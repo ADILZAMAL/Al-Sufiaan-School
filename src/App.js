@@ -5,7 +5,10 @@ import {createBrowserRouter, RouterProvider} from "react-router-dom"
 import Gallery from "./pages/Gallery"
 import Contact from "./pages/Contact"
 import {ThemeProvider, CssBaseline} from "@mui/material"
+import {useMode, ColorModeContext} from "./theme"
 import Dashboard from "./pages/Dashboard"
+import Login from "./pages/Login"
+import Global from "./pages/Global"
 
 const router = createBrowserRouter([
   {
@@ -30,12 +33,22 @@ const router = createBrowserRouter([
   },
   {
     path:"/dashboard",
-    element: <Dashboard/>
+    element: <Global><Dashboard/></Global>
+  },
+  {
+    path: "/login",
+    element: <Login />
   }
 ])
 function App() {
+  const [theme, colorMode] = useMode()
   return (
+    <ColorModeContext.Provider value={colorMode}>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
       <RouterProvider router={router} />
+    </ThemeProvider>
+    </ColorModeContext.Provider>
   );
 }
 

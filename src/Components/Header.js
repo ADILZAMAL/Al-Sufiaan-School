@@ -17,7 +17,7 @@ function Header() {
                         <a href="gallery" class="nav-item nav-link">Gallery</a>
                         <a href="contact" class="nav-item nav-link">Contact</a>
                     </div>
-                    <a href="" class="btn btn-primary px-4">Admin Login</a>
+                    <a href="login" class="btn btn-primary px-4">Admin Login</a>
                 </div>
             </nav>
         </div>

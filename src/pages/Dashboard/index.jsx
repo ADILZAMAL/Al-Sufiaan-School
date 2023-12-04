@@ -1,22 +1,30 @@
-import {ColorModeContext, useMode} from "../../theme"
-import {CssBaseline, ThemeProvider} from "@mui/material"
-import Topbar from "../Global/Topbar"
-import Sidebar from "../Global/Sidebar"
+import { Box, Button, IconButton, Typography, useTheme } from "@mui/material";
+import { tokens } from "../../theme";
+// import { mockTransactions } from "../../data/mockData";
+import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
+// import EmailIcon from "@mui/icons-material/Email";
+// import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
+// import PersonAddIcon from "@mui/icons-material/PersonAdd";
+// import TrafficIcon from "@mui/icons-material/Traffic";
+import Header from "../../Components/DashboardHeader";
+// import LineChart from "../../components/LineChart";
+// import GeographyChart from "../../components/GeographyChart";
+// import BarChart from "../../components/BarChart";
+// import StatBox from "../../components/StatBox";
+// import ProgressCircle from "../../components/ProgressCircle";
+
 const Dashboard = () => {
-    const [theme, colorMode] = useMode()
-    return (
-        <ColorModeContext.Provider value={colorMode}>
-            <ThemeProvider theme={theme}>
-                <CssBaseline />
-                <div className="app">
-                    <main className="content">
-                        <Topbar />
-                        <Sidebar />
-                    </main>
-                </div>
-            </ThemeProvider>
-        </ColorModeContext.Provider>
-    )
-}
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);
+
+  return (
+    <Box m="20px">
+      {/* HEADER */}
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Header title="DASHBOARD" subtitle="Welcome to your dashboard" />
+      </Box>
+    </Box>
+  );
+};
 
 export default Dashboard;
