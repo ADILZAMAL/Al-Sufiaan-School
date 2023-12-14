@@ -9,6 +9,8 @@ import {useMode, ColorModeContext} from "./theme"
 import Dashboard from "./pages/Dashboard"
 import Login from "./pages/Login"
 import Global from "./pages/Global"
+import RequireAuth from "./pages/Global/RequireAuth"
+import Class from "./pages/Class"
 
 const router = createBrowserRouter([
   {
@@ -33,7 +35,17 @@ const router = createBrowserRouter([
   },
   {
     path:"/dashboard",
-    element: <Global><Dashboard/></Global>
+    element: <RequireAuth/>,
+    children: [
+      {
+        path: "",
+        element: <Global><Dashboard/></Global>
+      }, 
+      {
+        path: "class",
+        element: <Global><Class/></Global>
+      }
+    ]
   },
   {
     path: "/login",

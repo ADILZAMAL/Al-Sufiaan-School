@@ -13,7 +13,6 @@ const Topbar = () => {
   const theme = useTheme(); // this is having limited color so not using
   const colors = tokens(theme.palette.mode);
   const colorMode = useContext(ColorModeContext);
-  console.log("testing", theme)
   return (
     <Box display="flex" justifyContent="right" p={2}>
       {/* SEARCH BAR */}

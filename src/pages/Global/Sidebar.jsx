@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
@@ -16,6 +16,10 @@ import PieChartOutlineOutlinedIcon from "@mui/icons-material/PieChartOutlineOutl
 import TimelineOutlinedIcon from "@mui/icons-material/TimelineOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import MapOutlinedIcon from "@mui/icons-material/MapOutlined";
+import {selectCurrentUser} from "../../app/store/auth"
+import {useGetSchoolQuery} from "../../app/api/schoolApiSlice"
+import {useSelector, useDispatch} from "react-redux"
+import {setSchool, selectCurrentSchool} from "../../app/store/school"
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -40,7 +44,21 @@ const Sidebar = () => {
   const colors = tokens(theme.palette.mode);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState("Dashboard");
+  const user = useSelector(selectCurrentUser)
+  const school = useSelector(selectCurrentSchool)
+  const dispatch = useDispatch()
+  const {        
+    data,
+    isLoading,
+    isSuccess,
+    isError,
+    error} = useGetSchoolQuery(user.school_id)
 
+    useEffect(()=>{
+      if(isSuccess){
+        dispatch(setSchool(data.data))
+      }
+    }, [isSuccess])
   return (
     <Box
       sx={{
@@ -80,7 +98,7 @@ const Sidebar = () => {
                 ml="15px"
               >
                 <Typography variant="h3" color={colors.grey[100]}>
-                  ADMINIS
+                  {school.name}
                 </Typography>
                 <IconButton onClick={() => setIsCollapsed(!isCollapsed)}>
                   <MenuOutlinedIcon />
@@ -96,7 +114,7 @@ const Sidebar = () => {
                   alt="profile-user"
                   width="100px"
                   height="100px"
-                  src={`../../assets/user.png`}
+                  src={`../../assets/team-5.jpg`}
                   style={{ cursor: "pointer", borderRadius: "50%" }}
                 />
               </Box>
@@ -107,10 +125,10 @@ const Sidebar = () => {
                   fontWeight="bold"
                   sx={{ m: "10px 0 0 0" }}
                 >
-                  Ed Roh
+                  {user.name}
                 </Typography>
                 <Typography variant="h5" color={colors.greenAccent[500]}>
-                  VP Fancy Admin
+                  {user.designation}
                 </Typography>
               </Box>
             </Box>
@@ -130,11 +148,11 @@ const Sidebar = () => {
               color={colors.grey[300]}
               sx={{ m: "15px 0 5px 20px" }}
             >
-              Data
+              Class
             </Typography>
             <Item
-              title="Manage Team"
-              to="/team"
+              title="Add/Update Class"
+              to="class"
               icon={<PeopleOutlinedIcon />}
               selected={selected}
               setSelected={setSelected}
@@ -159,7 +177,7 @@ const Sidebar = () => {
               color={colors.grey[300]}
               sx={{ m: "15px 0 5px 20px" }}
             >
-              Pages
+              Students
             </Typography>
             <Item
               title="Profile Form"
