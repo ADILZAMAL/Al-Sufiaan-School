@@ -11,6 +11,7 @@ import Login from "./pages/Login"
 import Global from "./pages/Global"
 import RequireAuth from "./pages/Global/RequireAuth"
 import Class from "./pages/Class"
+import Fees from "./pages/Fees"
 
 const router = createBrowserRouter([
   {
@@ -32,6 +33,10 @@ const router = createBrowserRouter([
   {
     path:"/contact",
     element: <Contact />
+  },
+  {
+    path:"/fees",
+    element: <Fees />
   },
   {
     path:"/dashboard",

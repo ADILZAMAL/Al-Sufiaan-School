@@ -48,6 +48,9 @@ function Header() {
             <a href="contact" class="nav-item nav-link">
               Contact
             </a>
+            <a href="fees" class="nav-item nav-link">
+              School Fees
+            </a>
           </div>
           <a href="login" class="btn btn-primary px-4">
             Admin Login
