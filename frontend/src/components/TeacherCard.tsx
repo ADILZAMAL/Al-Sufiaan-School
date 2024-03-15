@@ -10,7 +10,7 @@ const TeacherCard: React.FC<TeacherCardProps> = ({ name, designation, imageUrl }
     return (
         <div className="text-center mb-5 p-3 w-full">
             <div
-                className=" overflow-hidden mb-4 rounded-full"
+                className="overflow-hidden mb-4 rounded-full"
             >
                 <img className="w-full" src={imageUrl} alt="" />
             </div>
