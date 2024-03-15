@@ -8,15 +8,14 @@ interface TeacherCardProps {
 
 const TeacherCard: React.FC<TeacherCardProps> = ({ name, designation, imageUrl }) => {
     return (
-        <div className="text-center team mb-5 p-3 w-full">
+        <div className="text-center mb-5 p-3 w-full">
             <div
-                className="position-relative overflow-hidden mb-4"
-                style={{ borderRadius: "100%" }}
+                className=" overflow-hidden mb-4 rounded-full"
             >
-                <img className="img-fluid w-100" src={imageUrl} alt="" />
+                <img className="w-full" src={imageUrl} alt="" />
             </div>
-            <h4 className="text-primary">{name}</h4>
-            <i>{designation}</i>
+            <h4 className="text-cyan-600">{name}</h4>
+            <i className='text-gray-600 text-sm'>{designation}</i>
         </div>
     )
 }
