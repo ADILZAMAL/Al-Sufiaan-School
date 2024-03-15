@@ -4,26 +4,25 @@ interface PageHeaderProps {
   heading: string;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({heading}) => {
-    return (
-        <div className="container-fluid bg-primary mb-5">
-        <div
-          className="d-flex flex-column align-items-center justify-content-center"
-          style={{ minHeight: "400px" }}
-        >
-          <h3 className="display-3 font-weight-bold text-white">{heading}</h3>
-          <div className="d-inline-flex text-white">
-            <p className="m-0">
-              <a className="text-white" href="">
-                Home
-              </a>
-            </p>
-            <p className="m-0 px-2">/</p>
-            <p className="m-0">{heading}</p>
-          </div>
+const PageHeader: React.FC<PageHeaderProps> = ({ heading }) => {
+  return (
+    <div className="bg-cyan-600 border">
+      <div
+        className="flex flex-col items-center justify-center min-h-96"
+      >
+        <h3 className="text-6xl font-bold text-white">{heading}</h3>   
+        <div className="flex text-white mt-3">
+          <p className="m-0">
+            <a className="hover:no-underline" href="/">
+              Home
+            </a>
+          </p>
+          <p className="m-0 px-2">/</p>
+          <p className="m-0">{heading}</p>
         </div>
       </div>
-    )
+    </div>
+  )
 }
 
 export default PageHeader

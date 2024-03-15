@@ -1,31 +1,12 @@
-import Header from "../components/Navbar";
+import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import PageHeader from "../components/PageHeader";
 
 function About() {
   return (
     <div>
-      <Header />
-
-      {/* Header Start */}
-      <div className="container-fluid bg-primary mb-5">
-        <div
-          className="d-flex flex-column align-items-center justify-content-center"
-          style={{ minHeight: "400px" }}
-        >
-          <h3 className="display-3 font-weight-bold text-white">About Us</h3>
-          <div className="d-inline-flex text-white">
-            <p className="m-0">
-              <a className="text-white" href="">
-                Home
-              </a>
-            </p>
-            <p className="m-0 px-2">/</p>
-            <p className="m-0">About Us</p>
-          </div>
-        </div>
-      </div>
-      {/* Header End */}
-
+      <Navbar />
+      <PageHeader heading="About Us" />
       {/* About Start */}
       <div className="container-fluid py-5">
         <div className="container">

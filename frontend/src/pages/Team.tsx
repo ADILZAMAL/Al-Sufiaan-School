@@ -1,29 +1,11 @@
-import Header from "../components/Navbar";
+import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import PageHeader from "../components/PageHeader";
 function Team() {
   return (
     <div>
-      <Header />
-      {/* <!-- Header Start --> */}
-      <div className="container-fluid bg-primary mb-5">
-        <div
-          className="d-flex flex-column align-items-center justify-content-center"
-          style={{ minHeight: "400px" }}
-        >
-          <h3 className="display-3 font-weight-bold text-white">Our Teachers</h3>
-          <div className="d-inline-flex text-white">
-            <p className="m-0">
-              <a className="text-white" href="">
-                Home
-              </a>
-            </p>
-            <p className="m-0 px-2">/</p>
-            <p className="m-0">Our Teachers</p>
-          </div>
-        </div>
-      </div>
-      {/* <!-- Header End --> */}
-
+      <Navbar />
+      <PageHeader heading="Our Teachers" />
       {/* <!-- Team Start --> */}
       <div className="container-fluid pt-5">
         <div className="container">
