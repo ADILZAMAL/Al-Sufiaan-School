@@ -3,7 +3,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import PageHeader from "../components/PageHeader";
 import TeacherCard from "../components/TeacherCard"
-import teachers from "../Data/Teacher";
+import teachers from "../Data/teacher";
 const Team: React.FC = () => {
   return (
     <div>
