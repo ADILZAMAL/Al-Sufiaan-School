@@ -10,13 +10,12 @@ const FacilitiesCard: React.FC<FacilitiesCardProp> = ({ title, description, icon
     return (
         <div className="m-2">
             <div
-                className="d-flex bg-light shadow-sm border-top rounded mb-4"
-                style={{ padding: "30px" }}
+                className="flex bg-gray-100 drop-shadow-sm border-t rounded mb-4 p-7"
             >
-                <i className={`${iconName} h1 font-weight-normal text-primary mb-3`}></i>
+                <i className={`${iconName} text-cyan-600 mb-3`}></i>
                 <div className="pl-4">
-                    <h4>{title}</h4>
-                    <p className="m-0 text-secondary">
+                    <h4 className='text-gray-600'>{title}</h4>
+                    <p className="m-0 text-gray-500">
                         {description}
                     </p>
                 </div>
