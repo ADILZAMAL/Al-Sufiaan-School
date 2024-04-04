@@ -15,7 +15,7 @@ export const login = async (req: Request, res: Response) => {
             where: {
                 email
             }
-        })
+        });
         if(!user){
             return res.status(400).json({message: "Invalid Credentials"});
         }
