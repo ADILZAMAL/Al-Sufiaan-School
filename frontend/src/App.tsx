@@ -5,6 +5,7 @@ import Team from "./pages/Team"
 import Gallery from "./pages/Gallery"
 import Contact from "./pages/Contact"
 import Fees from "./pages/Fees"
+import SignIn from "./pages/SignIn"
 
 
 const router = createBrowserRouter([
@@ -32,6 +33,10 @@ const router = createBrowserRouter([
     path:"/fees",
     element: <Fees />
   },
+  {
+    path:"/sign-in",
+    element: <SignIn/>
+  }
   // {
   //   path:"/dashboard",
   //   element: <RequireAuth/>,
