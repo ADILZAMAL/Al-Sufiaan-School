@@ -6,6 +6,8 @@ import Gallery from "./pages/Gallery"
 import Contact from "./pages/Contact"
 import Fees from "./pages/Fees"
 import SignIn from "./pages/SignIn"
+import Dashboard from "./layout/Dashboard"
+import Class from "./pages/Class"
 
 
 const router = createBrowserRouter([
@@ -36,6 +38,16 @@ const router = createBrowserRouter([
   {
     path:"/sign-in",
     element: <SignIn/>
+  },
+  {
+    path: "/dashboard",
+    element: <Dashboard />,
+    children: [
+      {
+        path: "class",
+        element: <Class />
+      }
+    ]
   }
   // {
   //   path:"/dashboard",

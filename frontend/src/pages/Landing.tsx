@@ -6,12 +6,10 @@ import FacilitiesCard from "../components/FacilitiesCard";
 import facilities from "../Data/facilities";
 import principles from "../Data/principles";
 import PrincipleCard from "../components/PrincipleCard";
-import { useAppContext } from "../contexts/AppContext";
 
 
 
 function Landing() {
-  console.log("testing",useAppContext())
   return (
     <div>
       <Navbar />

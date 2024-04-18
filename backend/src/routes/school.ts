@@ -14,7 +14,7 @@ router.post("/onboard", [
     check("city", "City is required").isString(),
     check("district", "District is required").isString(),
     check("state", "State is required").isString(),
-    check("pinCode", "PinCode is required").isString(),
+    check("pincode", "PinCode is required").isString(),
     check("mobile", "Mobile is required").isString(),
     check("udiceCode", "Udice Code is required").isString(),
     check("email", "Email is required").isEmail(),

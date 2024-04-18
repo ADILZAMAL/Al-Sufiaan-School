@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import {Link} from 'react-router-dom'
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,7 +33,7 @@ function Navbar() {
             </div>
           </div>
           <div>
-            <a href="#" className='hidden md:block center bg-cyan-600 text-white px-4 py-2 rounded-3xl hover:no-underline'>Admin Login</a>
+            <Link to="/sign-in" className='hidden md:block center bg-cyan-600 text-white px-4 py-2 rounded-3xl hover:no-underline'>Admin Login</Link>
           </div>
           <div className="-mr-2 flex md:hidden">
             <button onClick={() => setIsOpen(!isOpen)} className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:bg-gray-700 focus:text-white">
@@ -52,7 +53,7 @@ function Navbar() {
           <a href="contact" className="block text-gray-800 no-underline hover:no-underline hover:text-cyan-600 text-sm font-semibold">Contact</a>
           <a href="fees"    className="block text-gray-800 no-underline hover:no-underline hover:text-cyan-600 text-sm font-semibold">School Fees</a>
           <div className=''>
-          <a href="#"       className='block text-gray-800 no-underline hover:no-underline hover:text-cyan-600 text-sm font-semibold'>Admin Login</a>
+          <Link to="/sign-in" className='block text-gray-800 no-underline hover:no-underline hover:text-cyan-600 text-sm font-semibold'>Admin Login</Link>
           </div>
         </div>
       </div>

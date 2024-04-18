@@ -1,6 +1,12 @@
 import { SignInFormData } from './pages/SignIn'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
+export type ClassType = {
+    id: number;
+    name: string;
+    schoolId: number;
+}
+
 export const signIn = async (formData: SignInFormData) => {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
@@ -29,3 +35,14 @@ export const validateToken = async () => {
 
     return response.json();
 };
+
+export const fetchClasses = async (): Promise<ClassType[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes`, {
+        credentials: "include"
+    })
+    const body = await response.json();
+    if (!body.success) {
+        throw new Error(body.error.message)
+    }
+    return body.data;
+}

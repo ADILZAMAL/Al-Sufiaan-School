@@ -10,7 +10,7 @@ class School extends Model {
   public city!: string;
   public district!: string;
   public state!: string;
-  public pinCode!: string;
+  public pincode!: string;
   public mobile!: string;
   public udiceCode!: string;
   public active!: boolean;
@@ -48,7 +48,7 @@ export const initSchoolModel = (sequelize: Sequelize): void => {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      pinCode: {
+      pincode: {
         type: DataTypes.STRING,
         allowNull: false,
       },
