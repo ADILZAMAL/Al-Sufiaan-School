@@ -2,6 +2,7 @@ import express, {Request, Response} from 'express';
 import verifyToken from '../middleware/auth'
 import Class from '../models/Class';
 import {check, validationResult} from 'express-validator'
+import Section from '../models/Section';
 
 
 // INVALID_INPUT: Indicates that the input data provided in the request is invalid or missing.
@@ -17,10 +18,12 @@ router.get("/", verifyToken,  async(req: Request, res: Response) => {
         const classes = await Class.findAll({
             where: {
                 schoolId: req.schoolId
-            }
+            },
+            include: Section
         })
         res.status(200).send({success: true, data: classes})
     } catch (error) {
+        console.log(error)
         res.status(500).send({success: false, error: {code: 'INTERNAL_SERVER_ERROR', message: "Someting went wrong"}})
     }
     const classes = await Class.findAll({

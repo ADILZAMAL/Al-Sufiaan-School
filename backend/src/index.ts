@@ -5,6 +5,9 @@ import schoolRouter from './routes/school';
 import userRouter from './routes/user';
 import authRouter from './routes/auth';
 import classRouter from './routes/class';
+import productRouter from './routes/product'
+import sectionRouter from './routes/section'
+import transactionRouter from './routes/transaction'
 import sequelize from './config/database';
 import cookieParser from "cookie-parser";
 
@@ -33,7 +36,10 @@ app.get("/api/test", async (req: Request, res: Response) => {
 app.use("/api/schools", schoolRouter)
 app.use("/api/users", userRouter)
 app.use("/api/auth", authRouter)
-app.use("/api/classes", classRouter);
+app.use("/api/classes", classRouter)
+app.use("/api/products", productRouter)
+app.use("/api/sections", sectionRouter)
+app.use("/api/transactions", transactionRouter)
 
 app.listen(7000, async () => {
     console.log("Server is running on port 7000")

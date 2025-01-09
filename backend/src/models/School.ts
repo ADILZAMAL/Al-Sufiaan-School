@@ -68,7 +68,6 @@ export const initSchoolModel = (sequelize: Sequelize): void => {
       email: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true,
       },
       sid: {
         type: DataTypes.STRING,

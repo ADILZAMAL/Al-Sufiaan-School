@@ -6,6 +6,7 @@ class Product extends Model {
     public name!: string;
     public description!: string;
     public price!: number;
+    public qty!: number;
     public schoolId!: number;
     public buyPrice!: number;
     public readonly createdAt !: Date;
@@ -23,14 +24,15 @@ export const initProductModel = (sequelize: Sequelize): void => {
             name: {
                 type: DataTypes.STRING,
                 allowNull: false,
-            },
-            description: {
-                type: DataTypes.STRING,
-                allowNull: false,
+                unique: true
             },
             price: {
                 type: DataTypes.FLOAT,
                 allowNull: false,
+            },
+            qty: {
+                type: DataTypes.INTEGER,
+                allowNull: false
             },
             schoolId: {
                 type: DataTypes.INTEGER,

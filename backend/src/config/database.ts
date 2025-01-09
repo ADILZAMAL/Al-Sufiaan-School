@@ -1,8 +1,8 @@
 import {Sequelize} from 'sequelize'
 import School, {initSchoolModel} from '../models/School';
 import {initUserModel} from '../models/User';
-import {initClassModel} from '../models/Class'
-import {initSectionModel} from '../models/Section'
+import Class from '../models/Class'
+import Section from '../models/Section'
 import {initProductModel} from '../models/Product'
 import {initTransactionModel} from '../models/Transaction'
 import "dotenv/config";
@@ -15,10 +15,13 @@ const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER |
     },
 });
 
+// Class.init(sequelize)
+console.log(Class)
+
 initSchoolModel(sequelize)
 initUserModel(sequelize)
-initClassModel(sequelize)
-initSectionModel(sequelize)
+// initClassModel(sequelize)
+// initSectionModel(sequelize)
 initProductModel(sequelize)
 initTransactionModel(sequelize)
 

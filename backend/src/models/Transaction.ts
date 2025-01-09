@@ -18,16 +18,16 @@ enum PaymentMode {
 
 class Transaction extends Model {
     public id!: number;
-    public quantity!: number;
     public totalAmount!: number;
-    public finalAmount!: number;
+    public discount!: number;
     public studentName!: string;
     public parentName!: string;
     public status!: Status;
     public paymentMode!: PaymentMode;
     public schoolId!: number;
     public productId!: number;
-    public classId!: number;
+    public class!: string;
+    public section!: string;
     public userId!: number;
     public createdAt!: Date;
     public updatedAt!: Date;
@@ -41,15 +41,11 @@ export const initTransactionModel = (sequelize: Sequelize): void => {
                 autoIncrement: true,
                 primaryKey: true,
             },
-            quantity: {
-                type: DataTypes.INTEGER,
-                allowNull: false
-            },
             totalAmount: {
                 type: DataTypes.FLOAT,
                 allowNull: false,
             },
-            finalAmount: {
+            discount: {
                 type: DataTypes.FLOAT,
                 allowNull: false,
             },
@@ -78,21 +74,13 @@ export const initTransactionModel = (sequelize: Sequelize): void => {
                     key: 'id'
                 }
             },
-            productId: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-                references: {
-                    model: Product,
-                    key: 'id'
-                }
+            class: {
+                type: DataTypes.STRING,
+                allowNull: false
             },
-            classId: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-                references: {
-                    model: Class,
-                    key: 'id'
-                }
+            section: {
+                type: DataTypes.STRING,
+                allowNull: false
             },
             userId: {
                 type: DataTypes.INTEGER,
@@ -118,10 +106,10 @@ export const initTransactionModel = (sequelize: Sequelize): void => {
             modelName: 'Transaction'
         }
     )
-    Transaction.belongsTo(School, {foreignKey: 'schoolId', as: 'school'})
-    Transaction.belongsTo(Class, {foreignKey: 'classId', as: 'class'})
-    Transaction.belongsTo(User, {foreignKey: 'userId', as: 'user'})
-    Transaction.belongsTo(Product, {foreignKey: 'productId', as: 'product'})
+    // Transaction.belongsTo(School, {foreignKey: 'schoolId', as: 'school'})
+    // Transaction.belongsTo(Class, {foreignKey: 'classId', as: 'class'})
+    // Transaction.belongsTo(User, {foreignKey: 'userId', as: 'user'})
+    // Transaction.belongsTo(Product, {foreignKey: 'productId', as: 'product'})
 }
 
 export default Transaction;
