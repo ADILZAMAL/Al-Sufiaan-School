@@ -8,6 +8,7 @@ import Fees from "./pages/Fees"
 import SignIn from "./pages/SignIn"
 import Dashboard from "./layout/Dashboard"
 import Class from "./pages/Class"
+import Inventory from "./pages/Inventory"
 
 
 const router = createBrowserRouter([
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
       {
         path: "class",
         element: <Class />
+      },
+      {
+        path: "inventory",
+        element: <Inventory />
       }
     ]
   }

@@ -1,8 +1,8 @@
 const teachers = [
-    {name: "Dr. Pran Mohan Thakur",designation: "Principal", imageUrl: "/img/team/paran.jpg"},
+    {name: "Arjumand Banu",designation: "Principal", imageUrl: "/img/team/arju.jpg"},
+    // {name: "Dr. Pran Mohan Thakur",designation: "Principal", imageUrl: "/img/team/paran.jpg"},
     {name: "Navin Thakur",designation: "Social Science Teacher", imageUrl: "/img/team/navin.jpg"},
     {name: "Md Raziullah Ansari",designation: "English Teacher", imageUrl: "/img/team/raziullah.jpg"},
-    {name: "Arjumand Banu",designation: "Science Teacher", imageUrl: "/img/team/arju.jpg"},
     {name: "Pankaj Kumar Das",designation: "Mathematics Teacher", imageUrl: "/img/team/pankaj.jpg"},
     {name: "Shamima Khatun",designation: "Primary Teacher", imageUrl: "/img/team/shamima.jpg"},
     {name: "Laxmi Kumari",designation: "Pre Primary Teacher", imageUrl: "/img/team/Laxmi.jpg"},

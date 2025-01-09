@@ -9,4 +9,9 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 		label: 'Class',
 		path: 'class',
 	},
+	{
+		key: 'inventory',
+		label: 'Inventory',
+		path: 'inventory'
+	}
 ]
