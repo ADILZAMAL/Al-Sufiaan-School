@@ -1,12 +1,9 @@
 import express, { Router, Request, Response } from 'express';
-import { onboardSchool } from '../controllers/school';
+import { getSchoolById, onboardSchool } from '../controllers/school';
 import { check } from 'express-validator'
 const router: Router = express.Router()
 
-router.get("/",
-    (req: Request, res: Response) => {
-        res.send("Hello from school router")
-    })
+router.get("/:id",getSchoolById)
 
 router.post("/onboard", [
     check("name", "School Name is required").isString(),

@@ -17,3 +17,25 @@ export const onboardSchool = async (req: Request, res: Response) => {
         res.status(400).send({ message: 'Something went wrong' })
     }
 }
+
+export const getSchoolById = async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id, 10);
+    if(isNaN(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid Id'})
+    }
+    if(!id) {
+        return res.status(500).json({ success: false, message: 'Id is required'})
+    }
+
+    try {
+        const school = await School.findByPk(id);
+        if(!school){
+            return res.status(500).json({success: false, message: 'School not found'});
+        }
+        return res.status(200).json({success: true, data: school})
+    } catch (error) {
+        console.log('Error fetching school', error)
+        return {success: false, message: 'An error occurred while fetching the school'}
+    }
+
+}
