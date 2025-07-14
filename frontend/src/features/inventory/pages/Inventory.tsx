@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery } from "react-query";
-import * as apiClient from "../api/api-client";
-import { useAppContext } from "../contexts/AppContext";
+import * as apiClient from "../../../api";
+import { useAppContext } from "../../../providers/AppContext";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import { useMemo, useState } from "react";
 

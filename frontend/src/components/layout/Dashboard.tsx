@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import { useAppContext } from '../contexts/AppContext';
+import Sidebar from './Sidebar';
+import { useAppContext } from '../../providers/AppContext';
 
 const Dashboard: React.FC = () => {
     const { isLoggedIn } = useAppContext();

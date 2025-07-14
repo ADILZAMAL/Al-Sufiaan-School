@@ -1,6 +1,6 @@
-import { SignInFormData } from '../pages/SignIn'
-import {AddProductFormData} from '../pages/Inventory'
-import { AddExpense } from '../pages/Expense';
+import { SignInFormData } from '../features/auth/pages/SignIn'
+import {AddProductFormData} from '../features/inventory/pages/Inventory'
+import { AddExpense } from '../features/expenses/pages/Expense';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 export type ClassType = {

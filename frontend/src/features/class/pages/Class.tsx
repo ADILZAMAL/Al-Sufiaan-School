@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from "react-query";
-import * as apiClient from "../api/api-client";
+import * as apiClient from "../../../api";
 import { FaPlus } from "react-icons/fa";
 
 const Class: React.FC = () => {

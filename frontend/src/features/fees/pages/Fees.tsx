@@ -1,5 +1,5 @@
-import Header from "../components/Navbar";
-import Footer from "../components/Footer";
+import Header from "../../../components/layout/Navbar";
+import Footer from "../../../components/layout/Footer";
 
 function createData(className: string, fee: number) {
     return { className, fee };

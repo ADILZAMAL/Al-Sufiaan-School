@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "react-query";
-import * as apiClient from "../api/api-client";
-import { useAppContext } from "../contexts/AppContext";
+import * as apiClient from "../../../api";
+import { useAppContext } from "../../../providers/AppContext";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaLock } from "react-icons/fa";
 

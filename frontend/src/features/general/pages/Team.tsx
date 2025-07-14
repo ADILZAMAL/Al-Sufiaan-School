@@ -1,9 +1,9 @@
 import React from "react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import PageHeader from "../components/PageHeader";
+import Navbar from "../../../components/layout/Navbar";
+import Footer from "../../../components/layout/Footer";
+import PageHeader from "../../../components/common/PageHeader";
 import TeacherCard from "../components/TeacherCard"
-import teachers from "../Data/teacher";
+import teachers from "../api/teacher";
 const Team: React.FC = () => {
   return (
     <div>

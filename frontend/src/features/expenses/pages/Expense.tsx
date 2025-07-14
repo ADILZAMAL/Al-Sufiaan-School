@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useQuery } from "react-query";
-import * as apiClient from "../api/api-client";
+import * as apiClient from "../../../api";
 import { FaPlus, FaSearch } from "react-icons/fa";
 
 export type AddExpense = {

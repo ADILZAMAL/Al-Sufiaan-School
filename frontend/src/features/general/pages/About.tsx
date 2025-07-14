@@ -1,11 +1,11 @@
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import PageHeader from "../components/PageHeader";
-import teachers from "../Data/teacher";
+import Navbar from "../../../components/layout/Navbar";
+import Footer from "../../../components/layout/Footer";
+import PageHeader from "../../../components/common/PageHeader";
+import teachers from "../api/teacher";
 import React from 'react'
 import TeacherCard from "../components/TeacherCard";
 import FacilitiesCard from "../components/FacilitiesCard";
-import facilities from "../Data/facilities";
+import facilities from "../api/facilities";
 
 const About: React.FC = () => {
   return (

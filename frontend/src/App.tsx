@@ -1,15 +1,15 @@
 import {createBrowserRouter, RouterProvider} from "react-router-dom"
-import Landing from "./pages/Landing"
-import About from "./pages/About"
-import Team from "./pages/Team"
-import Gallery from "./pages/Gallery"
-import Contact from "./pages/Contact"
-import Fees from "./pages/Fees"
-import SignIn from "./pages/SignIn"
-import Dashboard from "./layout/Dashboard"
-import Class from "./pages/Class"
-import Inventory from "./pages/Inventory"
-import Expense from "./pages/Expense"
+import Landing from "./features/general/pages/Landing"
+import About from "./features/general/pages/About"
+import Team from "./features/general/pages/Team"
+import Gallery from "./features/general/pages/Gallery"
+import Contact from "./features/general/pages/Contact"
+import Fees from "./features/fees/pages/Fees"
+import SignIn from "./features/auth/pages/SignIn"
+import Dashboard from "./components/layout/Dashboard"
+import Class from "./features/class/pages/Class"
+import Inventory from "./features/inventory/pages/Inventory"
+import Expense from "./features/expenses/pages/Expense"
 
 
 const router = createBrowserRouter([
@@ -59,24 +59,6 @@ const router = createBrowserRouter([
       }
     ]
   }
-  // {
-  //   path:"/dashboard",
-  //   element: <RequireAuth/>,
-  //   children: [
-  //     {
-  //       path: "",
-  //       element: <Global><Dashboard/></Global>
-  //     }, 
-  //     {
-  //       path: "class",
-  //       element: <Global><Class/></Global>
-  //     }
-  //   ]
-  // },
-  // {
-  //   path: "/login",
-  //   element: <Login />
-  // }
 ])
 
 function App() {

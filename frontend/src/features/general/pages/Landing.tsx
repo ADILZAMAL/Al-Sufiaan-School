@@ -1,10 +1,10 @@
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import teachers from "../Data/teacher";
+import Navbar from "../../../components/layout/Navbar";
+import Footer from "../../../components/layout/Footer";
+import teachers from "../api/teacher";
 import TeacherCard from "../components/TeacherCard";
 import FacilitiesCard from "../components/FacilitiesCard";
-import facilities from "../Data/facilities";
-import principles from "../Data/principles";
+import facilities from "../api/facilities";
+import principles from "../api/principles";
 import PrincipleCard from "../components/PrincipleCard";
 
 
