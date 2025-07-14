@@ -8,7 +8,9 @@ import classRouter from './routes/class';
 import productRouter from './routes/product'
 import sectionRouter from './routes/section'
 import transactionRouter from './routes/transaction'
+import expenseRouter from './routes/expense'
 import sequelize from './config/database';
+import './models'; // Import for associations
 import cookieParser from "cookie-parser";
 
 const app = express();
@@ -16,7 +18,9 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL
+    : 'http://localhost:5173',
     credentials: true,
   }));
 
@@ -40,6 +44,7 @@ app.use("/api/classes", classRouter)
 app.use("/api/products", productRouter)
 app.use("/api/sections", sectionRouter)
 app.use("/api/transactions", transactionRouter)
+app.use('/api/expenses', expenseRouter)
 
 app.listen(7000, async () => {
     console.log("Server is running on port 7000")

@@ -29,18 +29,18 @@ Section.init(
         classId: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            // references: {
-            //     model: Class,
-            //     key: 'id'
-            // }
+            references: {
+                model: Class,
+                key: 'id'
+            }
         },
         schoolId: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            // references:{
-            //     model: School,
-            //     key: 'id'
-            // }
+            references:{
+                model: School,
+                key: 'id'
+            }
         },
         roomNumber: {
             type: DataTypes.INTEGER,
@@ -66,6 +66,4 @@ Section.init(
         modelName: 'Section'
     }
 )
-Section.belongsTo(Class, {foreignKey: 'classId'})
-
 export default Section

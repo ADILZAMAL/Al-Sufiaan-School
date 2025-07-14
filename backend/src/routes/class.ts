@@ -19,7 +19,10 @@ router.get("/", verifyToken,  async(req: Request, res: Response) => {
             where: {
                 schoolId: req.schoolId
             },
-            include: Section
+            include: [{
+                model: Section,
+                as: 'sections'
+            }]
         })
         res.status(200).send({success: true, data: classes})
     } catch (error) {

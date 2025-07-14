@@ -4,6 +4,7 @@ import {check, validationResult} from 'express-validator'
 import Product from '../models/Product'
 import sequelize from '../config/database'
 import Transaction from '../models/Transaction'
+import {ExpenseCateogy} from '../models/Expense'
 
 const router = expres()
 
@@ -77,6 +78,5 @@ router.post("/", [
     }
 
 })
-
 
 export default router

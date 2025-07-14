@@ -39,7 +39,7 @@ function Landing() {
       </div>
 
       <div className="container grid md:grid-cols-3 md:gap-6 pt-5">
-        {facilities.map(facility => <FacilitiesCard title={facility.title} description={facility.description} iconName={facility.iconName} />)}
+        {facilities.map((facility, index) => <FacilitiesCard key={index} title={facility.title} description={facility.description} iconName={facility.iconName} />)}
       </div>
 
       <div className="container py-20 grid grid-cols-1 sm:grid-cols-3 items-center md:gap-7">
@@ -95,7 +95,7 @@ function Landing() {
           </p>
           <h1 className="mb-4 text-3xl text-cyan-600 font-moto">Leading with Excellence, Empowering with Knowledge</h1>
         </div>
-        {principles.map(principle => <PrincipleCard title={principle.title} description={principle.description} imageUrl={principle.imageUrl} />)}
+        {principles.map((principle, index) => <PrincipleCard key={index} title={principle.title} description={principle.description} imageUrl={principle.imageUrl} />)}
       </div>
       <div className="container grid grid-cols-1 sm:grid-cols-4 md:gap-6 mt-20">
         <div className="text-center pb-2 md:col-span-4">
@@ -104,7 +104,7 @@ function Landing() {
           </p>
           <h1 className="mb-4 text-3xl text-cyan-600 font-moto">Meet Our Teachers</h1>
         </div>
-        {teachers.map(teacher => <TeacherCard name={teacher.name} designation={teacher.designation} imageUrl={teacher.imageUrl} />)}
+        {teachers.map((teacher, index) => <TeacherCard key={index} name={teacher.name} designation={teacher.designation} imageUrl={teacher.imageUrl} />)}
       </div>
 
       <Footer />

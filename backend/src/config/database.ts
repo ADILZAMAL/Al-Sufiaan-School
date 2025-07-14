@@ -5,7 +5,6 @@ import Class from '../models/Class'
 import Section from '../models/Section'
 import {initProductModel} from '../models/Product'
 import {initTransactionModel} from '../models/Transaction'
-import {initExpenseModel} from '../models/Expense'
 import "dotenv/config";
 
 const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER || '', process.env.DB_PASSWORD, {
@@ -28,10 +27,9 @@ initUserModel(sequelize)
 // initSectionModel(sequelize)
 initProductModel(sequelize)
 initTransactionModel(sequelize)
-initExpenseModel(sequelize)
 
 //Sync the Model with the database
-sequelize.sync()
+sequelize.sync({ alter: true })
     .then(() => {
         console.log('Database synced!')
     })

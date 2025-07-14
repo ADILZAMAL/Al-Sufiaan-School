@@ -9,6 +9,7 @@ import SignIn from "./pages/SignIn"
 import Dashboard from "./layout/Dashboard"
 import Class from "./pages/Class"
 import Inventory from "./pages/Inventory"
+import Expense from "./pages/Expense"
 
 
 const router = createBrowserRouter([
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
     path: "/dashboard",
     element: <Dashboard />,
     children: [
+      {
+        path: "expense",
+        element: <Expense />
+      },
       {
         path: "class",
         element: <Class />

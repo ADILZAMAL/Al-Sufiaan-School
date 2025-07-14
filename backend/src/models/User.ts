@@ -1,5 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import School from './School';
+import Expense from './Expense';
 
 class User extends Model {
     public id!: number;
@@ -10,6 +11,11 @@ class User extends Model {
     public schoolId!: number; //Foreign Key
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
+
+       // Association method
+    //    public static associate() {
+    //     User.hasMany(Expense, { foreignKey: 'userId', as: 'expense' })
+    // }
 }
 
 export const initUserModel = (sequelize: Sequelize): void => {
@@ -62,6 +68,8 @@ export const initUserModel = (sequelize: Sequelize): void => {
         }
     )
     User.belongsTo(School, { foreignKey: 'schoolId', as: 'school' })
+    // User.associate()
 }
 
+console.log(User.getAttributes())
 export default User;

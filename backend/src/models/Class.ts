@@ -44,7 +44,4 @@ const Class = sequelize.define('class', {
 
 // module.exports = Class
 
-// Class.belongsTo(School, { foreignKey: 'schoolId', as: 'school' })
-// Class.hasMany(Section, { foreignKey: 'classId', as: 'class' })
-// 
 export default Class;
