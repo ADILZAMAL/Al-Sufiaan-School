@@ -1,7 +1,7 @@
 import React, { useContext, useState } from "react";
 import Toast from "../components/common/Toast";
 import { useQuery } from "react-query";
-import * as apiClient from "../api";
+import * as apiClient from "../features/auth/api";
 // import { loadStripe, Stripe } from "@stripe/stripe-js";
 
 
@@ -24,9 +24,13 @@ export const AppContextProvider = ({
 }) => {
   const [toast, setToast] = useState<ToastMessage | undefined>(undefined);
 
-  const { data, isError } = useQuery("validateToken", apiClient.validateToken, {
-    retry: false,
-  });
+  const { isError } = useQuery(
+    "validateToken",
+    apiClient.validateToken,
+    {
+      retry: false,
+    }
+  );
 
   return (
     <AppContext.Provider
@@ -34,7 +38,7 @@ export const AppContextProvider = ({
         showToast: (toastMessage) => {
           setToast(toastMessage);
         },
-        isLoggedIn: !!data,
+        isLoggedIn: !isError,
       }}
     >
       {toast && (

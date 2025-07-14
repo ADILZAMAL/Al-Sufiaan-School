@@ -4,7 +4,7 @@ import {DASHBOARD_SIDEBAR_LINKS} from '../../lib/constants';
 import classNames from 'classnames';
 import { HiOutlineLogout } from 'react-icons/hi';
 import { useMutation, useQueryClient } from 'react-query';
-import * as apiClient from '../../api';
+import * as apiClient from '../../features/auth/api';
 import { useAppContext } from '../../providers/AppContext';
 
 const linkClass =

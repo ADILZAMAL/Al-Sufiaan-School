@@ -9,7 +9,6 @@ type ToastProps = {
 import {
   FaCheckCircle,
   FaTimesCircle,
-  FaExclamationCircle,
 } from "react-icons/fa";
 
 const Toast = ({ message, type, onClose }: ToastProps) => {

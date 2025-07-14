@@ -1,4 +1,3 @@
-import { SignInFormData } from '../features/auth/pages/SignIn'
 import {AddProductFormData} from '../features/inventory/pages/Inventory'
 import { AddExpense } from '../features/expenses/pages/Expense';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
@@ -37,22 +36,6 @@ export type ExpenseType = {
     }
 }
 
-export const signIn = async (formData: SignInFormData) => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-    });
-
-    const body = await response.json();
-    if (!response.ok) {
-        throw new Error(body.message);
-    }
-    return body;
-};
 
 export const addProduct = async (formData: AddProductFormData) => {
     const response = await fetch(`${API_BASE_URL}/api/products`, {
@@ -83,17 +66,6 @@ export const fetchProducts = async(): Promise<ProductType[]> => {
     return body.data
 }
 
-export const validateToken = async () => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/validate-token`, {
-        credentials: "include",
-    });
-
-    if (!response.ok) {
-        throw new Error("Token invalid");
-    }
-
-    return response.json();
-};
 
 export const fetchClasses = async (): Promise<ClassType[]> => {
     const response = await fetch(`${API_BASE_URL}/api/classes`, {
@@ -140,15 +112,3 @@ export const addExpense = async (formData: AddExpense) => {
     }
     return body
 }
-
-export const signOut = async () => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-    });
-    const body = await response.json();
-    if (!response.ok) {
-        throw new Error(body.message);
-    }
-    return body;
-};
