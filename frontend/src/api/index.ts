@@ -48,8 +48,8 @@ export const addProduct = async (formData: AddProductFormData) => {
     })
 
     const body = await response.json()
-    if(!response.ok) {
-        throw new Error(body.error.message)
+    if(!body.success) {
+        throw new Error(body.message)
     }
     return body
 }
@@ -60,8 +60,8 @@ export const fetchProducts = async(): Promise<ProductType[]> => {
         credentials: "include"
     })
     const body = await response.json()
-    if(!response.ok) {
-        throw new Error(body.error.message)
+    if(!body.success) {
+        throw new Error(body.message)
     }
     return body.data
 }
@@ -107,8 +107,8 @@ export const addExpense = async (formData: AddExpense) => {
     })
 
     const body = await response.json()
-    if(!response.ok) {
-        throw new Error(body.error.message)
+    if(!body.success) {
+        throw new Error(body.message)
     }
     return body
 }

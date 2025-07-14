@@ -1,8 +1,9 @@
-import express, { } from 'express';
-import { check } from 'express-validator'
+import express from 'express';
+import { check } from 'express-validator';
 import { login } from '../controllers/auth';
-import { Request, Response } from 'express'
-import verifyToken from '../middleware/auth'
+import { Request, Response } from 'express';
+import verifyToken from '../middleware/auth';
+import { sendSuccess } from '../utils/response';
 
 const router = express.Router();
 
@@ -18,15 +19,14 @@ router.post(
 )
 
 router.get("/validate-token", verifyToken, (req: Request, res: Response) => {
-    res.status(200).send({ userId: req.userId, schoolId: req.schoolId })
-}
-)
+    sendSuccess(res, { userId: req.userId, schoolId: req.schoolId }, 'Token validated');
+});
 
 router.post("/logout", (req: Request, res: Response) => {
     res.cookie("auth_token", "", {
         expires: new Date(0),
     });
-    res.json({ message: "Signed out" });
+    sendSuccess(res, {}, 'Signed out');
 });
 
 export default router

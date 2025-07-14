@@ -4,11 +4,7 @@ import * as apiClient from "../api";
 import { useAppContext } from "../../../providers/AppContext";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaLock } from "react-icons/fa";
-
-export type SignInFormData = {
-  email: string;
-  password: string;
-};
+import { SignInFormData } from "../types";
 
 const SignIn = () => {
   const { showToast } = useAppContext();

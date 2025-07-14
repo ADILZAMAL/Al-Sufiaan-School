@@ -1,4 +1,4 @@
-import { SignInFormData } from "../pages/SignIn";
+import { SignInFormData } from "../types";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 export const signIn = async (formData: SignInFormData) => {
@@ -12,7 +12,7 @@ export const signIn = async (formData: SignInFormData) => {
     });
 
     const body = await response.json();
-    if (!response.ok) {
+    if (!body.success) {
         throw new Error(body.message);
     }
     return body;
@@ -23,11 +23,12 @@ export const validateToken = async () => {
         credentials: "include",
     });
 
-    if (!response.ok) {
-        throw new Error("Token invalid");
+    const body = await response.json();
+    if (!body.success) {
+        throw new Error(body.message);
     }
 
-    return response.json();
+    return body;
 };
 
 export const signOut = async () => {
@@ -36,7 +37,7 @@ export const signOut = async () => {
         credentials: "include",
     });
     const body = await response.json();
-    if (!response.ok) {
+    if (!body.success) {
         throw new Error(body.message);
     }
     return body;
