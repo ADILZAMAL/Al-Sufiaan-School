@@ -79,36 +79,38 @@ const ExpenseDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="font-bold mb-2">Expenses by Category</h3>
-            <ExpenseByCategoryPieChart expenses={filteredExpenses} />
+        <div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="font-bold mb-2">Expenses by Category</h3>
+              <ExpenseByCategoryPieChart expenses={filteredExpenses} />
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="font-bold mb-2">Total Expenses by Category</h3>
+              <TotalExpensesByCategoryBarChart expenses={filteredExpenses} />
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="font-bold mb-2">Expense Trend</h3>
+              <ExpenseTrendLineChart expenses={filteredExpenses} />
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="font-bold mb-2">Total For Selected Date</h3>
+              <p className="text-3xl font-bold text-gray-800">
+                ₹
+                {totalAmountForSelectedDate.toLocaleString("en-IN", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="font-bold mb-2">Total Expenses by Category</h3>
-            <TotalExpensesByCategoryBarChart expenses={filteredExpenses} />
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="font-bold mb-2">Expense Trend</h3>
-            <ExpenseTrendLineChart expenses={filteredExpenses} />
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="font-bold mb-2">Total For Selected Date</h3>
-            <p className="text-3xl font-bold text-gray-800">
-              ₹
-              {totalAmountForSelectedDate.toLocaleString("en-IN", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-          </div>
-        </div>
 
-        <ExpenseTable
-          expenses={sortedExpenses}
-          isLoading={isLoading}
-          error={error}
-        />
+          <ExpenseTable
+            expenses={sortedExpenses}
+            isLoading={isLoading}
+            error={error}
+          />
+        </div>
       </div>
 
       <AddExpenseModal
