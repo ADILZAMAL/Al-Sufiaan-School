@@ -1,6 +1,6 @@
 import React from 'react';
 import {Link, useLocation, useNavigate} from 'react-router-dom';
-import {DASHBOARD_SIDEBAR_LINKS} from '../../lib/constants';
+import {DASHBOARD_SIDEBAR_LINKS} from '../../lib/constants/index.tsx';
 import classNames from 'classnames';
 import { HiOutlineLogout } from 'react-icons/hi';
 import { useMutation, useQueryClient } from 'react-query';
@@ -8,7 +8,7 @@ import * as apiClient from '../../features/auth/api';
 import { useAppContext } from '../../providers/AppContext';
 
 const linkClass =
-	'flex items-center gap-2 font-light px-3 py-2 hover:bg-neutral-700 hover:no-underline active:bg-neutral-600 rounded-sm text-base'
+	'flex items-center gap-2 font-light px-3 py-2 hover:no-underline rounded-sm text-base'
 
 
 const Sidebar: React.FC = () => {
@@ -31,18 +31,19 @@ const Sidebar: React.FC = () => {
     };
 
     return (
-		<div className="bg-neutral-900 w-60 p-3 flex flex-col">
-			<div className="flex items-center gap-2 px-1 py-3">
-				<span className="text-neutral-200 text-lg">OpenShop</span>
+		<div className="bg-gray-50 w-60 p-3 flex flex-col font-sans border-r border-gray-200">
+			<div className="flex items-center gap-3 px-1 py-3">
+				<img src="/img/school-logo.png" alt="Al Sufiaan School" className="w-12 h-12" />
+				<span className="text-xl font-bold text-slate-800">AL SUFIAAN SCHOOL</span>
 			</div>
-			<div className="py-8 flex flex-1 flex-col gap-0.5">
+			<div className="py-8 flex flex-1 flex-col gap-4">
 
 				{DASHBOARD_SIDEBAR_LINKS.map((link) => (
-					<SidebarLink key={link.key} path={link.path} label={link.label} />
+					<SidebarLink key={link.key} item={link} />
 				))}
 
 			</div>
-			<div className="flex flex-col gap-0.5 pt-2 border-t border-neutral-700">
+			<div className="flex flex-col gap-0.5 pt-2 border-t border-gray-200">
 				<div onClick={handleClick} className={classNames(linkClass, 'cursor-pointer text-red-500')}>
 					<span className="text-xl">
 						<HiOutlineLogout />
@@ -55,19 +56,27 @@ const Sidebar: React.FC = () => {
 }
 
 interface SidebarLinkProps {
-    path: string,
-    label: string,
+    item: {
+		key: string;
+		label: string;
+		path: string;
+		icon: JSX.Element;
+	}
 }
 
-const SidebarLink: React.FC<SidebarLinkProps> = ({path, label}) => {
+const SidebarLink: React.FC<SidebarLinkProps> = ({item}) => {
 	const { pathname } = useLocation()
+	const isActive = item.path === '/' ? pathname === '/' : pathname.split('/')[1] === item.path;
+
 
 	return (
 		<Link
-			to={path}
-			className={classNames(pathname === path ? 'bg-neutral-700 text-white' : 'text-neutral-400', linkClass)}
+			to={item.path}
+			className={classNames(isActive ? 'bg-blue-100 text-blue-600 font-semibold' : 'text-slate-600', linkClass, 'relative')}
 		>
-			{label}
+			{isActive && <span className="absolute left-0 top-0 h-full w-1 bg-blue-600 rounded-r-full"></span>}
+			<span className="text-xl">{item.icon}</span>
+			{item.label}
 		</Link>
 	)
 }

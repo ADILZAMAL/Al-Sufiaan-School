@@ -38,3 +38,16 @@ export const registerNewUser = async (req: Request, res: Response) => {
     sendError(res, 'Something went wrong');
   }
 };
+
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findByPk(req.userId);
+    if (!user) {
+      return sendError(res, 'User not found', 404);
+    }
+    sendSuccess(res, user, 'User retrieved successfully');
+  } catch (error) {
+    console.log(error);
+    sendError(res, 'Something went wrong');
+  }
+}
