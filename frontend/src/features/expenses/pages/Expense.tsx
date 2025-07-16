@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "react-query";
 import * as apiClient from "../../../api";
-import { ExpenseType } from "../../../api";
+import { ExpenseType, AddExpense } from "../../../api";
 import { FaPlus } from "react-icons/fa";
 import {
   ExpenseByCategoryPieChart,
@@ -11,12 +11,6 @@ import {
 import AddExpenseModal from "../components/AddExpenseModal";
 import ExpenseFilter from "../components/ExpenseFilter";
 import ExpenseTable from "../components/ExpenseTable";
-
-export type AddExpense = {
-    name: string;
-    amount: string;
-    category: string;
-}
 
 const ExpenseDashboard: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -66,7 +60,7 @@ const ExpenseDashboard: React.FC = () => {
           <h2 className="text-3xl font-bold text-gray-800">
             Expense Management
           </h2>
-          <div className="flex items-center gap-4 bg-white p-4 rounded-lg shadow">
+          <div className="flex items-center gap-4">
             <ExpenseFilter
               searchTerm={searchTerm}
               onSearchTermChange={setSearchTerm}

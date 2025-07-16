@@ -1,6 +1,7 @@
 import {AddProductFormData} from '../features/inventory/pages/Inventory'
-import { AddExpense } from '../features/expenses/pages/Expense';
+import { AddExpense, ExpenseType } from '../features/expenses/types';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+export type { ExpenseType, AddExpense };
 
 export type ClassType = {
     id: number;
@@ -18,22 +19,6 @@ export type ProductType = {
     buyPrice: number;
     createdAt : Date;
     updatedAt : Date;
-}
-
-export type ExpenseType = {
-    id: number;
-    name: string;
-    amount: number;
-    remarks: string;
-    userId: number;
-    schoolId: number;
-    category: string;
-    createdAt: Date;
-    updatedAt: Date;
-    user: {
-        firstName: string;
-        lastName: string;
-    }
 }
 
 export const addProduct = async (formData: AddProductFormData) => {
