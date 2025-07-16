@@ -1,7 +1,7 @@
 import express, {Request, Response} from 'express';
 import verifyToken from '../middleware/auth'
 import {check, validationResult} from 'express-validator'
-import {addExpense, fetchExpense} from '../controllers/expense'
+import {addExpense, fetchExpense, fetchTotalExpenseForCurrentMonth} from '../controllers/expense'
 import {ExpenseCateogy} from '../models/Expense'
 
 const router = express.Router();
@@ -13,5 +13,7 @@ router.post('/', verifyToken, [
 ], addExpense)
 
 router.get('/', verifyToken, fetchExpense)
+
+router.get('/total-current-month', verifyToken, fetchTotalExpenseForCurrentMonth)
 
 export default router;

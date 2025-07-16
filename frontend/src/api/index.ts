@@ -36,7 +36,6 @@ export type ExpenseType = {
     }
 }
 
-
 export const addProduct = async (formData: AddProductFormData) => {
     const response = await fetch(`${API_BASE_URL}/api/products`, {
         method: "POST",
@@ -78,13 +77,16 @@ export const fetchClasses = async (): Promise<ClassType[]> => {
     return body.data;
 }
 
-export const fetchExpenses = async (name?: string, date?: Date): Promise<ExpenseType[]> => {
+export const fetchExpenses = async (name?: string, fromDate?: Date, toDate?: Date): Promise<ExpenseType[]> => {
     const params = new URLSearchParams();
     if (name) {
         params.append("name", name);
     }
-    if (date) {
-        params.append("date", date.toISOString());
+    if (fromDate) {
+        params.append("fromDate", fromDate.toISOString());
+    }
+    if (toDate) {
+        params.append("toDate", toDate.toISOString());
     }
     const response = await fetch(`${API_BASE_URL}/api/expenses?${params.toString()}`, {
         credentials: "include"
@@ -111,4 +113,19 @@ export const addExpense = async (formData: AddExpense) => {
         throw new Error(body.message)
     }
     return body
+}
+
+export const fetchTotalExpenseForCurrentMonth = async (date?: Date): Promise<{ total: number }> => {
+    const params = new URLSearchParams();
+    if (date) {
+        params.append("date", date.toISOString());
+    }
+    const response = await fetch(`${API_BASE_URL}/api/expenses/total-current-month?${params.toString()}`, {
+        credentials: "include"
+    })
+    const body = await response.json();
+    if(!body.success) {
+        throw new Error(body.error.message)
+    }
+    return body.data
 }
