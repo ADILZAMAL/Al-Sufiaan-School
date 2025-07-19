@@ -1,6 +1,6 @@
 import {AddProductFormData} from '../features/inventory/pages/Inventory'
 import { AddExpense, ExpenseType } from '../features/expenses/types';
-const API_BASE_URL = import.meta.env.BACKEND_API_BASE_URL || "";
+const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
 export type { ExpenseType, AddExpense };
 
 export type ClassType = {
