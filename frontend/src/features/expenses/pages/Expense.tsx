@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "react-query";
 import * as apiClient from "../../../api";
-import { ExpenseType, AddExpense } from "../../../api";
+import { ExpenseType } from "../../../api";
 import { FaPlus } from "react-icons/fa";
 import {
   ExpenseByCategoryPieChart,

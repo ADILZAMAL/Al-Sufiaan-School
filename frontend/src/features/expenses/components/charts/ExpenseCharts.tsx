@@ -58,7 +58,7 @@ export const ExpenseByCategoryPieChart: React.FC<Props> = ({ expenses }) => {
           dataKey="value"
           nameKey="name"
         >
-          {data.map((entry, index) => (
+          {data.map((_, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
