@@ -43,3 +43,20 @@ export const signOut = async () => {
     }
     return body;
 };
+
+export const changePassword = async (formData: any) => {
+    const response = await fetch(`${API_BASE_URL}/api/users/change-password`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData)
+    })
+
+    const body = await response.json()
+    if (!body.success) {
+        throw new Error(body.message)
+    }
+    return body
+};

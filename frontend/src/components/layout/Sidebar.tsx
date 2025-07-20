@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {DASHBOARD_SIDEBAR_LINKS} from '../../lib/constants/index.tsx';
 import classNames from 'classnames';
-import { HiOutlineLogout } from 'react-icons/hi';
+import { HiOutlineLogout, HiOutlineLockClosed } from 'react-icons/hi';
 import { useMutation, useQueryClient } from 'react-query';
 import * as apiClient from '../../features/auth/api';
 import { useAppContext } from '../../providers/AppContext';
+import ChangePasswordModal from '../../features/auth/components/ChangePasswordModal';
 
 const linkClass =
 	'flex items-center gap-2 font-light px-3 py-2 hover:no-underline rounded-sm text-base'
 
 
 const Sidebar: React.FC = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const navigate = useNavigate();
     const { showToast } = useAppContext();
     const queryClient = useQueryClient();
@@ -44,6 +46,12 @@ const Sidebar: React.FC = () => {
 
 			</div>
 			<div className="flex flex-col gap-0.5 pt-2 border-t border-gray-200">
+                <div onClick={() => setIsModalOpen(true)} className={classNames(linkClass, 'cursor-pointer text-gray-600')}>
+                    <span className="text-xl">
+                        <HiOutlineLockClosed />
+                    </span>
+                    Change Password
+                </div>
 				<div onClick={handleClick} className={classNames(linkClass, 'cursor-pointer text-red-500')}>
 					<span className="text-xl">
 						<HiOutlineLogout />
@@ -51,6 +59,7 @@ const Sidebar: React.FC = () => {
 					Logout
 				</div>
 			</div>
+            <ChangePasswordModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 		</div>
     )
 }

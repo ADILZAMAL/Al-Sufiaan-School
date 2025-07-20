@@ -1,6 +1,7 @@
 import express, {Request, Response} from 'express';
 import {check} from 'express-validator';
-import {registerNewUser} from '../controllers/user';
+import { changePassword, registerNewUser } from '../controllers/user';
+import auth from '../middleware/auth';
 const router = express.Router();
 
 router.post(
@@ -18,5 +19,19 @@ router.post(
     ],
     registerNewUser
     )
+
+router.post(
+    "/change-password",
+    auth,
+    [
+        check('oldPassword', 'Old Password is required').isLength({
+            min: 6
+        }),
+        check('newPassword', 'New Password with 6 or more character is required').isLength({
+            min: 6
+        })
+    ],
+    changePassword
+)
 
 export default router;
