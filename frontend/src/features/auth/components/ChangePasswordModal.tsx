@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from 'react-query';
 import * as apiClient from '../api';
 import { useAppContext } from '../../../providers/AppContext';
 import { useNavigate } from 'react-router-dom';
+import { ChangePasswordFormData } from '../types';
 
 type ChangePasswordModalProps = {
     isOpen: boolean;
@@ -12,7 +13,7 @@ type ChangePasswordModalProps = {
 
 const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClose }) => {
     const [loading, setLoading] = useState(false);
-    const { register, handleSubmit, formState: { errors } } = useForm();
+    const { register, handleSubmit, formState: { errors } } = useForm<ChangePasswordFormData>();
     const { showToast } = useAppContext();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -31,7 +32,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
         }
     });
 
-    const onSubmit = (data: any) => {
+    const onSubmit = (data: ChangePasswordFormData) => {
         if (data.oldPassword === data.newPassword) {
             showToast({ message: 'New password cannot be the same as the old password', type: 'ERROR' });
             return;
