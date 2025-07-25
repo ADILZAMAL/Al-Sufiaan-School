@@ -9,7 +9,10 @@ export enum ExpenseCateogy {
     KITCHEN = 'KITCHEN',
     BUILDING = 'BUILDING',
     DIRECTOR = 'DIRECTOR',
-    PETROL = 'PETROL'
+    PETROL = 'PETROL',
+    OTHERS = 'OTHERS',
+    SOHAIL = 'SOHAIL',
+    ADIL = 'ADIL'
 }
 
 class Expense extends Model {

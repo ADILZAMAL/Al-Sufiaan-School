@@ -72,7 +72,6 @@ export const initSchoolModel = (sequelize: Sequelize): void => {
       sid: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true
       },
       createdAt: {
         type: DataTypes.DATE,
@@ -84,15 +83,19 @@ export const initSchoolModel = (sequelize: Sequelize): void => {
         allowNull: false,
         defaultValue: DataTypes.NOW,
       }
-    }, 
+    },
     {
       sequelize,
-      modelName: 'School'
+      modelName: 'School',
+      indexes: [
+        {
+          name: 'school_ssid_index',
+          unique: true,
+          fields: ['sid']
+        }
+      ]
     }
   )
 }
 
 export default School;
-
-
-

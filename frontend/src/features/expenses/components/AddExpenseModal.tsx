@@ -8,6 +8,9 @@ const CATEGORY_OPTIONS = [
   "BUILDING",
   "DIRECTOR",
   "PETROL",
+  "OTHERS",
+  "SOHAIL",
+  "ADIL",
 ] as const;
 
 type AddExpenseModalProps = {
