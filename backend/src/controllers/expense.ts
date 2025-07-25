@@ -82,6 +82,15 @@ export const updateExpense = async (req: Request, res: Response) => {
     if (!expense) {
       return sendError(res, 'Expense not found', 404);
     }
+    const today = new Date();
+    const createdAt = new Date(expense.createdAt);
+    if (
+      createdAt.getFullYear() !== today.getFullYear() ||
+      createdAt.getMonth() !== today.getMonth() ||
+      createdAt.getDate() !== today.getDate()
+    ) {
+      return sendError(res, 'You can only edit expenses on the same day they were created', 403);
+    }
     await expense.update(req.body);
     sendSuccess(res, expense, 'Expense updated successfully');
   } catch (error) {
@@ -96,6 +105,15 @@ export const deleteExpense = async (req: Request, res: Response) => {
     const expense = await Expense.findOne({ where: { id, schoolId: req.schoolId } });
     if (!expense) {
       return sendError(res, 'Expense not found', 404);
+    }
+    const today = new Date();
+    const createdAt = new Date(expense.createdAt);
+    if (
+      createdAt.getFullYear() !== today.getFullYear() ||
+      createdAt.getMonth() !== today.getMonth() ||
+      createdAt.getDate() !== today.getDate()
+    ) {
+      return sendError(res, 'You can only delete expenses on the same day they were created', 403);
     }
     await expense.destroy();
     sendSuccess(res, {}, 'Expense deleted successfully');
