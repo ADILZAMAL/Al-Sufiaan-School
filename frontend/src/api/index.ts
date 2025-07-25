@@ -50,6 +50,36 @@ export const fetchProducts = async(): Promise<ProductType[]> => {
     return body.data
 }
 
+export const updateExpense = async (id: number, formData: AddExpense) => {
+    const response = await fetch(`${API_BASE_URL}/api/expenses/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+
+    const body = await response.json()
+    if(!body.success) {
+        throw new Error(body.message)
+    }
+    return body
+}
+
+export const deleteExpense = async (id: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/expenses/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+    })
+
+    const body = await response.json()
+    if(!body.success) {
+        throw new Error(body.message)
+    }
+    return body
+}
+
 
 export const fetchClasses = async (): Promise<ClassType[]> => {
     const response = await fetch(`${API_BASE_URL}/api/classes`, {

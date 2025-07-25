@@ -1,5 +1,6 @@
 import React from "react";
 import { ExpenseType } from "../../../api";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 type Expense = ExpenseType;
 
@@ -7,13 +8,26 @@ type ExpenseTableProps = {
   expenses: Expense[];
   isLoading: boolean;
   error: any;
+  onEdit: (expense: Expense) => void;
+  onDelete: (expense: Expense) => void;
 };
 
 const ExpenseTable: React.FC<ExpenseTableProps> = ({
   expenses,
   isLoading,
   error,
+  onEdit,
+  onDelete,
 }) => {
+  const isToday = (date: Date) => {
+    const today = new Date();
+    const givenDate = new Date(date);
+    return (
+      today.getFullYear() === givenDate.getFullYear() &&
+      today.getMonth() === givenDate.getMonth() &&
+      today.getDate() === givenDate.getDate()
+    );
+  };
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -47,6 +61,9 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
               </th>
               <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
+              </th>
+              <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
               </th>
             </tr>
           </thead>
@@ -88,6 +105,24 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                     day: "numeric",
                     timeZone: "Asia/Kolkata",
                   })}
+                </td>
+                <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-500">
+                  {isToday(expense.createdAt) && (
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => onEdit(expense)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        onClick={() => onDelete(expense)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

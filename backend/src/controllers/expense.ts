@@ -70,3 +70,37 @@ export const fetchTotalExpenseForCurrentMonth = async (req: Request, res: Respon
     sendError(res, 'Something went wrong');
   }
 }
+
+export const updateExpense = async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return sendError(res, 'Validation failed', 400, errors.array());
+  }
+  try {
+    const { id } = req.params;
+    const expense = await Expense.findOne({ where: { id, schoolId: req.schoolId } });
+    if (!expense) {
+      return sendError(res, 'Expense not found', 404);
+    }
+    await expense.update(req.body);
+    sendSuccess(res, expense, 'Expense updated successfully');
+  } catch (error) {
+    console.log('Something went wrong', error);
+    sendError(res, 'Something went wrong');
+  }
+}
+
+export const deleteExpense = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const expense = await Expense.findOne({ where: { id, schoolId: req.schoolId } });
+    if (!expense) {
+      return sendError(res, 'Expense not found', 404);
+    }
+    await expense.destroy();
+    sendSuccess(res, {}, 'Expense deleted successfully');
+  } catch (error) {
+    console.log('Something went wrong', error);
+    sendError(res, 'Something went wrong');
+  }
+}

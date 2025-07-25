@@ -9,11 +9,18 @@ import {
   ExpenseTrendLineChart,
 } from "../components/charts/ExpenseCharts";
 import AddExpenseModal from "../components/AddExpenseModal";
+import EditExpenseModal from "../components/EditExpenseModal";
+import DeleteExpenseModal from "../components/DeleteExpenseModal";
 import ExpenseFilter from "../components/ExpenseFilter";
 import ExpenseTable from "../components/ExpenseTable";
 
 const ExpenseDashboard: React.FC = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseType | null>(
+    null
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [fromDate, setFromDate] = useState<Date>(() => {
     const date = new Date();
@@ -71,7 +78,7 @@ const ExpenseDashboard: React.FC = () => {
             />
             <button
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => setIsAddModalOpen(true)}
             >
               <FaPlus />
               Add Expense
@@ -109,16 +116,40 @@ const ExpenseDashboard: React.FC = () => {
             expenses={sortedExpenses}
             isLoading={isLoading}
             error={error}
+            onEdit={(expense) => {
+              setSelectedExpense(expense);
+              setIsEditModalOpen(true);
+            }}
+            onDelete={(expense) => {
+              setSelectedExpense(expense);
+              setIsDeleteModalOpen(true);
+            }}
           />
         </div>
       </div>
 
       <AddExpenseModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
         onExpenseAdded={() => {
           queryClient.invalidateQueries("expenses");
         }}
+      />
+      <EditExpenseModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onExpenseUpdated={() => {
+          queryClient.invalidateQueries("expenses");
+        }}
+        expense={selectedExpense}
+      />
+      <DeleteExpenseModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onExpenseDeleted={() => {
+          queryClient.invalidateQueries("expenses");
+        }}
+        expense={selectedExpense}
       />
     </div>
   );
