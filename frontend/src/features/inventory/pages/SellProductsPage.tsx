@@ -1,14 +1,16 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import * as apiClient from "../api";
+import { ClassType, SectionType } from "../api";
 import { MdOutlineDelete } from "react-icons/md";
 import { useAppContext } from "../../../providers/AppContext";
 import { useNavigate } from "react-router-dom";
 
 interface Order {
     studentsName: string;
-    class: string;
+    classId: number;
+    sectionId: number;
     modeOfPayment: string;
     products: {
             productId: number | undefined;
@@ -20,25 +22,49 @@ const SellProductsPage: React.FC = () => {
     const { showToast } = useAppContext();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
+    const [selectedClassId, setSelectedClassId] = useState<number | undefined>(undefined);
+    
     const {
         control,
         handleSubmit,
         register,
         formState: { errors },
         watch,
+        setValue,
     } = useForm<Order>({
         defaultValues: {
             studentsName: "",
-            class: "",
+            classId: 0,
+            sectionId: 0,
             modeOfPayment: "",
             products: [{ productId: undefined, qty: undefined }],
         },
     });
     const watchFields = watch("products");
+    const watchClassId = watch("classId");
     const { fields, append, remove } = useFieldArray({
         name: "products",
         control,
     });
+
+    // Fetch classes and products
+    const { data: classes } = useQuery("fetchClasses", apiClient.fetchClasses);
+    const { data: products } = useQuery("fetchProducts", apiClient.fetchProducts);
+
+    // Get sections for selected class
+    const availableSections = useMemo(() => {
+        if (!classes || !watchClassId) return [];
+        const selectedClass = classes.find(cls => cls.id === watchClassId);
+        return selectedClass?.sections || [];
+    }, [classes, watchClassId]);
+
+    // Reset section when class changes
+    React.useEffect(() => {
+        if (watchClassId !== selectedClassId) {
+            setValue("sectionId", 0);
+            setSelectedClassId(watchClassId);
+        }
+    }, [watchClassId, selectedClassId, setValue]);
 
     const mutation = useMutation(apiClient.sellProducts, {
         onSuccess: () => {
@@ -54,7 +80,6 @@ const SellProductsPage: React.FC = () => {
     const onSubmit = (data: Order) => {
         mutation.mutate(data);
     };
-    const { data: products } = useQuery("fetchProducts", apiClient.fetchProducts);
 
     const getPrice = (id: number | undefined, qty: number | undefined) => {
         const p = products?.filter((product) => product.id == id)[0];
@@ -65,7 +90,7 @@ const SellProductsPage: React.FC = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="p-4 md:p-8 bg-gray-50 min-h-screen">
             <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-3xl font-bold text-gray-800 mb-6">Sell Products</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                     <label className="text-gray-700 text-sm font-bold">
                         Student's Name
                         <input
@@ -83,13 +108,49 @@ const SellProductsPage: React.FC = () => {
                     </label>
                     <label className="text-gray-700 text-sm font-bold">
                         Class
-                        <input
-                            type="text"
+                        <select
                             className="border rounded w-full py-2 px-3 font-normal"
-                            {...register("class", { required: "This field is required" })}
-                        />
-                        {errors.class && (
-                            <span className="text-red-500 text-xs">{errors.class.message}</span>
+                            {...register("classId", { 
+                                required: "This field is required",
+                                valueAsNumber: true,
+                                validate: (value) => value > 0 || "Please select a class"
+                            })}
+                        >
+                            <option value={0} disabled>
+                                Select Class
+                            </option>
+                            {classes?.map((classItem) => (
+                                <option key={classItem.id} value={classItem.id}>
+                                    {classItem.name}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.classId && (
+                            <span className="text-red-500 text-xs">{errors.classId.message}</span>
+                        )}
+                    </label>
+                    <label className="text-gray-700 text-sm font-bold">
+                        Section
+                        <select
+                            className="border rounded w-full py-2 px-3 font-normal"
+                            {...register("sectionId", { 
+                                required: "This field is required",
+                                valueAsNumber: true,
+                                validate: (value) => value > 0 || "Please select a section"
+                            })}
+                            disabled={!watchClassId || availableSections.length === 0}
+                        >
+                            <option value={0} disabled>
+                                {!watchClassId ? "Select class first" : "Select Section"}
+                            </option>
+                            {availableSections.map((section) => (
+                                <option key={section.id} value={section.id}>
+                                    {section.name}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.sectionId && (
+                            <span className="text-red-500 text-xs">{errors.sectionId.message}</span>
                         )}
                     </label>
                     <label className="text-gray-700 text-sm font-bold">
