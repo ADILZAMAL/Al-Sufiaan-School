@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "react-query";
 import * as apiClient from "../api";
 import { TransactionType } from "../api";
 import { useAppContext } from "../../../providers/AppContext";
-import { FaPlus, FaSearch, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { FaPlus, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 export type AddProductFormData = {
@@ -17,7 +17,6 @@ const Inventory = () => {
   const { showToast, userRole } = useAppContext();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [expandedTransactions, setExpandedTransactions] = useState<Set<number>>(new Set());
 
   const {
@@ -55,10 +54,8 @@ const Inventory = () => {
 
   const filteredProducts = useMemo(() => {
     if (!products) return [];
-    return products.filter((product: any) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [products, searchTerm]);
+    return products;
+  }, [products]);
 
   const toggleTransactionExpansion = (transactionId: number) => {
     const newExpanded = new Set(expandedTransactions);
@@ -89,16 +86,6 @@ const Inventory = () => {
             Inventory Management
           </h2>
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <FaSearch className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
             <Link
               to="/dashboard/sell-products"
               className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-all duration-200"
