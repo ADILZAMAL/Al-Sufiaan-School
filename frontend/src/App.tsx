@@ -12,6 +12,9 @@ import Inventory from "./features/inventory/pages/Inventory"
 import Expense from "./features/expenses/pages/Expense"
 import SellProductsPage from "./features/inventory/pages/SellProductsPage"
 import TransactionHistory from "./features/inventory/pages/TransactionHistory"
+import StaffManagement from "./features/staff/pages/StaffManagement"
+import AddTeachingStaff from "./features/staff/pages/AddTeachingStaff"
+import AddNonTeachingStaff from "./features/staff/pages/AddNonTeachingStaff"
 
 
 const router = createBrowserRouter([
@@ -66,6 +69,18 @@ const router = createBrowserRouter([
       {
         path: "transaction-history",
         element: <TransactionHistory />
+      },
+      {
+        path: "staff",
+        element: <StaffManagement />
+      },
+      {
+        path: "staff/add-teaching",
+        element: <AddTeachingStaff />
+      },
+      {
+        path: "staff/add-non-teaching",
+        element: <AddNonTeachingStaff />
       }
     ]
   }

@@ -9,6 +9,9 @@ import productRouter from './routes/product'
 import sectionRouter from './routes/section'
 import transactionRouter from './routes/transaction'
 import expenseRouter from './routes/expense'
+import teachingStaffRouter from './routes/teachingStaff'
+import nonTeachingStaffRouter from './routes/nonTeachingStaff'
+import photoUploadRouter from './routes/photoUpload'
 import sequelize from './config/database';
 import './models'; // Import for associations
 import cookieParser from "cookie-parser";
@@ -17,6 +20,9 @@ const app = express();
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+
+// Serve static files for uploaded photos
+app.use('/uploads', express.static('uploads'));
 app.use(cors({
     origin: process.env.NODE_ENV === 'production'
     ? process.env.FRONTEND_URL
@@ -45,6 +51,9 @@ app.use("/api/products", productRouter)
 app.use("/api/sections", sectionRouter)
 app.use("/api/transactions", transactionRouter)
 app.use('/api/expenses', expenseRouter)
+app.use('/api/teaching-staff', teachingStaffRouter)
+app.use('/api/non-teaching-staff', nonTeachingStaffRouter)
+app.use('/api/photos', photoUploadRouter)
 
 app.listen(7000, async () => {
     console.log("Server is running on port 7000")

@@ -7,6 +7,8 @@ import {initProductModel} from '../models/Product'
 import {initTransactionModel} from '../models/Transaction'
 // import {initExpenseModel} from '../models/Expense'
 import {initTransactionItemModel} from '../models/TransactionItem';
+import {initTeachingStaffModel} from '../models/TeachingStaff';
+import {initNonTeachingStaffModel} from '../models/NonTeachingStaff';
 import "dotenv/config";
 
 const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER || '', process.env.DB_PASSWORD, {
@@ -30,6 +32,8 @@ initSectionModel(sequelize)
 initProductModel(sequelize)
 initTransactionModel(sequelize)
 initTransactionItemModel(sequelize);
+initTeachingStaffModel(sequelize);
+initNonTeachingStaffModel(sequelize);
 //Sync the Model with the database
 sequelize.sync({ alter: true })
     .then(() => {
