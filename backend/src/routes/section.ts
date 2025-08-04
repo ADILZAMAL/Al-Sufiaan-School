@@ -3,7 +3,7 @@ import verifyToken from '../middleware/auth'
 import { check, validationResult } from 'express-validator'
 import Section from '../models/Section'
 
-const router = express();
+const router = express.Router();
 
 router.post("/", verifyToken,
     [
