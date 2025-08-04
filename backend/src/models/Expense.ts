@@ -24,11 +24,6 @@ class Expense extends Model {
     public category!: ExpenseCateogy;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
-
-    // Association method
-    static associate() {
-        Expense.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
-    }
 }
 
 Expense.init(

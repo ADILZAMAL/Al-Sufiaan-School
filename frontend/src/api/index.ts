@@ -1,4 +1,3 @@
-import {AddProductFormData} from '../features/inventory/pages/Inventory'
 import { AddExpense, ExpenseType } from '../features/expenses/types';
 const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
 export type { ExpenseType, AddExpense };
@@ -7,47 +6,6 @@ export type ClassType = {
     id: number;
     name: string;
     schoolId: number;
-}
-
-export type ProductType = {
-    id: number;
-    name: string;
-    description: string;
-    price: number;
-    qty: number;
-    schoolId: number;
-    buyPrice: number;
-    createdAt : Date;
-    updatedAt : Date;
-}
-
-export const addProduct = async (formData: AddProductFormData) => {
-    const response = await fetch(`${API_BASE_URL}/api/products`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData)
-    })
-
-    const body = await response.json()
-    if(!body.success) {
-        throw new Error(body.message)
-    }
-    return body
-}
-
-export const fetchProducts = async(): Promise<ProductType[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/products`, {
-        method: "GET",
-        credentials: "include"
-    })
-    const body = await response.json()
-    if(!body.success) {
-        throw new Error(body.message)
-    }
-    return body.data
 }
 
 export const updateExpense = async (id: number, formData: AddExpense) => {

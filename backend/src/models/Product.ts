@@ -1,5 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize'
 import School from './School';
+import TransactionItem from './TransactionItem';
 
 class Product extends Model {
   public id!: number;
@@ -41,10 +42,6 @@ export const initProductModel = (sequelize: Sequelize): void => {
           key: 'id'
         }
       },
-      buyPrice: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-      },
       createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -68,7 +65,8 @@ export const initProductModel = (sequelize: Sequelize): void => {
       ]
     }
   )
-  Product.belongsTo(School, { foreignKey: 'schoolId', as: 'school' })
+  // Product.belongsTo(School, { foreignKey: 'schoolId', as: 'school' })
+  // Product.hasMany(TransactionItem, { foreignKey: 'productId', as : 'items'});
 }
 
 export default Product;

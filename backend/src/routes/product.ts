@@ -7,17 +7,16 @@ const router = express.Router()
 
 router.post("/", verifyToken, [
     check("name", "Product Name is required").isString(),
-    check("price", "Price is required").isDecimal(),
-    check("buyPrice", "Buy Price is required").isString(),
     check("qty", "Quantity is required"). isNumeric(),
+    check("price", "Price is required").isDecimal(),
 ], async (req: Request, res: Response) => {
     const errors = validationResult(req)
     if(!errors.isEmpty()){
         return res.status(400).json({success: false, error: {code: 'INVALID_INPUT', message: errors.array() }});
     }
     try {
-        let {name, price, qty, buyPrice } = req.body
-        let product = await Product.create({name, price, qty, buyPrice, schoolId: req.schoolId});
+        let {name, qty, price } = req.body
+        let product = await Product.create({name, price, qty, buyPrice: price, schoolId: req.schoolId});
         res.status(200).json({success: true})
     } catch (error) {
         console.log(error);

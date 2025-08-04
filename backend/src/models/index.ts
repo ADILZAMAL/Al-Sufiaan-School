@@ -5,6 +5,7 @@ import Section from './Section';
 import Product from './Product';
 import Transaction from './Transaction';
 import Expense from './Expense';
+import TransactionItem from './TransactionItem';
 
 // School associations
 School.hasMany(User, { foreignKey: 'schoolId', as: 'users' });
@@ -24,14 +25,20 @@ Class.hasMany(Section, { foreignKey: 'classId', as: 'sections' });
 Section.belongsTo(Class, { foreignKey: 'classId', as: 'class' });
 
 // Product associations
-Product.belongsTo(School, { foreignKey: 'schoolId', as: 'productSchool' });
-Product.hasMany(Transaction, { foreignKey: 'productId', as: 'transactions' });
+Product.belongsTo(School, { foreignKey: 'schoolId'});
+Product.hasMany(TransactionItem, { foreignKey: 'productId', as : 'items' });
 
 // Transaction associations
 Transaction.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
+Transaction.hasMany(TransactionItem, { foreignKey: 'transactionId', as: 'items'});
+Transaction.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+
+// TransactionItem associations
+TransactionItem.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
+TransactionItem.belongsTo(Transaction, { foreignKey: 'transactionId', as: 'transaction' });
 
 // Expense associations
 Expense.belongsTo(School, { foreignKey: 'schoolId', as: 'expenseSchool' });
 Expense.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-export { School, User, Class, Section, Product, Transaction, Expense };
+export { School, User, Class, Section, Product, Transaction, Expense, TransactionItem };

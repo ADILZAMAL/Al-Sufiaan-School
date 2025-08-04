@@ -1,19 +1,20 @@
 import { useForm } from "react-hook-form";
-import { useMutation, useQuery } from "react-query";
-import * as apiClient from "../../../api";
+import { useMutation, useQuery, useQueryClient } from "react-query";
+import * as apiClient from "../api";
 import { useAppContext } from "../../../providers/AppContext";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 export type AddProductFormData = {
   name: string;
-  buyPrice: string;
-  price: string;
   qty: number;
+  price: string;
 };
 
 const Inventory = () => {
   const { showToast } = useAppContext();
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -29,7 +30,7 @@ const Inventory = () => {
       showToast({ message: "Product Added Successfully!", type: "SUCCESS" });
       reset();
       setIsModalOpen(false);
-      window.location.reload();
+      queryClient.invalidateQueries("fetchProducts");
     },
     onError: (error: Error) => {
       showToast({ message: error.message, type: "ERROR" });
@@ -70,6 +71,12 @@ const Inventory = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <Link
+              to="/dashboard/sell-products"
+              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-all duration-200"
+            >
+              Sell Product
+            </Link>
             <button
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200"
               onClick={() => setIsModalOpen(true)}
@@ -140,38 +147,6 @@ const Inventory = () => {
                   <span className="text-red-500">{errors.name.message}</span>
                 )}
                 <input
-                  type="text"
-                  className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Buy Price"
-                  {...register("buyPrice", {
-                    required: "This field is required",
-                    pattern: {
-                      value: /^\d+(\.\d{1,2})?$/,
-                      message: "Invalid price format",
-                    },
-                  })}
-                />
-                {errors.buyPrice && (
-                  <span className="text-red-500">
-                    {errors.buyPrice.message}
-                  </span>
-                )}
-                <input
-                  type="text"
-                  className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Sell Price"
-                  {...register("price", {
-                    required: "This field is required",
-                    pattern: {
-                      value: /^\d+(\.\d{1,2})?$/,
-                      message: "Invalid price format",
-                    },
-                  })}
-                />
-                {errors.price && (
-                  <span className="text-red-500">{errors.price.message}</span>
-                )}
-                <input
                   type="number"
                   className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Quantity"
@@ -182,6 +157,21 @@ const Inventory = () => {
                 />
                 {errors.qty && (
                   <span className="text-red-500">{errors.qty.message}</span>
+                )}
+                <input
+                  type="text"
+                  className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Price"
+                  {...register("price", {
+                    required: "This field is required",
+                    pattern: {
+                      value: /^\d+(\.\d{1,2})?$/,
+                      message: "Invalid price format",
+                    },
+                  })}
+                />
+                {errors.price && (
+                  <span className="text-red-500">{errors.price.message}</span>
                 )}
               </div>
               <div className="flex justify-end space-x-4 mt-6">

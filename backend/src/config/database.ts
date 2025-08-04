@@ -5,6 +5,8 @@ import Class from '../models/Class'
 import Section from '../models/Section'
 import {initProductModel} from '../models/Product'
 import {initTransactionModel} from '../models/Transaction'
+// import {initExpenseModel} from '../models/Expense'
+import {initTransactionItemModel} from '../models/TransactionItem';
 import "dotenv/config";
 
 const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER || '', process.env.DB_PASSWORD, {
@@ -19,7 +21,7 @@ const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER |
 });
 
 // Class.init(sequelize)
-console.log(Class)
+// console.log(Class)
 
 initSchoolModel(sequelize)
 initUserModel(sequelize)
@@ -27,7 +29,7 @@ initUserModel(sequelize)
 // initSectionModel(sequelize)
 initProductModel(sequelize)
 initTransactionModel(sequelize)
-
+initTransactionItemModel(sequelize);
 //Sync the Model with the database
 sequelize.sync({ alter: true })
     .then(() => {

@@ -10,6 +10,7 @@ import Dashboard from "./components/layout/Dashboard"
 import Class from "./features/class/pages/Class"
 import Inventory from "./features/inventory/pages/Inventory"
 import Expense from "./features/expenses/pages/Expense"
+import SellProductsPage from "./features/inventory/pages/SellProductsPage"
 
 
 const router = createBrowserRouter([
@@ -56,6 +57,10 @@ const router = createBrowserRouter([
       {
         path: "inventory",
         element: <Inventory />
+      },
+      {
+        path: "sell-products",
+        element: <SellProductsPage />
       }
     ]
   }
