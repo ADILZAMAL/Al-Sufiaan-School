@@ -22,7 +22,6 @@ export const initUserModel = (sequelize: Sequelize) => {
         email: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true,
         },
         password: {
             type: DataTypes.STRING,
@@ -57,6 +56,13 @@ export const initUserModel = (sequelize: Sequelize) => {
     }, {
         sequelize,
         modelName: 'User',
+        indexes: [
+          {
+            name: 'user_email_index',
+            unique: true,
+            fields: ['email']
+          }
+        ]
     });
 };
 

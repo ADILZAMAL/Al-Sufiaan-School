@@ -27,16 +27,8 @@ router.get("/", verifyToken,  async(req: Request, res: Response) => {
         res.status(200).send({success: true, data: classes})
     } catch (error) {
         console.log(error)
-        res.status(500).send({success: false, error: {code: 'INTERNAL_SERVER_ERROR', message: "Someting went wrong"}})
+        res.status(500).send({success: false, error: {code: 'INTERNAL_SERVER_ERROR', message: "Something went wrong"}})
     }
-    const classes = await Class.findAll({
-        where:{
-            schoolId: req.schoolId
-        }
-    })
-
-
-    
 })
 
 router.post("/", verifyToken, 

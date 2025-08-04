@@ -5,10 +5,9 @@ import Section from '../models/Section'
 
 const router = express();
 
-//classId & name
 router.post("/", verifyToken,
     [
-        check("classId", "Class is required").isString(),
+        check("classId", "ClassId is required").isInt(),
         check("name", "Section name is required").isString(),
     ], async (req: Request, res: Response) => {
         const errors = validationResult(req)

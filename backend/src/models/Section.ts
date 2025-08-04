@@ -8,8 +8,6 @@ class Section extends Model {
     public name!: string;
     public classId!: number; //Foreign Key
     public schoolId!: number;
-    public roomNumber!: number;
-    public maxStrength!: number;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
@@ -41,14 +39,6 @@ Section.init(
                 model: School,
                 key: 'id'
             }
-        },
-        roomNumber: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-        },
-        maxStrength: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
         },
         createdAt: {
             type: DataTypes.DATE,
