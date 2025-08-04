@@ -39,7 +39,7 @@ const Toast = ({ message, type, onClose }: ToastProps) => {
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm w-full border-l-4 ${style}`}
+      className={`fixed top-4 right-4 z-[9999] p-4 rounded-lg shadow-lg max-w-sm w-full border-l-4 ${style}`}
     >
       <div className="flex items-start">
         <div className="flex-shrink-0">{icon}</div>

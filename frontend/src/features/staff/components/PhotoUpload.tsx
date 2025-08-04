@@ -42,7 +42,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
       const formData = new FormData();
       formData.append('photo', file);
 
-      const response = await fetch('http://localhost:7000/api/photos/upload-staff-photo', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/photos/upload-staff-photo`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -54,7 +54,9 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
 
       const result = await response.json();
       if (result.success) {
+        // Update both the parent component and local preview
         onChange(result.data.photoUrl);
+        setPreviewUrl(result.data.photoUrl);
       } else {
         throw new Error(result.error?.message || 'Upload failed');
       }
@@ -91,7 +93,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
           <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
             {previewUrl ? (
               <img
-                src={previewUrl.startsWith('http') ? previewUrl : `http://localhost:7000/${previewUrl}`}
+                src={previewUrl.startsWith('http') ? previewUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${previewUrl}`}
                 alt="Staff photo preview"
                 className="w-full h-full object-cover"
               />

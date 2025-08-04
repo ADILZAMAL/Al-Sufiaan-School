@@ -41,7 +41,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               {formData.photoUrl && (
                 <div className="flex-shrink-0">
                   <img
-                    src={formData.photoUrl.startsWith('http') ? formData.photoUrl : `http://localhost:7000/${formData.photoUrl}`}
+                    src={formData.photoUrl.startsWith('http') ? formData.photoUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${formData.photoUrl}`}
                     alt="Staff photo"
                     className="w-24 h-24 object-cover rounded-lg border border-gray-300"
                   />

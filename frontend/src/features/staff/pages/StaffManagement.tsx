@@ -166,7 +166,7 @@ const StaffManagement: React.FC = () => {
                         <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                           {staff.photoUrl ? (
                             <img
-                              src={staff.photoUrl.startsWith('http') ? staff.photoUrl : `http://localhost:7000/${staff.photoUrl}`}
+                              src={staff.photoUrl.startsWith('http') ? staff.photoUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${staff.photoUrl}`}
                               alt={staff.name}
                               className="w-full h-full object-cover"
                             />
@@ -198,7 +198,7 @@ const StaffManagement: React.FC = () => {
                         <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                           {staff.photoUrl ? (
                             <img
-                              src={staff.photoUrl.startsWith('http') ? staff.photoUrl : `http://localhost:7000/${staff.photoUrl}`}
+                              src={staff.photoUrl.startsWith('http') ? staff.photoUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${staff.photoUrl}`}
                               alt={staff.name}
                               className="w-full h-full object-cover"
                             />
