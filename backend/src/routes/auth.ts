@@ -19,7 +19,7 @@ router.post(
 )
 
 router.get("/validate-token", verifyToken, (req: Request, res: Response) => {
-    sendSuccess(res, { userId: req.userId, schoolId: req.schoolId }, 'Token validated');
+    sendSuccess(res, { userId: req.userId, schoolId: req.schoolId, role: req.userRole }, 'Token validated');
 });
 
 router.post("/logout", (req: Request, res: Response) => {

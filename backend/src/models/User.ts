@@ -7,6 +7,7 @@ class User extends Model {
     public password!: string;
     public firstName!: string;
     public lastName!: string;
+    public role!: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER';
     public schoolId!: number;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
@@ -34,6 +35,11 @@ export const initUserModel = (sequelize: Sequelize) => {
         lastName: {
             type: DataTypes.STRING,
             allowNull: false,
+        },
+        role: {
+            type: DataTypes.ENUM('SUPER_ADMIN', 'ADMIN', 'CASHIER'),
+            allowNull: false,
+            defaultValue: 'CASHIER',
         },
         schoolId: {
             type: DataTypes.INTEGER,

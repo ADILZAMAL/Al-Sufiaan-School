@@ -1,11 +1,11 @@
 import express, {Request, Response} from 'express'
-import verifyToken from '../middleware/auth'
+import verifyToken, { requireRole } from '../middleware/auth'
 import Product from '../models/Product'
 import {check, validationResult} from 'express-validator'
 
 const router = express.Router()
 
-router.post("/", verifyToken, [
+router.post("/", verifyToken, requireRole(['SUPER_ADMIN']), [
     check("name", "Product Name is required").isString(),
     check("qty", "Quantity is required"). isNumeric(),
     check("price", "Price is required").isDecimal(),

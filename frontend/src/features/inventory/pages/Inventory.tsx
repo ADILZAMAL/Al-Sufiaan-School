@@ -14,7 +14,7 @@ export type AddProductFormData = {
 };
 
 const Inventory = () => {
-  const { showToast } = useAppContext();
+  const { showToast, userRole } = useAppContext();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -105,13 +105,15 @@ const Inventory = () => {
             >
               Sell Product
             </Link>
-            <button
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <FaPlus />
-              Add Product
-            </button>
+            {(userRole === 'SUPER_ADMIN' || userRole === null) && (
+              <button
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200"
+                onClick={() => setIsModalOpen(true)}
+              >
+                <FaPlus />
+                Add Product
+              </button>
+            )}
           </div>
         </div>
 

@@ -28,7 +28,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const token = jwt.sign(
-      { userId: user.id, schoolId: user.schoolId },
+      { userId: user.id, schoolId: user.schoolId, role: user.role },
       process.env.JWT_SECRET_KEY as string,
       {
         expiresIn: '1d',
@@ -42,7 +42,7 @@ export const login = async (req: Request, res: Response) => {
       maxAge: 86400000,
     });
 
-    sendSuccess(res, { userId: user.id, schoolId: user.schoolId }, 'Login successful');
+    sendSuccess(res, { userId: user.id, schoolId: user.schoolId, role: user.role }, 'Login successful');
   } catch (error) {
     console.log(error);
     sendError(res, 'Something went wrong');
