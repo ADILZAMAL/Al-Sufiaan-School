@@ -6,9 +6,162 @@ import Product from '../models/Product';
 import TransactionItem from '../models/TransactionItem';
 import Class from '../models/Class';
 import Section from '../models/Section';
+import User from '../models/User';
 import sequelize from '../config/database';
 
 const router = express.Router();
+
+// GET recent transactions (last 20)
+router.get('/recent', verifyToken, async (req: Request, res: Response) => {
+  try {
+    const transactions = await Transaction.findAll({
+      where: { schoolId: req.schoolId },
+      include: [
+        {
+          model: TransactionItem,
+          as: 'items',
+          include: [
+            {
+              model: Product,
+              as: 'product',
+              attributes: ['name', 'price']
+            }
+          ]
+        },
+        {
+          model: Class,
+          as: 'transactionClass',
+          attributes: ['name']
+        },
+        {
+          model: Section,
+          as: 'transactionSection',
+          attributes: ['name']
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['firstName', 'lastName']
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: 20
+    });
+
+    const formattedTransactions = transactions.map((transaction: any) => {
+      const totalAmount = transaction.items.reduce((sum: number, item: any) => {
+        return sum + (item.quantity * item.product.price);
+      }, 0);
+
+      return {
+        id: transaction.id,
+        studentName: transaction.studentName,
+        className: transaction.transactionClass?.name || transaction.class,
+        sectionName: transaction.transactionSection?.name || '',
+        modeOfPayment: transaction.modeOfPayment,
+        totalAmount: totalAmount,
+        soldBy: transaction.user ? `${transaction.user.firstName} ${transaction.user.lastName}` : 'Unknown',
+        userId: transaction.userId,
+        createdAt: transaction.createdAt,
+        transactionItems: transaction.items.map((item: any) => ({
+          productName: item.product.name,
+          quantity: item.quantity,
+          unitPrice: item.product.price,
+          totalPrice: item.quantity * item.product.price
+        }))
+      };
+    });
+
+    res.status(200).json({ success: true, data: formattedTransactions });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' } });
+  }
+});
+
+// GET all transactions with pagination
+router.get('/', verifyToken, async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: transactions } = await Transaction.findAndCountAll({
+      where: { schoolId: req.schoolId },
+      include: [
+        {
+          model: TransactionItem,
+          as: 'items',
+          include: [
+            {
+              model: Product,
+              as: 'product',
+              attributes: ['name', 'price']
+            }
+          ]
+        },
+        {
+          model: Class,
+          as: 'transactionClass',
+          attributes: ['name']
+        },
+        {
+          model: Section,
+          as: 'transactionSection',
+          attributes: ['name']
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['firstName', 'lastName']
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+    });
+
+    const formattedTransactions = transactions.map((transaction: any) => {
+      const totalAmount = transaction.items.reduce((sum: number, item: any) => {
+        return sum + (item.quantity * item.product.price);
+      }, 0);
+
+      return {
+        id: transaction.id,
+        studentName: transaction.studentName,
+        className: transaction.transactionClass?.name || transaction.class,
+        sectionName: transaction.transactionSection?.name || '',
+        modeOfPayment: transaction.modeOfPayment,
+        totalAmount: totalAmount,
+        soldBy: transaction.user ? `${transaction.user.firstName} ${transaction.user.lastName}` : 'Unknown',
+        userId: transaction.userId,
+        createdAt: transaction.createdAt,
+        transactionItems: transaction.items.map((item: any) => ({
+          productName: item.product.name,
+          quantity: item.quantity,
+          unitPrice: item.product.price,
+          totalPrice: item.quantity * item.product.price
+        }))
+      };
+    });
+
+    res.status(200).json({ 
+      success: true, 
+      data: {
+        transactions: formattedTransactions,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(count / limit),
+          totalItems: count,
+          itemsPerPage: limit
+        }
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' } });
+  }
+});
 
 router.post(
   '/',
@@ -61,6 +214,7 @@ router.post(
           classId: classId,
           sectionId: sectionId,
           modeOfPayment,
+          userId: req.userId,
           schoolId: req.schoolId,
         },
         { transaction: t }

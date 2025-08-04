@@ -4,6 +4,7 @@ import Product from './Product';
 import TransactionItem from './TransactionItem';
 import Class from './Class';
 import Section from './Section';
+import User from './User';
 
 class Transaction extends Model {
   public id!: number;
@@ -12,6 +13,7 @@ class Transaction extends Model {
   public classId!: number;
   public sectionId!: number;
   public modeOfPayment!: string;
+  public userId!: number;
   public schoolId!: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -59,6 +61,14 @@ export const initTransactionModel = (sequelize: Sequelize): void => {
       modeOfPayment: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: User,
+          key: 'id'
+        }
       },
       schoolId: {
         type: DataTypes.INTEGER,

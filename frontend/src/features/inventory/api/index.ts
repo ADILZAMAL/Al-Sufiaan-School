@@ -17,6 +17,26 @@ export type SectionType = {
     schoolId: number;
 }
 
+export type TransactionItemType = {
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+}
+
+export type TransactionType = {
+    id: number;
+    studentName: string;
+    className: string;
+    sectionName: string;
+    modeOfPayment: string;
+    totalAmount: number;
+    soldBy: string;
+    userId: number;
+    createdAt: string;
+    transactionItems: TransactionItemType[];
+}
+
 export const fetchClasses = async (): Promise<ClassType[]> => {
     const response = await fetch(`${API_BASE_URL}/api/classes`, {
         credentials: "include"
@@ -72,4 +92,26 @@ export const sellProducts = async (formData: any) => {
         throw new Error(body.message)
     }
     return body
+}
+
+export const fetchRecentTransactions = async (): Promise<TransactionType[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/transactions/recent`, {
+        credentials: "include"
+    })
+    const body = await response.json();
+    if (!body.success) {
+        throw new Error(body.error.message)
+    }
+    return body.data;
+}
+
+export const fetchTransactions = async (page: number = 1, limit: number = 20) => {
+    const response = await fetch(`${API_BASE_URL}/api/transactions?page=${page}&limit=${limit}`, {
+        credentials: "include"
+    })
+    const body = await response.json();
+    if (!body.success) {
+        throw new Error(body.error.message)
+    }
+    return body.data;
 }

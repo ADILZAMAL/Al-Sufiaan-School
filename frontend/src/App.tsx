@@ -11,6 +11,7 @@ import Class from "./features/class/pages/Class"
 import Inventory from "./features/inventory/pages/Inventory"
 import Expense from "./features/expenses/pages/Expense"
 import SellProductsPage from "./features/inventory/pages/SellProductsPage"
+import TransactionHistory from "./features/inventory/pages/TransactionHistory"
 
 
 const router = createBrowserRouter([
@@ -61,6 +62,10 @@ const router = createBrowserRouter([
       {
         path: "sell-products",
         element: <SellProductsPage />
+      },
+      {
+        path: "transaction-history",
+        element: <TransactionHistory />
       }
     ]
   }
