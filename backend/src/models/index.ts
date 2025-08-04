@@ -32,6 +32,8 @@ Product.hasMany(TransactionItem, { foreignKey: 'productId', as : 'items' });
 Transaction.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
 Transaction.hasMany(TransactionItem, { foreignKey: 'transactionId', as: 'items'});
 Transaction.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+Transaction.belongsTo(Class, { foreignKey: 'classId', as: 'transactionClass' });
+Transaction.belongsTo(Section, { foreignKey: 'sectionId', as: 'transactionSection' });
 
 // TransactionItem associations
 TransactionItem.belongsTo(Product, { foreignKey: 'productId', as: 'product' });

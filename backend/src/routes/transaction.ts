@@ -4,6 +4,8 @@ import verifyToken from '../middleware/auth';
 import Transaction from '../models/Transaction';
 import Product from '../models/Product';
 import TransactionItem from '../models/TransactionItem';
+import Class from '../models/Class';
+import Section from '../models/Section';
 import sequelize from '../config/database';
 
 const router = express.Router();
@@ -13,7 +15,8 @@ router.post(
   verifyToken,
   [
     check('studentsName', 'Student name is required').isString(),
-    check('class', 'Class is required').isString(),
+    check('classId', 'Class ID is required').isInt(),
+    check('sectionId', 'Section ID is required').isInt(),
     check('modeOfPayment', 'Mode of payment is required').isString(),
     check('products', 'Products are required').isArray(),
     check('products.*.productId', 'Product ID is required').isInt(),
@@ -28,12 +31,35 @@ router.post(
     const t = await sequelize.transaction();
 
     try {
-      const { studentsName, class: className, modeOfPayment, products } = req.body;
+      const { studentsName, classId, sectionId, modeOfPayment, products } = req.body;
+
+      // Verify class and section exist and belong to the school
+      const classInstance = await Class.findOne({
+        where: { id: classId, schoolId: req.schoolId },
+        transaction: t
+      });
+
+      if (!classInstance) {
+        await t.rollback();
+        return res.status(404).json({ success: false, error: { code: 'CLASS_NOT_FOUND', message: 'Class not found' } });
+      }
+
+      const sectionInstance = await Section.findOne({
+        where: { id: sectionId, classId: classId, schoolId: req.schoolId },
+        transaction: t
+      });
+
+      if (!sectionInstance) {
+        await t.rollback();
+        return res.status(404).json({ success: false, error: { code: 'SECTION_NOT_FOUND', message: 'Section not found' } });
+      }
 
       const transaction = await Transaction.create(
         {
           studentName: studentsName,
-          class: className,
+          class: (classInstance as any).name, // Keep the class name for backward compatibility
+          classId: classId,
+          sectionId: sectionId,
           modeOfPayment,
           schoolId: req.schoolId,
         },

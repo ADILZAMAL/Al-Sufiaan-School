@@ -2,11 +2,15 @@ import { Model, DataTypes, Sequelize } from 'sequelize';
 import School from './School';
 import Product from './Product';
 import TransactionItem from './TransactionItem';
+import Class from './Class';
+import Section from './Section';
 
 class Transaction extends Model {
   public id!: number;
   public studentName!: string;
   public class!: string;
+  public classId!: number;
+  public sectionId!: number;
   public modeOfPayment!: string;
   public schoolId!: number;
   public readonly createdAt!: Date;
@@ -35,6 +39,22 @@ export const initTransactionModel = (sequelize: Sequelize): void => {
       class: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      classId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: Class,
+          key: 'id'
+        }
+      },
+      sectionId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: Section,
+          key: 'id'
+        }
       },
       modeOfPayment: {
         type: DataTypes.STRING,
