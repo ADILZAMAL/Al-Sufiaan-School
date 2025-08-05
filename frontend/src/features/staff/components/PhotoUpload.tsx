@@ -247,6 +247,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
     }
   };
 
+  
   const handleRemovePhoto = () => {
     setPreviewUrl('');
     onChange('');
