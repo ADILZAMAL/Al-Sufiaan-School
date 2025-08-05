@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { HiCamera, HiX, HiVideoCamera, HiRefresh, HiCheck, HiSwitchHorizontal } from 'react-icons/hi';
+import { HiCamera, HiX, HiVideoCamera, HiRefresh, HiCheck, HiSwitchHorizontal, HiUpload } from 'react-icons/hi';
 
 interface PhotoUploadProps {
   photoUrl: string;
@@ -18,6 +18,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
   const [cameraError, setCameraError] = useState<string>('');
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -186,9 +187,73 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
     }, 100);
   };
 
+  // Handle file selection
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please select a valid image file (JPEG, PNG, or WebP)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPreviewUrl(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload file
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/photos/upload-staff-photo`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        onChange(result.data.photoUrl);
+        setPreviewUrl(result.data.photoUrl);
+      } else {
+        throw new Error(result.error?.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload photo. Please try again.');
+      setPreviewUrl(photoUrl);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
+  };
+
   const handleRemovePhoto = () => {
     setPreviewUrl('');
     onChange('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -226,20 +291,50 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
           )}
         </div>
 
-        {/* Camera Controls */}
+        {/* Photo Controls */}
         <div className="flex-1">
-          <button
-            type="button"
-            onClick={initializeWebcam}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-          >
-            <HiVideoCamera className="h-4 w-4 mr-2" />
-            Take Photo
-          </button>
+          <div className="flex space-x-2 mb-2">
+            <button
+              type="button"
+              onClick={handleFileClick}
+              disabled={isUploading}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isUploading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <HiUpload className="h-4 w-4 mr-2" />
+                  Select Photo
+                </>
+              )}
+            </button>
+            
+            <button
+              type="button"
+              onClick={initializeWebcam}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <HiVideoCamera className="h-4 w-4 mr-2" />
+              Take Photo
+            </button>
+          </div>
           
-          <p className="text-xs text-gray-500 mt-2">
-            Use your device camera to take a photo
+          <p className="text-xs text-gray-500">
+            Choose a photo from your device or use your camera
           </p>
+          
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
         </div>
       </div>
 
