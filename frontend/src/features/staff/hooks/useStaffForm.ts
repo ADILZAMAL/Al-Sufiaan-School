@@ -64,7 +64,7 @@ export const useStaffForm = () => {
     }
   }, [errors]);
 
-  const validateStep = useCallback((step: number, staffType: 'teaching' | 'non-teaching'): boolean => {
+  const validateStep = useCallback((step: number): boolean => {
     const newErrors: StaffFormErrors = {};
 
     if (step === 1) {
@@ -112,8 +112,8 @@ export const useStaffForm = () => {
     return Object.keys(newErrors).length === 0;
   }, [formData]);
 
-  const nextStep = useCallback((staffType: 'teaching' | 'non-teaching') => {
-    if (validateStep(currentStep, staffType)) {
+  const nextStep = useCallback(() => {
+    if (validateStep(currentStep)) {
       const maxSteps = 3; // Both teaching and non-teaching have 3 steps
       if (currentStep < maxSteps) {
         setCurrentStep(prev => prev + 1);
@@ -133,8 +133,8 @@ export const useStaffForm = () => {
     setCurrentStep(1);
   }, []);
 
-  const isStepValid = useCallback((step: number, staffType: 'teaching' | 'non-teaching'): boolean => {
-    return validateStep(step, staffType);
+  const isStepValid = useCallback((step: number): boolean => {
+    return validateStep(step);
   }, [validateStep]);
 
   return {

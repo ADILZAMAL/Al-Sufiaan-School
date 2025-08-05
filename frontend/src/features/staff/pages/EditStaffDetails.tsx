@@ -27,8 +27,7 @@ const EditStaffDetails: React.FC = () => {
     handleChange,
     validateStep,
     nextStep,
-    prevStep,
-    setCurrentStep
+    prevStep
   } = useStaffForm();
 
   useEffect(() => {
@@ -133,11 +132,11 @@ const EditStaffDetails: React.FC = () => {
   };
 
   const handleNext = () => {
-    if (validateStep(currentStep, type!)) {
+    if (validateStep(currentStep)) {
       if (currentStep === 3) {
         setShowConfirmation(true);
       } else {
-        nextStep(type!);
+        nextStep();
       }
     }
   };

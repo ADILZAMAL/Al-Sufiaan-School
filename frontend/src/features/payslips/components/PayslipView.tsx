@@ -451,7 +451,7 @@ const PayslipView: React.FC<PayslipViewProps> = ({
                   <h4 className="text-md font-semibold text-gray-800">Payment History</h4>
                 </div>
                 <div className="divide-y divide-gray-200">
-                  {(currentPayslip as PayslipWithPayments).payments!.map((payment, index) => (
+                  {(currentPayslip as PayslipWithPayments).payments!.map((payment, _) => (
                     <div key={payment.id} className="px-4 py-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">

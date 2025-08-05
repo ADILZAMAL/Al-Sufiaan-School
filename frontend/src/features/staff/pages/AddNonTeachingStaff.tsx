@@ -28,7 +28,7 @@ const AddNonTeachingStaff: React.FC = () => {
     if (currentStep === 3) {
       setShowConfirmation(true);
     } else {
-      nextStep('non-teaching');
+      nextStep();
     }
   };
 

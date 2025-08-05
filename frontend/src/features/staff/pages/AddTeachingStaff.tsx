@@ -29,7 +29,7 @@ const AddTeachingStaff: React.FC = () => {
     if (currentStep === 3) {
       setShowConfirmation(true);
     } else {
-      nextStep('teaching');
+      nextStep();
     }
   };
 
