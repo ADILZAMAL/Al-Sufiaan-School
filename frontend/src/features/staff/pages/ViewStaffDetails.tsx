@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { HiArrowLeft, HiPencil, HiTrash } from 'react-icons/hi';
+import { HiArrowLeft, HiPencil, HiTrash, HiCurrencyRupee, HiPlus } from 'react-icons/hi';
 import { teachingStaffApi } from '../api/teachingStaff';
 import { nonTeachingStaffApi } from '../api/nonTeachingStaff';
 import { TeachingStaff, NonTeachingStaff } from '../types';
+import { payslipApi } from '../../payslips/api/payslips';
+import { Payslip } from '../../payslips/types';
+import PayslipGenerator from '../../payslips/components/PayslipGenerator';
+import PayslipList from '../../payslips/components/PayslipList';
+import PayslipView from '../../payslips/components/PayslipView';
 import Toast from '../../../components/common/Toast';
 
 const ViewStaffDetails: React.FC = () => {
@@ -12,10 +17,45 @@ const ViewStaffDetails: React.FC = () => {
   const [staff, setStaff] = useState<TeachingStaff | NonTeachingStaff | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'SUCCESS' | 'ERROR' } | null>(null);
+  
+  // Payslip related state
+  const [payslips, setPayslips] = useState<Payslip[]>([]);
+  const [isLoadingPayslips, setIsLoadingPayslips] = useState(false);
+  const [showPayslipGenerator, setShowPayslipGenerator] = useState(false);
+  const [selectedPayslip, setSelectedPayslip] = useState<Payslip | null>(null);
 
   useEffect(() => {
     fetchStaffDetails();
   }, [type, id]);
+
+  useEffect(() => {
+    if (staff?.id) {
+      fetchPayslips();
+    }
+  }, [staff]);
+
+  const fetchPayslips = async () => {
+    if (!staff?.id || !type) return;
+    
+    setIsLoadingPayslips(true);
+    try {
+      const response = await payslipApi.getByStaff(type, staff.id, 1, 5); // Get recent 5 payslips
+      setPayslips(response.payslips);
+    } catch (error: any) {
+      console.error('Error fetching payslips:', error);
+    } finally {
+      setIsLoadingPayslips(false);
+    }
+  };
+
+  const handlePayslipGenerated = (newPayslip: Payslip) => {
+    setPayslips(prev => [newPayslip, ...prev]);
+    setShowPayslipGenerator(false);
+  };
+
+  const handleViewPayslip = (payslip: Payslip) => {
+    setSelectedPayslip(payslip);
+  };
 
   const fetchStaffDetails = async () => {
     if (!type || !id) return;
@@ -308,9 +348,85 @@ const ViewStaffDetails: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Payslip History */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                  <HiCurrencyRupee className="h-5 w-5 mr-2" />
+                  Payslip History
+                </h3>
+                <div className="flex items-center space-x-3">
+                  {payslips.length > 0 && (
+                    <div className="text-sm text-gray-500">
+                      Total: {payslips.length} payslips
+                      {payslips[0] && (
+                        <span className="ml-2">
+                          Latest: {payslips[0].monthName} {payslips[0].year}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setShowPayslipGenerator(true)}
+                    disabled={!staff.salaryPerMonth}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                    title={!staff.salaryPerMonth ? 'Staff member needs salary information to generate payslip' : 'Generate new payslip'}
+                  >
+                    <HiPlus className="h-4 w-4 mr-2" />
+                    Generate Payslip
+                  </button>
+                </div>
+              </div>
+
+              {!staff.salaryPerMonth && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm text-yellow-700">
+                    ⚠️ Salary information is required to generate payslips. Please update the staff member's salary details.
+                  </p>
+                </div>
+              )}
+
+              <PayslipList
+                payslips={payslips}
+                onViewPayslip={handleViewPayslip}
+                isLoading={isLoadingPayslips}
+              />
+
+              {payslips.length > 5 && (
+                <div className="mt-4 text-center">
+                  <Link
+                    to={`/dashboard/staff/payslips/${type}/${staff.id}`}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    View All Payslips →
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Payslip Generator Modal */}
+      {showPayslipGenerator && staff && (
+        <PayslipGenerator
+          staff={staff}
+          staffType={type!}
+          isOpen={showPayslipGenerator}
+          onClose={() => setShowPayslipGenerator(false)}
+          onSuccess={handlePayslipGenerated}
+        />
+      )}
+
+      {/* Payslip View Modal */}
+      {selectedPayslip && (
+        <PayslipView
+          payslip={selectedPayslip}
+          isOpen={!!selectedPayslip}
+          onClose={() => setSelectedPayslip(null)}
+        />
+      )}
     </div>
   );
 };

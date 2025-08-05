@@ -12,6 +12,7 @@ import expenseRouter from './routes/expense'
 import teachingStaffRouter from './routes/teachingStaff'
 import nonTeachingStaffRouter from './routes/nonTeachingStaff'
 import photoUploadRouter from './routes/photoUpload'
+import payslipRouter from './routes/payslip'
 import sequelize from './config/database';
 import './models'; // Import for associations
 import cookieParser from "cookie-parser";
@@ -54,6 +55,7 @@ app.use('/api/expenses', expenseRouter)
 app.use('/api/teaching-staff', teachingStaffRouter)
 app.use('/api/non-teaching-staff', nonTeachingStaffRouter)
 app.use('/api/photos', photoUploadRouter)
+app.use('/api/payslips', payslipRouter)
 
 app.listen(7000, async () => {
     console.log("Server is running on port 7000")
