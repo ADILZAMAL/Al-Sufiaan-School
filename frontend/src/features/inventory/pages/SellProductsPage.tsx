@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import * as apiClient from "../api";
-import { ClassType, SectionType } from "../api";
 import { MdOutlineDelete } from "react-icons/md";
 import { useAppContext } from "../../../providers/AppContext";
 import { useNavigate } from "react-router-dom";

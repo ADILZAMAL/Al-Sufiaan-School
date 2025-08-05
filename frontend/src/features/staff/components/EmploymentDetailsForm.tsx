@@ -9,7 +9,6 @@ interface EmploymentDetailsFormProps {
 
 const EmploymentDetailsForm: React.FC<EmploymentDetailsFormProps> = ({
   formData,
-  errors,
   onChange
 }) => {
   return (

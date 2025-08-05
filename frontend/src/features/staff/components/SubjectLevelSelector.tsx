@@ -9,7 +9,6 @@ interface SubjectLevelSelectorProps {
 
 const SubjectLevelSelector: React.FC<SubjectLevelSelectorProps> = ({
   formData,
-  errors,
   onChange
 }) => {
   return (

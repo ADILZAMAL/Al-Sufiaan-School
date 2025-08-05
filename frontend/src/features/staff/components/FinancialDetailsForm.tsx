@@ -9,7 +9,6 @@ interface FinancialDetailsFormProps {
 
 const FinancialDetailsForm: React.FC<FinancialDetailsFormProps> = ({
   formData,
-  errors,
   onChange
 }) => {
   return (
