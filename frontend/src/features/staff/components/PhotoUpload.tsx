@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { HiCamera, HiX, HiUpload, HiVideoCamera, HiRefresh, HiCheck, HiSwitchHorizontal } from 'react-icons/hi';
+import { HiCamera, HiX, HiVideoCamera, HiRefresh, HiCheck, HiSwitchHorizontal } from 'react-icons/hi';
 
 interface PhotoUploadProps {
   photoUrl: string;
@@ -279,101 +279,51 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
         Staff Photo
       </label>
 
-      {/* Mode Selection */}
-      <div className="flex space-x-2">
-        <button
-          type="button"
-          onClick={() => handleModeSwitch('file')}
-          className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-            captureMode === 'file'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          <HiUpload className="h-4 w-4 mr-2" />
-          Upload File
-        </button>
-        <button
-          type="button"
-          onClick={() => handleModeSwitch('webcam')}
-          className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-            captureMode === 'webcam'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          <HiVideoCamera className="h-4 w-4 mr-2" />
-          Take Photo
-        </button>
-      </div>
-
-      {/* File Upload Mode */}
-      {captureMode === 'file' && (
-        <div className="flex items-start space-x-4">
-          {/* Photo Preview */}
-          <div className="relative">
-            <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
-              {previewUrl ? (
-                <img
-                  src={previewUrl.startsWith('http') ? previewUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${previewUrl}`}
-                  alt="Staff photo preview"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="text-center">
-                  <HiCamera className="mx-auto h-8 w-8 text-gray-400" />
-                  <p className="text-xs text-gray-500 mt-1">No photo</p>
-                </div>
-              )}
-            </div>
-            
-            {previewUrl && (
-              <button
-                type="button"
-                onClick={handleRemovePhoto}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-              >
-                <HiX className="h-4 w-4" />
-              </button>
+      {/* Photo Preview */}
+      <div className="flex items-start space-x-4">
+        <div className="relative">
+          <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
+            {previewUrl ? (
+              <img
+                src={previewUrl.startsWith('http') ? previewUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${previewUrl}`}
+                alt="Staff photo preview"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="text-center">
+                <HiCamera className="mx-auto h-8 w-8 text-gray-400" />
+                <p className="text-xs text-gray-500 mt-1">No photo</p>
+              </div>
             )}
           </div>
-
-          {/* Upload Controls */}
-          <div className="flex-1">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,image/webp"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            
+          
+          {previewUrl && (
             <button
               type="button"
-              onClick={handleFileClick}
-              disabled={isUploading}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleRemovePhoto}
+              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
             >
-              {isUploading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <HiUpload className="h-4 w-4 mr-2" />
-                  {previewUrl ? 'Change Photo' : 'Select Photo'}
-                </>
-              )}
+              <HiX className="h-4 w-4" />
             </button>
-            
-            <p className="text-xs text-gray-500 mt-2">
-              Supported formats: JPEG, PNG, WebP<br />
-              Maximum size: 5MB
-            </p>
-          </div>
+          )}
         </div>
-      )}
+
+        {/* Camera Controls */}
+        <div className="flex-1">
+          <button
+            type="button"
+            onClick={() => handleModeSwitch('webcam')}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <HiVideoCamera className="h-4 w-4 mr-2" />
+            Take Photo
+          </button>
+          
+          <p className="text-xs text-gray-500 mt-2">
+            Use your device camera to take a photo
+          </p>
+        </div>
+      </div>
 
       {/* Webcam Mode */}
       {captureMode === 'webcam' && (
