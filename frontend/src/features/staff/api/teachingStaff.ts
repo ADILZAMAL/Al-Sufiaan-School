@@ -65,16 +65,16 @@ export const teachingStaffApi = {
     return body.data;
   },
 
-  // Delete teaching staff
-  delete: async (id: number): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/api/teaching-staff/${id}`, {
-      method: 'DELETE',
+  // Mark teaching staff as left school
+  markLeftSchool: async (id: number): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/api/teaching-staff/${id}/left-school`, {
+      method: 'PUT',
       credentials: 'include'
     });
 
     const body = await response.json();
     if (!body.success) {
-      throw new Error(body.message || 'Failed to delete teaching staff');
+      throw new Error(body.message || 'Failed to mark teaching staff as left school');
     }
   }
 };

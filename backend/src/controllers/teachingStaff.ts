@@ -98,6 +98,7 @@ export const createTeachingStaff = async (req: Request, res: Response) => {
             accountName,
             ifscCode,
             photoUrl,
+            active: true,
             schoolId
         });
 
@@ -185,7 +186,7 @@ export const updateTeachingStaff = async (req: Request, res: Response) => {
     }
 };
 
-export const deleteTeachingStaff = async (req: Request, res: Response) => {
+export const markTeachingStaffLeftSchool = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
@@ -195,11 +196,11 @@ export const deleteTeachingStaff = async (req: Request, res: Response) => {
             return sendError(res, 'Teaching staff not found', 404);
         }
 
-        await teachingStaff.destroy();
+        await teachingStaff.update({ active: false });
 
-        return sendSuccess(res, null, 'Teaching staff deleted successfully');
+        return sendSuccess(res, teachingStaff, 'Teaching staff marked as left school successfully');
     } catch (error: any) {
-        console.error('Error deleting teaching staff:', error);
+        console.error('Error marking teaching staff as left school:', error);
         return sendError(res, 'Internal server error', 500);
     }
 };

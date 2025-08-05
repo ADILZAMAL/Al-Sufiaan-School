@@ -65,16 +65,16 @@ export const nonTeachingStaffApi = {
     return body.data;
   },
 
-  // Delete non-teaching staff
-  delete: async (id: number): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/api/non-teaching-staff/${id}`, {
-      method: 'DELETE',
+  // Mark non-teaching staff as left school
+  markLeftSchool: async (id: number): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/api/non-teaching-staff/${id}/left-school`, {
+      method: 'PUT',
       credentials: 'include'
     });
 
     const body = await response.json();
     if (!body.success) {
-      throw new Error(body.message || 'Failed to delete non-teaching staff');
+      throw new Error(body.message || 'Failed to mark non-teaching staff as left school');
     }
   }
 };

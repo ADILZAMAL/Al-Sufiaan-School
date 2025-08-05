@@ -25,6 +25,7 @@ class NonTeachingStaff extends Model {
     public accountName!: string;
     public ifscCode!: string;
     public photoUrl!: string;
+    public active!: boolean;
     public schoolId!: number;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
@@ -141,6 +142,11 @@ export const initNonTeachingStaffModel = (sequelize: Sequelize) => {
         photoUrl: {
             type: DataTypes.STRING,
             allowNull: true,
+        },
+        active: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
         },
         schoolId: {
             type: DataTypes.INTEGER,

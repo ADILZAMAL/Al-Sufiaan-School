@@ -13,6 +13,7 @@ export interface TeachingStaff {
   highestProfessionalQualification?: string;
   role?: string;
   photoUrl?: string;
+  active?: boolean;
   mathematicsLevel?: string;
   scienceLevel?: string;
   englishLevel?: string;
@@ -47,6 +48,7 @@ export interface NonTeachingStaff {
   highestProfessionalQualification?: string;
   role?: string;
   photoUrl?: string;
+  active?: boolean;
   typeOfDisability?: string;
   natureOfAppointment?: string;
   dateOfJoiningService?: string;

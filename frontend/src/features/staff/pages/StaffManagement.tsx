@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { HiPlus, HiUserGroup, HiUsers, HiPencil, HiTrash } from 'react-icons/hi';
+import { HiPlus, HiUserGroup, HiUsers, HiPencil, HiTrash, HiEye } from 'react-icons/hi';
 import { teachingStaffApi } from '../api/teachingStaff';
 import { nonTeachingStaffApi } from '../api/nonTeachingStaff';
 import { TeachingStaff, NonTeachingStaff } from '../types';
@@ -35,23 +35,27 @@ const StaffManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number, type: 'teaching' | 'non-teaching') => {
-    if (!window.confirm('Are you sure you want to delete this staff member?')) {
+  const handleLeftSchool = async (id: number, type: 'teaching' | 'non-teaching') => {
+    if (!window.confirm('Are you sure you want to mark this staff member as left school?')) {
       return;
     }
 
     try {
       if (type === 'teaching') {
-        await teachingStaffApi.delete(id);
-        setTeachingStaff(prev => prev.filter(staff => staff.id !== id));
+        await teachingStaffApi.markLeftSchool(id);
+        setTeachingStaff(prev => prev.map(staff => 
+          staff.id === id ? { ...staff, active: false } : staff
+        ));
       } else {
-        await nonTeachingStaffApi.delete(id);
-        setNonTeachingStaff(prev => prev.filter(staff => staff.id !== id));
+        await nonTeachingStaffApi.markLeftSchool(id);
+        setNonTeachingStaff(prev => prev.map(staff => 
+          staff.id === id ? { ...staff, active: false } : staff
+        ));
       }
-      setToast({ message: 'Staff member deleted successfully!', type: 'SUCCESS' });
+      setToast({ message: 'Staff member marked as left school successfully!', type: 'SUCCESS' });
     } catch (error: any) {
       setToast({ 
-        message: error.message || 'Failed to delete staff member', 
+        message: error.message || 'Failed to mark staff member as left school', 
         type: 'ERROR' 
       });
     }
@@ -156,6 +160,7 @@ const StaffManagement: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -189,6 +194,31 @@ const StaffManagement: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.role || 'Not specified'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.mobileNumber}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <Link
+                            to={`/dashboard/staff/view/teaching/${staff.id}`}
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                            title="View Details"
+                          >
+                            <HiEye className="h-4 w-4" />
+                          </Link>
+                          <Link
+                            to={`/dashboard/staff/edit/teaching/${staff.id}`}
+                            className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
+                            title="Edit Staff"
+                          >
+                            <HiPencil className="h-4 w-4" />
+                          </Link>
+                          <button
+                            onClick={() => handleLeftSchool(staff.id!, 'teaching')}
+                            className="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50"
+                            title="Left School"
+                          >
+                            <HiTrash className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {/* Non-Teaching Staff */}
@@ -221,6 +251,31 @@ const StaffManagement: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.role || 'Not specified'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.mobileNumber}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <Link
+                            to={`/dashboard/staff/view/non-teaching/${staff.id}`}
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                            title="View Details"
+                          >
+                            <HiEye className="h-4 w-4" />
+                          </Link>
+                          <Link
+                            to={`/dashboard/staff/edit/non-teaching/${staff.id}`}
+                            className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
+                            title="Edit Staff"
+                          >
+                            <HiPencil className="h-4 w-4" />
+                          </Link>
+                          <button
+                            onClick={() => handleLeftSchool(staff.id!, 'non-teaching')}
+                            className="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50"
+                            title="Left School"
+                          >
+                            <HiTrash className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

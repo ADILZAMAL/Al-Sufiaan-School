@@ -15,6 +15,8 @@ import TransactionHistory from "./features/inventory/pages/TransactionHistory"
 import StaffManagement from "./features/staff/pages/StaffManagement"
 import AddTeachingStaff from "./features/staff/pages/AddTeachingStaff"
 import AddNonTeachingStaff from "./features/staff/pages/AddNonTeachingStaff"
+import ViewStaffDetails from "./features/staff/pages/ViewStaffDetails"
+import EditStaffDetails from "./features/staff/pages/EditStaffDetails"
 
 
 const router = createBrowserRouter([
@@ -81,6 +83,14 @@ const router = createBrowserRouter([
       {
         path: "staff/add-non-teaching",
         element: <AddNonTeachingStaff />
+      },
+      {
+        path: "staff/view/:type/:id",
+        element: <ViewStaffDetails />
+      },
+      {
+        path: "staff/edit/:type/:id",
+        element: <EditStaffDetails />
       }
     ]
   }

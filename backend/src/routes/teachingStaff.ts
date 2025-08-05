@@ -4,7 +4,7 @@ import {
     getAllTeachingStaff,
     getTeachingStaffById,
     updateTeachingStaff,
-    deleteTeachingStaff
+    markTeachingStaffLeftSchool
 } from '../controllers/teachingStaff';
 import verifyToken from '../middleware/auth';
 
@@ -25,7 +25,7 @@ router.get('/:id', getTeachingStaffById);
 // PUT /api/teaching-staff/:id - Update teaching staff
 router.put('/:id', updateTeachingStaff);
 
-// DELETE /api/teaching-staff/:id - Delete teaching staff
-router.delete('/:id', deleteTeachingStaff);
+// PUT /api/teaching-staff/:id/left-school - Mark teaching staff as left school
+router.put('/:id/left-school', markTeachingStaffLeftSchool);
 
 export default router;
