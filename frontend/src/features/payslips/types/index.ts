@@ -38,6 +38,12 @@ export interface Payslip {
   deductions: number;
   netSalary: number;
   
+  // Payment Tracking
+  totalPaidAmount: number;
+  remainingAmount: number;
+  paymentStatus: 'UNPAID' | 'PARTIAL' | 'PAID';
+  lastPaymentDate?: string;
+  
   // Audit Information
   generatedBy: number;
   generatedDate: string;
@@ -53,11 +59,11 @@ export interface PayslipFormData {
   staffType: 'teaching' | 'non-teaching';
   month: number;
   year: number;
-  workingDays: number;
-  absentDays: number;
-  casualLeave: number;
-  halfDays: number;
-  deductions: number;
+  workingDays: number | string;
+  absentDays: number | string;
+  casualLeave: number | string;
+  halfDays: number | string;
+  deductions: number | string;
 }
 
 export interface PayslipFormErrors {
@@ -87,6 +93,62 @@ export interface PayslipExistsResponse {
   exists: boolean;
   payslip?: Payslip;
 }
+
+export interface PayslipPayment {
+  id: number;
+  payslipId: number;
+  paymentAmount: number;
+  paymentDate: string;
+  paymentMethod: 'Cash' | 'UPI' | 'Bank Transfer';
+  notes?: string;
+  paidBy: number;
+  expenseId: number;
+  schoolId: number;
+  createdAt: string;
+  updatedAt: string;
+  
+  // Associated data
+  paidByUser?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  expense?: {
+    id: number;
+    name: string;
+    amount: number;
+  };
+}
+
+export interface PayslipWithPayments extends Payslip {
+  payments?: PayslipPayment[];
+}
+
+export interface PaymentFormData {
+  paymentAmount: number;
+  paymentMethod: 'Cash' | 'UPI' | 'Bank Transfer';
+  notes?: string;
+}
+
+export interface PaymentFormErrors {
+  [key: string]: string;
+}
+
+export interface PaymentResponse {
+  payslip: PayslipWithPayments;
+  payment: PayslipPayment;
+  expense: {
+    id: number;
+    name: string;
+    amount: number;
+  };
+}
+
+export const PAYMENT_METHODS = [
+  { value: 'Cash', label: 'Cash' },
+  { value: 'UPI', label: 'UPI' },
+  { value: 'Bank Transfer', label: 'Bank Transfer' }
+] as const;
 
 export const MONTHS = [
   { value: 1, label: 'January' },

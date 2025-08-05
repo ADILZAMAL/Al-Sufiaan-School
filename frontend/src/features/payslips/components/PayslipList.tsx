@@ -25,6 +25,24 @@ const PayslipList: React.FC<PayslipListProps> = ({
     });
   };
 
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'PAID': return 'bg-green-100 text-green-800 border-green-200';
+      case 'PARTIAL': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'UNPAID': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPaymentStatusText = (status: string) => {
+    switch (status) {
+      case 'PAID': return 'Fully Paid';
+      case 'PARTIAL': return 'Partially Paid';
+      case 'UNPAID': return 'Unpaid';
+      default: return 'Unknown';
+    }
+  };
+
 
 
   if (isLoading) {
@@ -56,7 +74,7 @@ const PayslipList: React.FC<PayslipListProps> = ({
           className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
         >
           <div className="flex items-center justify-between">
-            <div className="flex-1">
+            <div className="flex-1 pr-6">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center text-sm text-gray-600">
                   <HiCalendar className="h-4 w-4 mr-1" />
@@ -67,7 +85,7 @@ const PayslipList: React.FC<PayslipListProps> = ({
                 </div>
               </div>
               
-              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500">Gross Salary:</span>
                   <div className="font-medium text-gray-900">
@@ -83,9 +101,16 @@ const PayslipList: React.FC<PayslipListProps> = ({
                 </div>
                 
                 <div>
-                  <span className="text-gray-500">Net Salary:</span>
-                  <div className="font-semibold text-green-600">
-                    {formatCurrency(payslip.netSalary)}
+                  <span className="text-gray-500">Paid:</span>
+                  <div className="font-medium text-green-600">
+                    {formatCurrency(payslip.totalPaidAmount || 0)}
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="text-gray-500">Due:</span>
+                  <div className="font-medium text-orange-600">
+                    {formatCurrency(payslip.remainingAmount || payslip.netSalary)}
                   </div>
                 </div>
                 
@@ -97,7 +122,7 @@ const PayslipList: React.FC<PayslipListProps> = ({
                 </div>
               </div>
 
-              <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+              <div className="mt-3 flex items-center space-x-4 text-xs text-gray-500">
                 <span>Present: {payslip.presentDays} days</span>
                 <span>Absent: {payslip.absentDays} days</span>
                 <span>Half Days: {payslip.halfDays}</span>
@@ -105,7 +130,12 @@ const PayslipList: React.FC<PayslipListProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 ml-4">
+            <div className="flex items-center space-x-4 flex-shrink-0">
+              {/* Payment Status Badge */}
+              <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPaymentStatusColor(payslip.paymentStatus)}`}>
+                {getPaymentStatusText(payslip.paymentStatus)}
+              </div>
+              
               <button
                 onClick={() => onViewPayslip(payslip)}
                 className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

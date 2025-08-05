@@ -39,7 +39,8 @@ const ViewStaffDetails: React.FC = () => {
     
     setIsLoadingPayslips(true);
     try {
-      const response = await payslipApi.getByStaff(type, staff.id, 1, 5); // Get recent 5 payslips
+      // Get recent 5 payslips for display
+      const response = await payslipApi.getByStaff(type, staff.id, 1, 5);
       setPayslips(response.payslips);
     } catch (error: any) {
       console.error('Error fetching payslips:', error);
@@ -349,6 +350,7 @@ const ViewStaffDetails: React.FC = () => {
               </div>
             </div>
 
+
             {/* Payslip History */}
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -425,6 +427,7 @@ const ViewStaffDetails: React.FC = () => {
           payslip={selectedPayslip}
           isOpen={!!selectedPayslip}
           onClose={() => setSelectedPayslip(null)}
+          onPayslipUpdated={fetchPayslips}
         />
       )}
     </div>

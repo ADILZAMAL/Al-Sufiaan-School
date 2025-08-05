@@ -61,12 +61,10 @@ export const initNonTeachingStaffModel = (sequelize: Sequelize) => {
         email: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true,
         },
         aadhaarNumber: {
             type: DataTypes.STRING(12),
             allowNull: false,
-            unique: true,
         },
         nameAsPerAadhaar: {
             type: DataTypes.STRING,

@@ -9,6 +9,7 @@ import TransactionItem from './TransactionItem';
 import TeachingStaff from './TeachingStaff';
 import NonTeachingStaff from './NonTeachingStaff';
 import Payslip from './Payslip';
+import PayslipPayment from './PayslipPayment';
 
 // School associations
 School.hasMany(User, { foreignKey: 'schoolId', as: 'users' });
@@ -17,10 +18,14 @@ School.hasMany(Product, { foreignKey: 'schoolId', as: 'products' });
 School.hasMany(Expense, { foreignKey: 'schoolId', as: 'expenses' });
 School.hasMany(TeachingStaff, { foreignKey: 'schoolId', as: 'teachingStaff' });
 School.hasMany(NonTeachingStaff, { foreignKey: 'schoolId', as: 'nonTeachingStaff' });
+School.hasMany(Payslip, { foreignKey: 'schoolId', as: 'payslips' });
+School.hasMany(PayslipPayment, { foreignKey: 'schoolId', as: 'payslipPayments' });
 
 // User associations
 User.belongsTo(School, { foreignKey: 'schoolId', as: 'userSchool' });
 User.hasMany(Expense, { foreignKey: 'userId', as: 'expenses' });
+User.hasMany(Payslip, { foreignKey: 'generatedBy', as: 'generatedPayslips' });
+User.hasMany(PayslipPayment, { foreignKey: 'paidBy', as: 'paymentsMade' });
 
 // Class associations
 Class.belongsTo(School, { foreignKey: 'schoolId', as: 'classSchool' });
@@ -48,6 +53,7 @@ TransactionItem.belongsTo(Transaction, { foreignKey: 'transactionId', as: 'trans
 // Expense associations
 Expense.belongsTo(School, { foreignKey: 'schoolId', as: 'expenseSchool' });
 Expense.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Expense.hasOne(PayslipPayment, { foreignKey: 'expenseId', as: 'payslipPayment' });
 
 // TeachingStaff associations
 TeachingStaff.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
@@ -58,7 +64,14 @@ NonTeachingStaff.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 // Payslip associations
 Payslip.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 Payslip.belongsTo(User, { foreignKey: 'generatedBy', as: 'generatedByUser' });
-School.hasMany(Payslip, { foreignKey: 'schoolId', as: 'payslips' });
-User.hasMany(Payslip, { foreignKey: 'generatedBy', as: 'generatedPayslips' });
+Payslip.hasMany(PayslipPayment, { foreignKey: 'payslipId', as: 'payments' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip };
+// User associations
+
+// PayslipPayment associations
+PayslipPayment.belongsTo(Payslip, { foreignKey: 'payslipId', as: 'payslip' });
+PayslipPayment.belongsTo(User, { foreignKey: 'paidBy', as: 'paidByUser' });
+PayslipPayment.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+PayslipPayment.belongsTo(Expense, { foreignKey: 'expenseId', as: 'expense' });
+
+export { School, User, Class, Section, Product, Transaction, Expense, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment };

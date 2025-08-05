@@ -1,18 +1,31 @@
-import React from 'react';
-import { HiX, HiPrinter } from 'react-icons/hi';
-import { Payslip } from '../types';
+import React, { useState, useEffect } from 'react';
+import { HiX, HiPrinter, HiCurrencyRupee, HiCash, HiCreditCard } from 'react-icons/hi';
+import { Payslip, PayslipWithPayments, PaymentFormData, PAYMENT_METHODS } from '../types';
+import { payslipApi } from '../api/payslips';
 
 interface PayslipViewProps {
   payslip: Payslip;
   isOpen: boolean;
   onClose: () => void;
+  onPayslipUpdated?: () => void;
 }
 
 const PayslipView: React.FC<PayslipViewProps> = ({
   payslip,
   isOpen,
-  onClose
+  onClose,
+  onPayslipUpdated
 }) => {
+  const [payslipWithPayments, setPayslipWithPayments] = useState<PayslipWithPayments | null>(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentForm, setPaymentForm] = useState<PaymentFormData>({
+    paymentAmount: 0,
+    paymentMethod: 'Cash',
+    notes: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const formatCurrency = (amount: number) => {
     return `₹${amount.toLocaleString('en-IN')}`;
   };
@@ -28,6 +41,81 @@ const PayslipView: React.FC<PayslipViewProps> = ({
   const handlePrint = () => {
     window.print();
   };
+
+  const handleClose = () => {
+    onClose();
+    // Trigger payslip list reload if callback is provided
+    if (onPayslipUpdated) {
+      onPayslipUpdated();
+    }
+  };
+
+  // Load payslip with payment details
+  useEffect(() => {
+    if (isOpen && payslip.id) {
+      loadPayslipWithPayments();
+    }
+  }, [isOpen, payslip.id]);
+
+  const loadPayslipWithPayments = async () => {
+    try {
+      setIsLoading(true);
+      const data = await payslipApi.getWithPayments(payslip.id!);
+      setPayslipWithPayments(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMakePayment = async () => {
+    if (!payslip.id) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      await payslipApi.makePayment(payslip.id, paymentForm);
+      
+      // Reload payslip data
+      await loadPayslipWithPayments();
+      
+      // Reset form
+      setPaymentForm({
+        paymentAmount: 0,
+        paymentMethod: 'Cash',
+        notes: ''
+      });
+      setShowPaymentForm(false);
+      
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'PAID': return 'text-green-600 bg-green-100';
+      case 'PARTIAL': return 'text-yellow-600 bg-yellow-100';
+      case 'UNPAID': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getPaymentMethodIcon = (method: string) => {
+    switch (method) {
+      case 'Cash': return <HiCash className="h-4 w-4" />;
+      case 'UPI': return <HiCreditCard className="h-4 w-4" />;
+      case 'Bank Transfer': return <HiCreditCard className="h-4 w-4" />;
+      default: return <HiCurrencyRupee className="h-4 w-4" />;
+    }
+  };
+
+  // Use payslipWithPayments if available, otherwise use the original payslip
+  const currentPayslip = payslipWithPayments || payslip;
 
 
   if (!isOpen) return null;
@@ -50,7 +138,7 @@ const PayslipView: React.FC<PayslipViewProps> = ({
               Print
             </button>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="text-gray-400 hover:text-gray-600"
             >
               <HiX className="h-6 w-6" />
@@ -221,6 +309,183 @@ const PayslipView: React.FC<PayslipViewProps> = ({
                 }
               </span>
             </p>
+          </div>
+
+          {/* Payment Status and Management */}
+          <div className="mb-6 print:hidden">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-300 pb-1">
+              PAYMENT STATUS
+            </h3>
+            
+            {/* Payment Status Summary */}
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Net Salary</p>
+                  <p className="text-xl font-bold text-blue-600">{formatCurrency(currentPayslip.netSalary)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Paid Amount</p>
+                  <p className="text-xl font-bold text-green-600">{formatCurrency(currentPayslip.totalPaidAmount || 0)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Remaining</p>
+                  <p className="text-xl font-bold text-red-600">{formatCurrency(currentPayslip.remainingAmount || currentPayslip.netSalary)}</p>
+                </div>
+              </div>
+              
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">Status:</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusColor(currentPayslip.paymentStatus || 'UNPAID')}`}>
+                    {currentPayslip.paymentStatus || 'UNPAID'}
+                  </span>
+                </div>
+                
+                {currentPayslip.paymentStatus !== 'PAID' && (
+                  <button
+                    onClick={() => setShowPaymentForm(!showPaymentForm)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    <HiCurrencyRupee className="h-4 w-4 mr-2" />
+                    Make Payment
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Payment Form */}
+            {showPaymentForm && (
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <h4 className="text-md font-semibold text-gray-800 mb-3">Make Payment</h4>
+                
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Payment Amount
+                    </label>
+                    <input
+                      type="number"
+                      min="0.01"
+                      max={currentPayslip.remainingAmount || currentPayslip.netSalary}
+                      step="0.01"
+                      value={paymentForm.paymentAmount === 0 ? '' : paymentForm.paymentAmount}
+                      onChange={(e) => setPaymentForm({
+                        ...paymentForm,
+                        paymentAmount: e.target.value === '' ? 0 : parseFloat(e.target.value)
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter amount"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Max: {formatCurrency(currentPayslip.remainingAmount || currentPayslip.netSalary)}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Payment Method
+                    </label>
+                    <select
+                      value={paymentForm.paymentMethod}
+                      onChange={(e) => setPaymentForm({
+                        ...paymentForm,
+                        paymentMethod: e.target.value as 'Cash' | 'UPI' | 'Bank Transfer'
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {PAYMENT_METHODS.map((method) => (
+                        <option key={method.value} value={method.value}>
+                          {method.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={paymentForm.notes}
+                    onChange={(e) => setPaymentForm({
+                      ...paymentForm,
+                      notes: e.target.value
+                    })}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Payment notes or reference..."
+                  />
+                </div>
+                
+                <div className="mt-4 flex items-center space-x-3">
+                  <button
+                    onClick={handleMakePayment}
+                    disabled={isLoading || paymentForm.paymentAmount <= 0}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+                  >
+                    {isLoading ? 'Processing...' : 'Record Payment'}
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowPaymentForm(false)}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Payment History */}
+            {(currentPayslip as PayslipWithPayments).payments && (currentPayslip as PayslipWithPayments).payments!.length > 0 && (
+              <div className="bg-white border border-gray-200 rounded-lg">
+                <div className="px-4 py-3 border-b border-gray-200">
+                  <h4 className="text-md font-semibold text-gray-800">Payment History</h4>
+                </div>
+                <div className="divide-y divide-gray-200">
+                  {(currentPayslip as PayslipWithPayments).payments!.map((payment, index) => (
+                    <div key={payment.id} className="px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-2">
+                            {getPaymentMethodIcon(payment.paymentMethod)}
+                            <span className="text-sm font-medium text-gray-900">
+                              {formatCurrency(payment.paymentAmount)}
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-500">
+                            via {payment.paymentMethod}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-900">
+                            {formatDate(payment.paymentDate)}
+                          </p>
+                          {payment.paidByUser && (
+                            <p className="text-xs text-gray-500">
+                              by {payment.paidByUser.name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {payment.notes && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          Note: {payment.notes}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer */}

@@ -42,9 +42,9 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
   const salaryCalculation = staff.salaryPerMonth 
     ? payslipApi.calculateSalary(
         staff.salaryPerMonth,
-        formData.absentDays,
-        formData.halfDays,
-        formData.deductions
+        typeof formData.absentDays === 'string' ? 0 : formData.absentDays,
+        typeof formData.halfDays === 'string' ? 0 : formData.halfDays,
+        typeof formData.deductions === 'string' ? 0 : formData.deductions
       )
     : null;
 
@@ -78,6 +78,21 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
     }
   };
 
+  const handleNumberChange = (field: keyof PayslipFormData, value: string) => {
+    // Allow empty string or valid numbers
+    if (value === '') {
+      setFormData(prev => ({ ...prev, [field]: '' as any }));
+    } else {
+      const numValue = field === 'deductions' ? parseFloat(value) : parseInt(value);
+      if (!isNaN(numValue)) {
+        setFormData(prev => ({ ...prev, [field]: numValue }));
+      }
+    }
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
   const validateForm = (): boolean => {
     const newErrors: PayslipFormErrors = {};
 
@@ -89,31 +104,36 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
       newErrors.year = 'Please select a valid year';
     }
 
-    if (formData.workingDays < 20 || formData.workingDays > 31) {
+    const workingDays = typeof formData.workingDays === 'string' ? parseInt(formData.workingDays) || 0 : formData.workingDays;
+    if (workingDays < 20 || workingDays > 31) {
       newErrors.workingDays = 'Working days must be between 20 and 31';
     }
 
-    if (formData.absentDays < 0 || formData.absentDays > 30) {
+    const absentDays = typeof formData.absentDays === 'string' ? parseInt(formData.absentDays) || 0 : formData.absentDays;
+    if (absentDays < 0 || absentDays > 30) {
       newErrors.absentDays = 'Absent days must be between 0 and 30';
     }
 
-    if (formData.casualLeave < 0 || formData.casualLeave > 30) {
+    const casualLeave = typeof formData.casualLeave === 'string' ? parseInt(formData.casualLeave) || 0 : formData.casualLeave;
+    if (casualLeave < 0 || casualLeave > 30) {
       newErrors.casualLeave = 'Casual leave must be between 0 and 30';
     }
 
-    if (formData.halfDays < 0 || formData.halfDays > 30) {
+    const halfDays = typeof formData.halfDays === 'string' ? parseInt(formData.halfDays) || 0 : formData.halfDays;
+    if (halfDays < 0 || halfDays > 30) {
       newErrors.halfDays = 'Half days must be between 0 and 30';
     }
 
-    if (formData.absentDays + formData.casualLeave + formData.halfDays > formData.workingDays) {
+    if (absentDays + casualLeave + halfDays > workingDays) {
       newErrors.absentDays = 'Total absent days, casual leave, and half days cannot exceed working days';
     }
 
-    if (formData.absentDays + formData.halfDays > 30) {
+    if (absentDays + halfDays > 30) {
       newErrors.absentDays = 'Total absent days and half days cannot exceed 30';
     }
 
-    if (formData.deductions < 0) {
+    const deductions = typeof formData.deductions === 'string' ? parseFloat(formData.deductions) || 0 : formData.deductions;
+    if (deductions < 0) {
       newErrors.deductions = 'Deductions cannot be negative';
     }
 
@@ -268,8 +288,8 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
                   type="number"
                   min="20"
                   max="31"
-                  value={formData.workingDays}
-                  onChange={(e) => handleChange('workingDays', parseInt(e.target.value) || 26)}
+                  value={formData.workingDays === '' ? '' : formData.workingDays}
+                  onChange={(e) => handleNumberChange('workingDays', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.workingDays ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -294,8 +314,8 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
                   type="number"
                   min="0"
                   max="30"
-                  value={formData.absentDays}
-                  onChange={(e) => handleChange('absentDays', parseInt(e.target.value) || 0)}
+                  value={formData.absentDays === '' ? '' : formData.absentDays}
+                  onChange={(e) => handleNumberChange('absentDays', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.absentDays ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -313,8 +333,8 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
                   type="number"
                   min="0"
                   max="30"
-                  value={formData.casualLeave}
-                  onChange={(e) => handleChange('casualLeave', parseInt(e.target.value) || 0)}
+                  value={formData.casualLeave === '' ? '' : formData.casualLeave}
+                  onChange={(e) => handleNumberChange('casualLeave', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.casualLeave ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -333,8 +353,8 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
                   type="number"
                   min="0"
                   max="30"
-                  value={formData.halfDays}
-                  onChange={(e) => handleChange('halfDays', parseInt(e.target.value) || 0)}
+                  value={formData.halfDays === '' ? '' : formData.halfDays}
+                  onChange={(e) => handleNumberChange('halfDays', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.halfDays ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -352,8 +372,8 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
                   type="number"
                   min="0"
                   step="0.01"
-                  value={formData.deductions}
-                  onChange={(e) => handleChange('deductions', parseFloat(e.target.value) || 0)}
+                  value={formData.deductions === '' ? '' : formData.deductions}
+                  onChange={(e) => handleNumberChange('deductions', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.deductions ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -396,7 +416,7 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span>Deductions:</span>
-                    <span className="font-medium">₹{formData.deductions.toLocaleString()}</span>
+                    <span className="font-medium">₹{(typeof formData.deductions === 'string' ? 0 : formData.deductions).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between border-t pt-2 col-span-2">
                     <span className="text-lg font-semibold">Net Salary:</span>

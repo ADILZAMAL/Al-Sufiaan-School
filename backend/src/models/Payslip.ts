@@ -49,6 +49,12 @@ class Payslip extends Model {
     public deductions!: number;
     public netSalary!: number;
     
+    // Payment Tracking
+    public totalPaidAmount!: number;
+    public remainingAmount!: number;
+    public paymentStatus!: 'UNPAID' | 'PARTIAL' | 'PAID';
+    public lastPaymentDate!: Date | null;
+    
     // Audit Information
     public generatedBy!: number;
     public generatedDate!: Date;
@@ -57,6 +63,9 @@ class Payslip extends Model {
     // Timestamps
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
+    
+    // Associations
+    public payments?: any[];
 }
 
 export const initPayslipModel = (sequelize: Sequelize) => {
@@ -203,6 +212,25 @@ export const initPayslipModel = (sequelize: Sequelize) => {
         netSalary: {
             type: DataTypes.DECIMAL(10, 2),
             allowNull: false,
+        },
+        // Payment Tracking
+        totalPaidAmount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+            defaultValue: 0,
+        },
+        remainingAmount: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+        },
+        paymentStatus: {
+            type: DataTypes.ENUM('UNPAID', 'PARTIAL', 'PAID'),
+            allowNull: false,
+            defaultValue: 'UNPAID',
+        },
+        lastPaymentDate: {
+            type: DataTypes.DATE,
+            allowNull: true,
         },
         // Audit Information
         generatedBy: {

@@ -5,7 +5,11 @@ import {
     getPayslipById,
     checkPayslipExists,
     getAllPayslips,
-    deletePayslip
+    deletePayslip,
+    makePayment,
+    getPaymentHistory,
+    getPayslipWithPayments,
+    deletePayment
 } from '../controllers/payslip';
 import verifyToken from '../middleware/auth';
 
@@ -28,6 +32,18 @@ router.get('/all', getAllPayslips);
 
 // GET /api/payslips/:id - Get specific payslip by ID
 router.get('/:id', getPayslipById);
+
+// GET /api/payslips/:id/with-payments - Get payslip with payment details
+router.get('/:id/with-payments', getPayslipWithPayments);
+
+// GET /api/payslips/:id/payments - Get payment history for a payslip
+router.get('/:id/payments', getPaymentHistory);
+
+// POST /api/payslips/:id/payments - Make a payment for a payslip
+router.post('/:id/payments', makePayment);
+
+// DELETE /api/payslips/:id/payments/:paymentId - Delete a payment
+router.delete('/:id/payments/:paymentId', deletePayment);
 
 // DELETE /api/payslips/:id - Delete payslip
 router.delete('/:id', deletePayslip);

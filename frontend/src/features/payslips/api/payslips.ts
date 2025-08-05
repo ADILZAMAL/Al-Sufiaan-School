@@ -1,4 +1,13 @@
-import { Payslip, PayslipFormData, PayslipListResponse, PayslipExistsResponse } from '../types';
+import { 
+  Payslip, 
+  PayslipFormData, 
+  PayslipListResponse, 
+  PayslipExistsResponse,
+  PayslipWithPayments,
+  PaymentFormData,
+  PaymentResponse,
+  PayslipPayment
+} from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
 
@@ -110,5 +119,64 @@ export const payslipApi = {
       grossSalary: Math.round(grossSalary * 100) / 100,
       netSalary: Math.round(netSalary * 100) / 100
     };
+  },
+
+  // Payment Management APIs
+  
+  // Get payslip with payment details
+  getWithPayments: async (id: number): Promise<PayslipWithPayments> => {
+    const response = await fetch(`${API_BASE_URL}/api/payslips/${id}/with-payments`, {
+      credentials: 'include'
+    });
+
+    const body = await response.json();
+    if (!body.success) {
+      throw new Error(body.message || 'Failed to fetch payslip with payments');
+    }
+    return body.data;
+  },
+
+  // Get payment history for a payslip
+  getPaymentHistory: async (id: number): Promise<{ payslip: PayslipWithPayments; payments: PayslipPayment[] }> => {
+    const response = await fetch(`${API_BASE_URL}/api/payslips/${id}/payments`, {
+      credentials: 'include'
+    });
+
+    const body = await response.json();
+    if (!body.success) {
+      throw new Error(body.message || 'Failed to fetch payment history');
+    }
+    return body.data;
+  },
+
+  // Make a payment for a payslip
+  makePayment: async (id: number, paymentData: PaymentFormData): Promise<PaymentResponse> => {
+    const response = await fetch(`${API_BASE_URL}/api/payslips/${id}/payments`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(paymentData)
+    });
+
+    const body = await response.json();
+    if (!body.success) {
+      throw new Error(body.message || 'Failed to make payment');
+    }
+    return body.data;
+  },
+
+  // Delete a payment
+  deletePayment: async (payslipId: number, paymentId: number): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/api/payslips/${payslipId}/payments/${paymentId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+
+    const body = await response.json();
+    if (!body.success) {
+      throw new Error(body.message || 'Failed to delete payment');
+    }
   }
 };
