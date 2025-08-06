@@ -13,7 +13,13 @@ declare global {
 
 const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   const token = req.cookies["auth_token"];
+  
+  // Debug logging
+  console.log('Auth middleware - Cookies received:', req.cookies);
+  console.log('Auth middleware - Token:', token ? 'Present' : 'Missing');
+  
   if (!token) {
+    console.log('Auth middleware - No token found in cookies');
     return res.status(401).json({ message: "unauthorized" });
   }
 
@@ -22,8 +28,10 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
     req.userId = (decoded as JwtPayload).userId;
     req.schoolId = (decoded as JwtPayload).schoolId;
     req.userRole = (decoded as JwtPayload).role;
+    console.log('Auth middleware - Token verified successfully for user:', req.userId);
     next();
   } catch (error) {
+    console.log('Auth middleware - Token verification failed:', error);
     return res.status(401).json({ message: "unauthorized" });
   }
 };
