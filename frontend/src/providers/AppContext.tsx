@@ -14,6 +14,8 @@ type AppContext = {
   showToast: (toastMessage: ToastMessage) => void;
   isLoggedIn: boolean;
   userRole: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | null;
+  isSidebarOpen: boolean;
+  toggleSidebar: () => void;
 };
 
 const AppContext = React.createContext<AppContext | undefined>(undefined);
@@ -24,6 +26,7 @@ export const AppContextProvider = ({
   children: React.ReactNode;
 }) => {
   const [toast, setToast] = useState<ToastMessage | undefined>(undefined);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
   const { data: userData, isError } = useQuery(
     "validateToken",
@@ -33,6 +36,10 @@ export const AppContextProvider = ({
     }
   );
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -41,6 +48,8 @@ export const AppContextProvider = ({
         },
         isLoggedIn: !isError,
         userRole: userData?.data?.role || null,
+        isSidebarOpen,
+        toggleSidebar,
       }}
     >
       {toast && (

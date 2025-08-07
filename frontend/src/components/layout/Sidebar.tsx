@@ -15,7 +15,7 @@ const linkClass =
 const Sidebar: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const navigate = useNavigate();
-    const { showToast } = useAppContext();
+    const { showToast, isSidebarOpen } = useAppContext();
     const queryClient = useQueryClient();
     const mutation = useMutation(apiClient.signOut, {
         onSuccess: async () => {
@@ -33,10 +33,17 @@ const Sidebar: React.FC = () => {
     };
 
     return (
-		<div className="bg-gray-50 w-60 p-3 flex flex-col font-sans border-r border-gray-200">
+		<div className={classNames(
+            "bg-gray-50 p-3 flex flex-col font-sans border-r border-gray-200 transition-all duration-300 ease-in-out",
+            isSidebarOpen ? "w-64" : "w-16"
+        )}>
 			<div className="flex items-center gap-3 px-1 py-3">
-				<img src="/img/school-logo.png" alt="Al Sufiaan School" className="w-12 h-12" />
-				<span className="text-xl font-bold text-slate-800">AL SUFIAAN SCHOOL</span>
+				<img src="/img/school-logo.png" alt="Al Sufiaan School" className="w-12 h-12 flex-shrink-0" />
+				{isSidebarOpen && (
+                    <span className="text-lg font-bold text-slate-800 leading-tight">
+                        AL SUFIAAN SCHOOL
+                    </span>
+                )}
 			</div>
 			<div className="py-8 flex flex-1 flex-col gap-4">
 
@@ -46,17 +53,33 @@ const Sidebar: React.FC = () => {
 
 			</div>
 			<div className="flex flex-col gap-0.5 pt-2 border-t border-gray-200">
-                <div onClick={() => setIsModalOpen(true)} className={classNames(linkClass, 'cursor-pointer text-gray-600')}>
-                    <span className="text-xl">
+                <div 
+                    onClick={() => setIsModalOpen(true)} 
+                    className={classNames(
+                        linkClass, 
+                        'cursor-pointer text-gray-600',
+                        !isSidebarOpen && 'justify-center'
+                    )}
+                    title={!isSidebarOpen ? 'Change Password' : undefined}
+                >
+                    <span className="text-xl flex-shrink-0">
                         <HiOutlineLockClosed />
                     </span>
-                    Change Password
+                    {isSidebarOpen && <span>Change Password</span>}
                 </div>
-				<div onClick={handleClick} className={classNames(linkClass, 'cursor-pointer text-red-500')}>
-					<span className="text-xl">
+				<div 
+                    onClick={handleClick} 
+                    className={classNames(
+                        linkClass, 
+                        'cursor-pointer text-red-500',
+                        !isSidebarOpen && 'justify-center'
+                    )}
+                    title={!isSidebarOpen ? 'Logout' : undefined}
+                >
+					<span className="text-xl flex-shrink-0">
 						<HiOutlineLogout />
 					</span>
-					Logout
+					{isSidebarOpen && <span>Logout</span>}
 				</div>
 			</div>
             <ChangePasswordModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
@@ -75,17 +98,24 @@ interface SidebarLinkProps {
 
 const SidebarLink: React.FC<SidebarLinkProps> = ({item}) => {
 	const { pathname } = useLocation()
+	const { isSidebarOpen } = useAppContext()
 	const isActive = item.path === '/' ? pathname === '/' : pathname.split('/')[1] === item.path;
 
 
 	return (
 		<Link
 			to={item.path}
-			className={classNames(isActive ? 'bg-blue-100 text-blue-600 font-semibold' : 'text-slate-600', linkClass, 'relative')}
+			className={classNames(
+				isActive ? 'bg-blue-100 text-blue-600 font-semibold' : 'text-slate-600', 
+				linkClass, 
+				'relative',
+				!isSidebarOpen && 'justify-center'
+			)}
+			title={!isSidebarOpen ? item.label : undefined}
 		>
 			{isActive && <span className="absolute left-0 top-0 h-full w-1 bg-blue-600 rounded-r-full"></span>}
-			<span className="text-xl">{item.icon}</span>
-			{item.label}
+			<span className="text-xl flex-shrink-0">{item.icon}</span>
+			{isSidebarOpen && <span>{item.label}</span>}
 		</Link>
 	)
 }
