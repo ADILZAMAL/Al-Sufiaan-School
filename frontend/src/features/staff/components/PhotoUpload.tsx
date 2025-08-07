@@ -263,9 +263,9 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
       </label>
 
       {/* Photo Preview */}
-      <div className="flex items-start space-x-4">
-        <div className="relative">
-          <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
+      <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4">
+        <div className="relative mx-auto sm:mx-0">
+          <div className="w-32 h-32 sm:w-32 sm:h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
             {previewUrl ? (
               <img
                 src={previewUrl.startsWith('http') ? previewUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${previewUrl}`}
@@ -274,7 +274,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
               />
             ) : (
               <div className="text-center">
-                <HiCamera className="mx-auto h-8 w-8 text-gray-400" />
+                <HiCamera className="mx-auto h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                 <p className="text-xs text-gray-500 mt-1">No photo</p>
               </div>
             )}
@@ -286,19 +286,19 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
               onClick={handleRemovePhoto}
               className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
             >
-              <HiX className="h-4 w-4" />
+              <HiX className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           )}
         </div>
 
         {/* Photo Controls */}
-        <div className="flex-1">
-          <div className="flex space-x-2 mb-2">
+        <div className="flex-1 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mb-2">
             <button
               type="button"
               onClick={handleFileClick}
               disabled={isUploading}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isUploading ? (
                 <>
@@ -316,14 +316,14 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
             <button
               type="button"
               onClick={initializeWebcam}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
               <HiVideoCamera className="h-4 w-4 mr-2" />
               Take Photo
             </button>
           </div>
           
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 text-center sm:text-left">
             Choose a photo from your device or use your camera
           </p>
           

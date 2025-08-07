@@ -70,27 +70,27 @@ const StaffManagement: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <Link
           to="/dashboard/staff/add-teaching"
-          className="bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-lg shadow-md transition-colors duration-200 flex items-center justify-between group no-underline hover:no-underline"
+          className="bg-blue-600 hover:bg-blue-700 text-white p-4 sm:p-6 rounded-lg shadow-md transition-colors duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between group no-underline hover:no-underline"
         >
-          <div>
+          <div className="mb-3 sm:mb-0">
             <h3 className="text-lg font-semibold mb-2">Add Teaching Staff</h3>
-            <p className="text-blue-100">Add new teaching staff member with subject competencies</p>
+            <p className="text-blue-100 text-sm sm:text-base">Add new teaching staff member with subject competencies</p>
           </div>
-          <HiPlus className="text-3xl group-hover:scale-110 transition-transform duration-200" />
+          <HiPlus className="text-2xl sm:text-3xl group-hover:scale-110 transition-transform duration-200 self-end sm:self-auto" />
         </Link>
 
         <Link
           to="/dashboard/staff/add-non-teaching"
-          className="bg-green-600 hover:bg-green-700 text-white p-6 rounded-lg shadow-md transition-colors duration-200 flex items-center justify-between group no-underline hover:no-underline"
+          className="bg-green-600 hover:bg-green-700 text-white p-4 sm:p-6 rounded-lg shadow-md transition-colors duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between group no-underline hover:no-underline"
         >
-          <div>
+          <div className="mb-3 sm:mb-0">
             <h3 className="text-lg font-semibold mb-2">Add Non-Teaching Staff</h3>
-            <p className="text-green-100">Add new non-teaching staff member</p>
+            <p className="text-green-100 text-sm sm:text-base">Add new non-teaching staff member</p>
           </div>
-          <HiPlus className="text-3xl group-hover:scale-110 transition-transform duration-200" />
+          <HiPlus className="text-2xl sm:text-3xl group-hover:scale-110 transition-transform duration-200 self-end sm:self-auto" />
         </Link>
       </div>
 
@@ -150,137 +150,279 @@ const StaffManagement: React.FC = () => {
               <p className="mt-4 text-gray-500">Loading staff data...</p>
             </div>
           ) : teachingStaff.length > 0 || nonTeachingStaff.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {/* Teaching Staff */}
-                  {teachingStaff.map((staff) => (
-                    <tr key={`teaching-${staff.id}`} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                          {staff.photoUrl ? (
-                            <img
-                              src={staff.photoUrl.startsWith('http') ? staff.photoUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${staff.photoUrl}`}
-                              alt={staff.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-gray-500 text-xs font-medium">
-                              {staff.name.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{staff.name}</div>
-                        <div className="text-sm text-gray-500">{staff.gender}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          Teaching
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.role || 'Not specified'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.mobileNumber}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <Link
-                            to={`/dashboard/staff/view/teaching/${staff.id}`}
-                            className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                            title="View Details"
-                          >
-                            <HiEye className="h-4 w-4" />
-                          </Link>
-                          <Link
-                            to={`/dashboard/staff/edit/teaching/${staff.id}`}
-                            className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
-                            title="Edit Staff"
-                          >
-                            <HiPencil className="h-4 w-4" />
-                          </Link>
-                          <button
-                            onClick={() => handleLeftSchool(staff.id!, 'teaching')}
-                            className="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50"
-                            title="Left School"
-                          >
-                            <HiTrash className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
-                  ))}
-                  {/* Non-Teaching Staff */}
-                  {nonTeachingStaff.map((staff) => (
-                    <tr key={`non-teaching-${staff.id}`} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                          {staff.photoUrl ? (
-                            <img
-                              src={staff.photoUrl.startsWith('http') ? staff.photoUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${staff.photoUrl}`}
-                              alt={staff.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-gray-500 text-xs font-medium">
-                              {staff.name.charAt(0).toUpperCase()}
-                            </span>
-                          )}
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {/* Teaching Staff */}
+                    {teachingStaff.map((staff) => (
+                      <tr key={`teaching-${staff.id}`} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                            {staff.photoUrl ? (
+                              <img
+                                src={staff.photoUrl.startsWith('http') ? staff.photoUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${staff.photoUrl}`}
+                                alt={staff.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-gray-500 text-xs font-medium">
+                                {staff.name.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{staff.name}</div>
+                          <div className="text-sm text-gray-500">{staff.gender}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Teaching
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.role || 'Not specified'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.email}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.mobileNumber}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <Link
+                              to={`/dashboard/staff/view/teaching/${staff.id}`}
+                              className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                              title="View Details"
+                            >
+                              <HiEye className="h-4 w-4" />
+                            </Link>
+                            <Link
+                              to={`/dashboard/staff/edit/teaching/${staff.id}`}
+                              className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
+                              title="Edit Staff"
+                            >
+                              <HiPencil className="h-4 w-4" />
+                            </Link>
+                            <button
+                              onClick={() => handleLeftSchool(staff.id!, 'teaching')}
+                              className="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50"
+                              title="Left School"
+                            >
+                              <HiTrash className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {/* Non-Teaching Staff */}
+                    {nonTeachingStaff.map((staff) => (
+                      <tr key={`non-teaching-${staff.id}`} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                            {staff.photoUrl ? (
+                              <img
+                                src={staff.photoUrl.startsWith('http') ? staff.photoUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${staff.photoUrl}`}
+                                alt={staff.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-gray-500 text-xs font-medium">
+                                {staff.name.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{staff.name}</div>
+                          <div className="text-sm text-gray-500">{staff.gender}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Non-Teaching
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.role || 'Not specified'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.email}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.mobileNumber}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <Link
+                              to={`/dashboard/staff/view/non-teaching/${staff.id}`}
+                              className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                              title="View Details"
+                            >
+                              <HiEye className="h-4 w-4" />
+                            </Link>
+                            <Link
+                              to={`/dashboard/staff/edit/non-teaching/${staff.id}`}
+                              className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
+                              title="Edit Staff"
+                            >
+                              <HiPencil className="h-4 w-4" />
+                            </Link>
+                            <button
+                              onClick={() => handleLeftSchool(staff.id!, 'non-teaching')}
+                              className="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50"
+                              title="Left School"
+                            >
+                              <HiTrash className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile/Tablet Card View */}
+              <div className="lg:hidden space-y-4">
+                {/* Teaching Staff Cards */}
+                {teachingStaff.map((staff) => (
+                  <div key={`teaching-card-${staff.id}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-start space-x-4">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        {staff.photoUrl ? (
+                          <img
+                            src={staff.photoUrl.startsWith('http') ? staff.photoUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${staff.photoUrl}`}
+                            alt={staff.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-gray-500 text-sm font-medium">
+                            {staff.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-900 truncate">{staff.name}</h3>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                Teaching
+                              </span>
+                              <span className="text-xs text-gray-500">{staff.gender}</span>
+                            </div>
+                          </div>
+                          <div className="flex space-x-1 ml-2">
+                            <Link
+                              to={`/dashboard/staff/view/teaching/${staff.id}`}
+                              className="text-blue-600 hover:text-blue-900 p-2 rounded hover:bg-blue-50"
+                              title="View Details"
+                            >
+                              <HiEye className="h-4 w-4" />
+                            </Link>
+                            <Link
+                              to={`/dashboard/staff/edit/teaching/${staff.id}`}
+                              className="text-green-600 hover:text-green-900 p-2 rounded hover:bg-green-50"
+                              title="Edit Staff"
+                            >
+                              <HiPencil className="h-4 w-4" />
+                            </Link>
+                            <button
+                              onClick={() => handleLeftSchool(staff.id!, 'teaching')}
+                              className="text-orange-600 hover:text-orange-900 p-2 rounded hover:bg-orange-50"
+                              title="Left School"
+                            >
+                              <HiTrash className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{staff.name}</div>
-                        <div className="text-sm text-gray-500">{staff.gender}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Non-Teaching
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.role || 'Not specified'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.mobileNumber}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <Link
-                            to={`/dashboard/staff/view/non-teaching/${staff.id}`}
-                            className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                            title="View Details"
-                          >
-                            <HiEye className="h-4 w-4" />
-                          </Link>
-                          <Link
-                            to={`/dashboard/staff/edit/non-teaching/${staff.id}`}
-                            className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
-                            title="Edit Staff"
-                          >
-                            <HiPencil className="h-4 w-4" />
-                          </Link>
-                          <button
-                            onClick={() => handleLeftSchool(staff.id!, 'non-teaching')}
-                            className="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50"
-                            title="Left School"
-                          >
-                            <HiTrash className="h-4 w-4" />
-                          </button>
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs text-gray-600">
+                            <span className="font-medium">Role:</span> {staff.role || 'Not specified'}
+                          </p>
+                          <p className="text-xs text-gray-600 truncate">
+                            <span className="font-medium">Email:</span> {staff.email}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            <span className="font-medium">Mobile:</span> {staff.mobileNumber}
+                          </p>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Non-Teaching Staff Cards */}
+                {nonTeachingStaff.map((staff) => (
+                  <div key={`non-teaching-card-${staff.id}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-start space-x-4">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        {staff.photoUrl ? (
+                          <img
+                            src={staff.photoUrl.startsWith('http') ? staff.photoUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${staff.photoUrl}`}
+                            alt={staff.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-gray-500 text-sm font-medium">
+                            {staff.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-900 truncate">{staff.name}</h3>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                Non-Teaching
+                              </span>
+                              <span className="text-xs text-gray-500">{staff.gender}</span>
+                            </div>
+                          </div>
+                          <div className="flex space-x-1 ml-2">
+                            <Link
+                              to={`/dashboard/staff/view/non-teaching/${staff.id}`}
+                              className="text-blue-600 hover:text-blue-900 p-2 rounded hover:bg-blue-50"
+                              title="View Details"
+                            >
+                              <HiEye className="h-4 w-4" />
+                            </Link>
+                            <Link
+                              to={`/dashboard/staff/edit/non-teaching/${staff.id}`}
+                              className="text-green-600 hover:text-green-900 p-2 rounded hover:bg-green-50"
+                              title="Edit Staff"
+                            >
+                              <HiPencil className="h-4 w-4" />
+                            </Link>
+                            <button
+                              onClick={() => handleLeftSchool(staff.id!, 'non-teaching')}
+                              className="text-orange-600 hover:text-orange-900 p-2 rounded hover:bg-orange-50"
+                              title="Left School"
+                            >
+                              <HiTrash className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs text-gray-600">
+                            <span className="font-medium">Role:</span> {staff.role || 'Not specified'}
+                          </p>
+                          <p className="text-xs text-gray-600 truncate">
+                            <span className="font-medium">Email:</span> {staff.email}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            <span className="font-medium">Mobile:</span> {staff.mobileNumber}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="text-center py-12">
               <HiUserGroup className="mx-auto h-12 w-12 text-gray-400" />

@@ -128,7 +128,7 @@ const AddTeachingStaff: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6">
       {toast && (
         <Toast
           message={toast.message}
@@ -137,20 +137,20 @@ const AddTeachingStaff: React.FC = () => {
         />
       )}
 
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Add Teaching Staff</h1>
-          <p className="text-gray-600">Step {currentStep} of 3: {getStepTitle()}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Add Teaching Staff</h1>
+          <p className="text-sm sm:text-base text-gray-600">Step {currentStep} of 3: {getStepTitle()}</p>
         </div>
 
         {/* Progress Bar */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center">
             {[1, 2, 3].map((step) => (
               <React.Fragment key={step}>
                 <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                  className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full text-sm sm:text-base font-medium ${
                     step <= currentStep
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-300 text-gray-600'
@@ -160,7 +160,7 @@ const AddTeachingStaff: React.FC = () => {
                 </div>
                 {step < 3 && (
                   <div
-                    className={`flex-1 h-1 mx-2 ${
+                    className={`flex-1 h-1 mx-1 sm:mx-2 ${
                       step < currentStep ? 'bg-blue-600' : 'bg-gray-300'
                     }`}
                   />
@@ -168,33 +168,45 @@ const AddTeachingStaff: React.FC = () => {
               </React.Fragment>
             ))}
           </div>
+          {/* Step Labels for Mobile */}
+          <div className="flex justify-between mt-2 sm:hidden">
+            <span className={`text-xs ${currentStep >= 1 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+              Personal
+            </span>
+            <span className={`text-xs ${currentStep >= 2 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+              Employment
+            </span>
+            <span className={`text-xs ${currentStep >= 3 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+              Financial
+            </span>
+          </div>
         </div>
 
         {/* Form Content */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           {renderStepContent()}
         </div>
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between">
+        <div className="flex flex-col sm:flex-row justify-between space-y-3 sm:space-y-0">
           <button
             onClick={prevStep}
             disabled={currentStep === 1}
-            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1"
           >
             Previous
           </button>
           
-          <div className="space-x-4">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 order-1 sm:order-2">
             <button
               onClick={() => navigate('/dashboard/staff')}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="w-full sm:w-auto px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               onClick={handleNext}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               {currentStep === 3 ? 'Save & Next' : 'Next'}
             </button>
