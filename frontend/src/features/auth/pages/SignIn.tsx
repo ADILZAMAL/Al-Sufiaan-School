@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "react-query";
 import * as apiClient from "../api";
 import { useAppContext } from "../../../providers/AppContext";
 import { useNavigate } from "react-router-dom";
-import { FaUser, FaLock } from "react-icons/fa";
+import { FaUser, FaLock, FaSpinner } from "react-icons/fa";
 import { SignInFormData } from "../types";
 
 const SignIn = () => {
@@ -78,9 +78,21 @@ const SignIn = () => {
           </div>
           <button
             type="submit"
-            className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
+            disabled={mutation.isLoading}
+            className={`w-full py-2 px-4 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 flex items-center justify-center ${
+              mutation.isLoading
+                ? "bg-blue-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
-            Sign In
+            {mutation.isLoading ? (
+              <>
+                <FaSpinner className="animate-spin mr-2" />
+                Signing In...
+              </>
+            ) : (
+              "Sign In"
+            )}
           </button>
         </form>
       </div>

@@ -5,7 +5,7 @@ import HamburgerIcon from '../common/HamburgerIcon';
 import { useAppContext } from '../../providers/AppContext';
 
 const Dashboard: React.FC = () => {
-    const { isLoggedIn, isSidebarOpen } = useAppContext();
+    const { isLoggedIn } = useAppContext();
     const navigate = useNavigate();
     if (!isLoggedIn)
         navigate("/sign-in");
