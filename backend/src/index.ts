@@ -9,6 +9,7 @@ import productRouter from './routes/product'
 import sectionRouter from './routes/section'
 import transactionRouter from './routes/transaction'
 import expenseRouter from './routes/expense'
+import expenseCategoryRouter from './routes/expenseCategory'
 import teachingStaffRouter from './routes/teachingStaff'
 import nonTeachingStaffRouter from './routes/nonTeachingStaff'
 import photoUploadRouter from './routes/photoUpload'
@@ -73,6 +74,7 @@ app.use("/api/products", productRouter)
 app.use("/api/sections", sectionRouter)
 app.use("/api/transactions", transactionRouter)
 app.use('/api/expenses', expenseRouter)
+app.use('/api/expense-categories', expenseCategoryRouter)
 app.use('/api/teaching-staff', teachingStaffRouter)
 app.use('/api/non-teaching-staff', nonTeachingStaffRouter)
 app.use('/api/photos', photoUploadRouter)

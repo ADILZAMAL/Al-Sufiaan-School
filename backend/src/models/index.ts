@@ -5,6 +5,7 @@ import Section from './Section';
 import Product from './Product';
 import Transaction from './Transaction';
 import Expense from './Expense';
+import ExpenseCategory from './ExpenseCategory';
 import TransactionItem from './TransactionItem';
 import TeachingStaff from './TeachingStaff';
 import NonTeachingStaff from './NonTeachingStaff';
@@ -16,6 +17,7 @@ School.hasMany(User, { foreignKey: 'schoolId', as: 'users' });
 School.hasMany(Class, { foreignKey: 'schoolId', as: 'classes' });
 School.hasMany(Product, { foreignKey: 'schoolId', as: 'products' });
 School.hasMany(Expense, { foreignKey: 'schoolId', as: 'expenses' });
+School.hasMany(ExpenseCategory, { foreignKey: 'schoolId', as: 'expenseCategories' });
 School.hasMany(TeachingStaff, { foreignKey: 'schoolId', as: 'teachingStaff' });
 School.hasMany(NonTeachingStaff, { foreignKey: 'schoolId', as: 'nonTeachingStaff' });
 School.hasMany(Payslip, { foreignKey: 'schoolId', as: 'payslips' });
@@ -53,7 +55,12 @@ TransactionItem.belongsTo(Transaction, { foreignKey: 'transactionId', as: 'trans
 // Expense associations
 Expense.belongsTo(School, { foreignKey: 'schoolId', as: 'expenseSchool' });
 Expense.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Expense.belongsTo(ExpenseCategory, { foreignKey: 'categoryId', as: 'expenseCategory' });
 Expense.hasOne(PayslipPayment, { foreignKey: 'expenseId', as: 'payslipPayment' });
+
+// ExpenseCategory associations
+ExpenseCategory.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+ExpenseCategory.hasMany(Expense, { foreignKey: 'categoryId', as: 'expenses' });
 
 // TeachingStaff associations
 TeachingStaff.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
@@ -74,4 +81,4 @@ PayslipPayment.belongsTo(User, { foreignKey: 'paidBy', as: 'paidByUser' });
 PayslipPayment.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 PayslipPayment.belongsTo(Expense, { foreignKey: 'expenseId', as: 'expense' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment };
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment };

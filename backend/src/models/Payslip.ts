@@ -78,7 +78,6 @@ export const initPayslipModel = (sequelize: Sequelize) => {
         payslipNumber: {
             type: DataTypes.STRING(50),
             allowNull: false,
-            unique: true,
         },
         staffId: {
             type: DataTypes.INTEGER,

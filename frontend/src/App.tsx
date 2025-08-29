@@ -9,7 +9,9 @@ import SignIn from "./features/auth/pages/SignIn"
 import Dashboard from "./components/layout/Dashboard"
 import Class from "./features/class/pages/Class"
 import Inventory from "./features/inventory/pages/Inventory"
-import Expense from "./features/expenses/pages/Expense"
+import ExpenseLayout from "./features/expenses/pages/ExpenseLayout"
+import ExpenseDashboard from "./features/expenses/pages/Expense"
+import ExpenseSettings from "./features/expenses/pages/ExpenseSettings"
 import SellProductsPage from "./features/inventory/pages/SellProductsPage"
 import TransactionHistory from "./features/inventory/pages/TransactionHistory"
 import StaffManagement from "./features/staff/pages/StaffManagement"
@@ -54,7 +56,21 @@ const router = createBrowserRouter([
     children: [
       {
         path: "expense",
-        element: <Expense />
+        element: <ExpenseLayout />,
+        children: [
+          {
+            index: true,
+            element: <ExpenseDashboard />
+          },
+          {
+            path: "dashboard",
+            element: <ExpenseDashboard />
+          },
+          {
+            path: "settings",
+            element: <ExpenseSettings />
+          }
+        ]
       },
       {
         path: "class",

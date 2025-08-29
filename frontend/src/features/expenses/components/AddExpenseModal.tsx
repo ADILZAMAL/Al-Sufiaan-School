@@ -1,17 +1,6 @@
 import React, { useState } from "react";
+import { useQuery } from "react-query";
 import * as apiClient from "../../../api";
-
-const CATEGORY_OPTIONS = [
-  "SALARY",
-  "LPG",
-  "KITCHEN",
-  "BUILDING",
-  "DIRECTOR",
-  "PETROL",
-  "OTHERS",
-  "SOHAIL",
-  "ADIL",
-] as const;
 
 type AddExpenseModalProps = {
   isOpen: boolean;
@@ -27,13 +16,22 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const [newExpense, setNewExpense] = useState<{
     name: string;
     amount: string;
-    category: (typeof CATEGORY_OPTIONS)[number];
+    categoryId: number | null;
   }>({
     name: "",
     amount: "",
-    category: CATEGORY_OPTIONS[0],
+    categoryId: null,
   });
   const [amountError, setAmountError] = useState<string | null>(null);
+
+  // Fetch expense categories
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery(
+    'expenseCategories',
+    () => apiClient.fetchExpenseCategories(),
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    }
+  );
 
   const handleAddExpense = () => {
     const amount = parseFloat(newExpense.amount);
@@ -41,15 +39,26 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       setAmountError("Please enter a valid amount");
       return;
     }
+    
+    if (!newExpense.categoryId) {
+      setAmountError("Please select a category");
+      return;
+    }
+
     apiClient
-      .addExpense(newExpense)
+      .addExpense({
+        name: newExpense.name,
+        amount: newExpense.amount,
+        categoryId: newExpense.categoryId
+      })
       .then(() => {
         onExpenseAdded();
         onClose();
-        setNewExpense({ name: "", amount: "", category: CATEGORY_OPTIONS[0] });
+        setNewExpense({ name: "", amount: "", categoryId: null });
       })
       .catch((error) => {
         console.error("Error adding expense:", error);
+        setAmountError(error.message || "Failed to add expense");
       });
   };
 
@@ -89,20 +98,29 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
           )}
           <select
             className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={newExpense.category}
+            value={newExpense.categoryId || ""}
             onChange={(e) =>
               setNewExpense({
                 ...newExpense,
-                category: e.target.value as (typeof CATEGORY_OPTIONS)[number],
+                categoryId: e.target.value ? parseInt(e.target.value) : null,
               })
             }
+            disabled={categoriesLoading}
           >
-            {CATEGORY_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            <option value="">
+              {categoriesLoading ? "Loading categories..." : "Select a category"}
+            </option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
               </option>
             ))}
           </select>
+          {categories.length === 0 && !categoriesLoading && (
+            <p className="text-sm text-orange-600 mt-1">
+              No categories available. Please create categories in Settings first.
+            </p>
+          )}
         </div>
         <div className="flex justify-end space-x-4 mt-6">
           <button
@@ -112,8 +130,9 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             Cancel
           </button>
           <button
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
             onClick={handleAddExpense}
+            disabled={categoriesLoading || categories.length === 0}
           >
             Add Expense
           </button>

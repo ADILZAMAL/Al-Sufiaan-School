@@ -11,6 +11,7 @@ import {initNonTeachingStaffModel} from '../models/NonTeachingStaff';
 import {initPayslipModel} from '../models/Payslip';
 import {initPayslipPaymentModel} from '../models/PayslipPayment';
 import {initExpenseModel} from '../models/Expense';
+import {initExpenseCategoryModel} from '../models/ExpenseCategory';
 import "dotenv/config";
 
 const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER || '', process.env.DB_PASSWORD, {
@@ -34,6 +35,7 @@ initSectionModel(sequelize)
 initProductModel(sequelize)
 initTransactionModel(sequelize)
 initTransactionItemModel(sequelize);
+initExpenseCategoryModel(sequelize);
 initExpenseModel(sequelize);
 initTeachingStaffModel(sequelize);
 initNonTeachingStaffModel(sequelize);

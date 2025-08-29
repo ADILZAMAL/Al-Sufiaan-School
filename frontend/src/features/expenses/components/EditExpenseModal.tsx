@@ -1,18 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useQuery } from "react-query";
 import * as apiClient from "../../../api";
 import { ExpenseType } from "../../../api";
-
-const CATEGORY_OPTIONS = [
-  "SALARY",
-  "LPG",
-  "KITCHEN",
-  "BUILDING",
-  "DIRECTOR",
-  "PETROL",
-  "OTHERS",
-  "SOHAIL",
-  "ADIL",
-] as const;
 
 type EditExpenseModalProps = {
   isOpen: boolean;
@@ -30,20 +19,29 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   const [updatedExpense, setUpdatedExpense] = useState<{
     name: string;
     amount: string;
-    category: (typeof CATEGORY_OPTIONS)[number];
+    categoryId: number | null;
   }>({
     name: "",
     amount: "",
-    category: CATEGORY_OPTIONS[0],
+    categoryId: null,
   });
   const [amountError, setAmountError] = useState<string | null>(null);
+
+  // Fetch expense categories
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery(
+    'expenseCategories',
+    () => apiClient.fetchExpenseCategories(),
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    }
+  );
 
   useEffect(() => {
     if (expense) {
       setUpdatedExpense({
         name: expense.name,
         amount: expense.amount.toString(),
-        category: expense.category as (typeof CATEGORY_OPTIONS)[number],
+        categoryId: expense.categoryId || null,
       });
     }
   }, [expense]);
@@ -56,14 +54,25 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       setAmountError("Please enter a valid amount");
       return;
     }
+
+    if (!updatedExpense.categoryId) {
+      setAmountError("Please select a category");
+      return;
+    }
+
     apiClient
-      .updateExpense(expense.id, updatedExpense)
+      .updateExpense(expense.id, {
+        name: updatedExpense.name,
+        amount: updatedExpense.amount,
+        categoryId: updatedExpense.categoryId
+      })
       .then(() => {
         onExpenseUpdated();
         onClose();
       })
       .catch((error) => {
         console.error("Error updating expense:", error);
+        setAmountError(error.message || "Failed to update expense");
       });
   };
 
@@ -103,20 +112,29 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
           )}
           <select
             className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={updatedExpense.category}
+            value={updatedExpense.categoryId || ""}
             onChange={(e) =>
               setUpdatedExpense({
                 ...updatedExpense,
-                category: e.target.value as (typeof CATEGORY_OPTIONS)[number],
+                categoryId: e.target.value ? parseInt(e.target.value) : null,
               })
             }
+            disabled={categoriesLoading}
           >
-            {CATEGORY_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            <option value="">
+              {categoriesLoading ? "Loading categories..." : "Select a category"}
+            </option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
               </option>
             ))}
           </select>
+          {categories.length === 0 && !categoriesLoading && (
+            <p className="text-sm text-orange-600 mt-1">
+              No categories available. Please create categories in Settings first.
+            </p>
+          )}
         </div>
         <div className="flex justify-end space-x-4 mt-6">
           <button
@@ -126,8 +144,9 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
             Cancel
           </button>
           <button
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
             onClick={handleUpdateExpense}
+            disabled={categoriesLoading || categories.length === 0}
           >
             Save Changes
           </button>

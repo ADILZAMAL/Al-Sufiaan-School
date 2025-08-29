@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import Expense from '../models/Expense';
+import ExpenseCategory from '../models/ExpenseCategory';
 import User from '../models/User';
 import { sendError, sendSuccess } from '../utils/response';
 import sequelize from 'sequelize';
@@ -11,7 +12,34 @@ export const addExpense = async (req: Request, res: Response) => {
     return sendError(res, 'Validation failed', 400, errors.array());
   }
   try {
-    const expense = await Expense.create({ ...req.body, userId: req.userId, schoolId: req.schoolId });
+    const { categoryId, category, ...otherData } = req.body;
+    
+    // Handle both new dynamic categories and old hardcoded categories for backward compatibility
+    const expenseData: any = {
+      ...otherData,
+      userId: req.userId,
+      schoolId: req.schoolId
+    };
+
+    if (categoryId) {
+      // New dynamic category system
+      const expenseCategory = await ExpenseCategory.findOne({
+        where: { id: categoryId, schoolId: req.schoolId, isActive: true }
+      });
+      
+      if (!expenseCategory) {
+        return sendError(res, 'Invalid expense category', 400);
+      }
+      
+      expenseData.categoryId = categoryId;
+    } else if (category) {
+      // Backward compatibility with hardcoded categories
+      expenseData.category = category;
+    } else {
+      return sendError(res, 'Either categoryId or category must be provided', 400);
+    }
+
+    const expense = await Expense.create(expenseData);
     sendSuccess(res, expense, 'Expense added successfully', 201);
   } catch (error) {
     console.log('Something went wrong', error);
@@ -41,6 +69,12 @@ export const fetchExpense = async (req: Request, res: Response) => {
           as: 'user',
           attributes: ['firstName', 'lastName'],
         },
+        {
+          model: ExpenseCategory,
+          as: 'expenseCategory',
+          attributes: ['id', 'name'],
+          required: false // Left join to handle expenses without categoryId
+        }
       ],
     });
     sendSuccess(res, result, 'Expenses fetched successfully');
@@ -78,10 +112,13 @@ export const updateExpense = async (req: Request, res: Response) => {
   }
   try {
     const { id } = req.params;
+    const { categoryId, category, ...otherData } = req.body;
+    
     const expense = await Expense.findOne({ where: { id, schoolId: req.schoolId } });
     if (!expense) {
       return sendError(res, 'Expense not found', 404);
     }
+    
     const today = new Date();
     const createdAt = new Date(expense.createdAt);
     if (
@@ -91,7 +128,27 @@ export const updateExpense = async (req: Request, res: Response) => {
     ) {
       return sendError(res, 'You can only edit expenses on the same day they were created', 403);
     }
-    await expense.update(req.body);
+
+    const updateData: any = { ...otherData };
+
+    // Handle category updates
+    if (categoryId) {
+      const expenseCategory = await ExpenseCategory.findOne({
+        where: { id: categoryId, schoolId: req.schoolId, isActive: true }
+      });
+      
+      if (!expenseCategory) {
+        return sendError(res, 'Invalid expense category', 400);
+      }
+      
+      updateData.categoryId = categoryId;
+      updateData.category = null; // Clear old category if using new system
+    } else if (category) {
+      updateData.category = category;
+      updateData.categoryId = null; // Clear categoryId if using old system
+    }
+
+    await expense.update(updateData);
     sendSuccess(res, expense, 'Expense updated successfully');
   } catch (error) {
     console.log('Something went wrong', error);

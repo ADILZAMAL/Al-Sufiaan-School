@@ -5,17 +5,23 @@ export type ExpenseType = {
     remarks: string;
     userId: number;
     schoolId: number;
-    category: string;
+    category: string | null; // For backward compatibility
+    categoryId: number | null; // For new dynamic categories
     createdAt: Date;
     updatedAt: Date;
     user: {
         firstName: string;
         lastName: string;
-    }
+    };
+    expenseCategory?: {
+        id: number;
+        name: string;
+    } | null;
 }
 
 export type AddExpense = {
     name: string;
     amount: string;
-    category: string;
+    category?: string; // For backward compatibility
+    categoryId?: number; // For new dynamic categories
 }
