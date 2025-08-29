@@ -17,8 +17,11 @@ import {
 
 interface Expense {
   amount: number;
-  category: string;
   createdAt: Date;
+  expenseCategory: {
+    id: number;
+    name: string;
+  };
 }
 
 interface Props {
@@ -36,11 +39,12 @@ const COLORS = [
 
 export const ExpenseByCategoryPieChart: React.FC<Props> = ({ expenses }) => {
   const data = expenses.reduce((acc, expense) => {
-    const category = acc.find((item) => item.name === expense.category);
+    const categoryName = expense.expenseCategory.name;
+    const category = acc.find((item) => item.name === categoryName);
     if (category) {
       category.value += Number(expense.amount);
     } else {
-      acc.push({ name: expense.category, value: Number(expense.amount) });
+      acc.push({ name: categoryName, value: Number(expense.amount) });
     }
     return acc;
   }, [] as { name: string; value: number }[]);
@@ -73,11 +77,12 @@ export const TotalExpensesByCategoryBarChart: React.FC<Props> = ({
   expenses,
 }) => {
   const data = expenses.reduce((acc, expense) => {
-    const category = acc.find((item) => item.name === expense.category);
+    const categoryName = expense.expenseCategory.name;
+    const category = acc.find((item) => item.name === categoryName);
     if (category) {
       category.total += Number(expense.amount);
     } else {
-      acc.push({ name: expense.category, total: Number(expense.amount) });
+      acc.push({ name: categoryName, total: Number(expense.amount) });
     }
     return acc;
   }, [] as { name: string; total: number }[]);

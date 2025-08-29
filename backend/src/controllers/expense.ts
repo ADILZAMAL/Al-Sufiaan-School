@@ -12,32 +12,27 @@ export const addExpense = async (req: Request, res: Response) => {
     return sendError(res, 'Validation failed', 400, errors.array());
   }
   try {
-    const { categoryId, category, ...otherData } = req.body;
+    const { categoryId, ...otherData } = req.body;
     
-    // Handle both new dynamic categories and old hardcoded categories for backward compatibility
-    const expenseData: any = {
+    if (!categoryId) {
+      return sendError(res, 'categoryId is required', 400);
+    }
+
+    // Validate that the category exists and belongs to the school
+    const expenseCategory = await ExpenseCategory.findOne({
+      where: { id: categoryId, schoolId: req.schoolId, isActive: true }
+    });
+    
+    if (!expenseCategory) {
+      return sendError(res, 'Invalid expense category', 400);
+    }
+
+    const expenseData = {
       ...otherData,
+      categoryId,
       userId: req.userId,
       schoolId: req.schoolId
     };
-
-    if (categoryId) {
-      // New dynamic category system
-      const expenseCategory = await ExpenseCategory.findOne({
-        where: { id: categoryId, schoolId: req.schoolId, isActive: true }
-      });
-      
-      if (!expenseCategory) {
-        return sendError(res, 'Invalid expense category', 400);
-      }
-      
-      expenseData.categoryId = categoryId;
-    } else if (category) {
-      // Backward compatibility with hardcoded categories
-      expenseData.category = category;
-    } else {
-      return sendError(res, 'Either categoryId or category must be provided', 400);
-    }
 
     const expense = await Expense.create(expenseData);
     sendSuccess(res, expense, 'Expense added successfully', 201);
@@ -112,7 +107,7 @@ export const updateExpense = async (req: Request, res: Response) => {
   }
   try {
     const { id } = req.params;
-    const { categoryId, category, ...otherData } = req.body;
+    const { categoryId, ...otherData } = req.body;
     
     const expense = await Expense.findOne({ where: { id, schoolId: req.schoolId } });
     if (!expense) {
@@ -129,24 +124,23 @@ export const updateExpense = async (req: Request, res: Response) => {
       return sendError(res, 'You can only edit expenses on the same day they were created', 403);
     }
 
-    const updateData: any = { ...otherData };
-
-    // Handle category updates
-    if (categoryId) {
-      const expenseCategory = await ExpenseCategory.findOne({
-        where: { id: categoryId, schoolId: req.schoolId, isActive: true }
-      });
-      
-      if (!expenseCategory) {
-        return sendError(res, 'Invalid expense category', 400);
-      }
-      
-      updateData.categoryId = categoryId;
-      updateData.category = null; // Clear old category if using new system
-    } else if (category) {
-      updateData.category = category;
-      updateData.categoryId = null; // Clear categoryId if using old system
+    if (!categoryId) {
+      return sendError(res, 'categoryId is required', 400);
     }
+
+    // Validate that the category exists and belongs to the school
+    const expenseCategory = await ExpenseCategory.findOne({
+      where: { id: categoryId, schoolId: req.schoolId, isActive: true }
+    });
+    
+    if (!expenseCategory) {
+      return sendError(res, 'Invalid expense category', 400);
+    }
+
+    const updateData = {
+      ...otherData,
+      categoryId
+    };
 
     await expense.update(updateData);
     sendSuccess(res, expense, 'Expense updated successfully');

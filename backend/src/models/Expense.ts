@@ -3,26 +3,13 @@ import School from './School';
 import User from './User';
 import ExpenseCategory from './ExpenseCategory';
 
-export enum ExpenseCateogy {
-    SALARY = 'SALARY',
-    LPG = 'LPG',
-    KITCHEN = 'KITCHEN',
-    BUILDING = 'BUILDING',
-    DIRECTOR = 'DIRECTOR',
-    PETROL = 'PETROL',
-    OTHERS = 'OTHERS',
-    SOHAIL = 'SOHAIL',
-    ADIL = 'ADIL'
-}
-
 class Expense extends Model {
     public id!: number;
     public amount!: number;
     public name!: string;
     public userId!: number;
     public schoolId!: number;
-    public category!: ExpenseCateogy; // Keep for backward compatibility
-    public categoryId!: number | null; // New field for dynamic categories
+    public categoryId!: number; // Now mandatory - references ExpenseCategory
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
@@ -59,13 +46,9 @@ export const initExpenseModel = (sequelize: Sequelize) => {
                     key: 'id'
                 }
             },
-            category: {
-                type: DataTypes.ENUM(...Object.values(ExpenseCateogy)),
-                allowNull: true, // Made nullable for backward compatibility
-            },
             categoryId: {
                 type: DataTypes.INTEGER,
-                allowNull: true, // Nullable for backward compatibility
+                allowNull: false, // Now mandatory
                 references: {
                     model: ExpenseCategory,
                     key: 'id'

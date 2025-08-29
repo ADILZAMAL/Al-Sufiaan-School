@@ -75,7 +75,7 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                     {expense.name}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {expense.category}
+                    {expense.expenseCategory.name}
                   </div>
                 </td>
                 <td className="py-4 px-6 whitespace-nowrap">
