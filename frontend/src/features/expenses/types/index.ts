@@ -7,6 +7,7 @@ export type ExpenseType = {
     schoolId: number;
     categoryId: number; // Now mandatory
     isVendorPayment: boolean; // Flag to identify vendor payment expenses
+    isPayslipPayment: boolean; // Flag to identify payslip payment expenses
     createdAt: Date;
     updatedAt: Date;
     user: {
