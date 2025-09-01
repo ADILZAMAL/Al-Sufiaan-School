@@ -78,11 +78,6 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                         Vendor Payment
                       </span>
                     )}
-                    {expense.isPayslipPayment && (
-                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                        Payslip Payment
-                      </span>
-                    )}
                   </div>
                   <div className="text-xs text-gray-500">
                     {expense.expenseCategory.name}
