@@ -2,12 +2,14 @@ import { Request, Response } from 'express';
 import Payslip from '../models/Payslip';
 import PayslipPayment from '../models/PayslipPayment';
 import Expense from '../models/Expense';
+import ExpenseCategory from '../models/ExpenseCategory';
 import TeachingStaff from '../models/TeachingStaff';
 import NonTeachingStaff from '../models/NonTeachingStaff';
 import School from '../models/School';
 import User from '../models/User';
 import { sendSuccess, sendError } from '../utils/response';
 import sequelize from '../config/database';
+import { Op } from 'sequelize';
 
 // Helper function to get month name
 const getMonthName = (month: number): string => {
@@ -374,12 +376,30 @@ export const makePayment = async (req: Request, res: Response) => {
         // Get user ID from request
         const userId = (req as any).user?.id || 1;
 
+        // Find the SALARY expense category for this school (case-insensitive)
+        const salaryCategory = await ExpenseCategory.findOne({
+            where: {
+                name: sequelize.where(
+                    sequelize.fn('UPPER', sequelize.col('name')), 
+                    'SALARY'
+                ),
+                schoolId: payslip.schoolId,
+                isActive: true
+            },
+            transaction
+        });
+
+        if (!salaryCategory) {
+            await transaction.rollback();
+            return sendError(res, 'SALARY expense category not found for this school. Please create a SALARY category first.', 400);
+        }
+
         // Create expense entry first
         const expenseName = `${payslip.staffName}-SALARY-${payslip.payslipNumber}`;
         const expense = await Expense.create({
             amount: paymentAmount,
             name: expenseName,
-            category: 'SALARY',
+            categoryId: salaryCategory.id,
             userId: userId,
             schoolId: payslip.schoolId
         }, { transaction });
@@ -544,7 +564,7 @@ export const deletePayment = async (req: Request, res: Response) => {
         const lastPayment = await PayslipPayment.findOne({
             where: { 
                 payslipId: id,
-                id: { [require('sequelize').Op.ne]: paymentId }
+                id: { [Op.ne]: paymentId }
             },
             order: [['paymentDate', 'DESC']],
             transaction
