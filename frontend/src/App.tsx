@@ -12,6 +12,8 @@ import Inventory from "./features/inventory/pages/Inventory"
 import ExpenseLayout from "./features/expenses/pages/ExpenseLayout"
 import ExpenseDashboard from "./features/expenses/pages/Expense"
 import ExpenseSettings from "./features/expenses/pages/ExpenseSettings"
+import VendorDashboard from "./features/vendors/pages/VendorDashboard"
+import VendorDetail from "./features/vendors/pages/VendorDetail"
 import SellProductsPage from "./features/inventory/pages/SellProductsPage"
 import TransactionHistory from "./features/inventory/pages/TransactionHistory"
 import StaffManagement from "./features/staff/pages/StaffManagement"
@@ -69,6 +71,14 @@ const router = createBrowserRouter([
           {
             path: "settings",
             element: <ExpenseSettings />
+          },
+          {
+            path: "vendors",
+            element: <VendorDashboard />
+          },
+          {
+            path: "vendors/:id",
+            element: <VendorDetail />
           }
         ]
       },

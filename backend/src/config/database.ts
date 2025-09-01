@@ -12,6 +12,9 @@ import {initPayslipModel} from '../models/Payslip';
 import {initPayslipPaymentModel} from '../models/PayslipPayment';
 import {initExpenseModel} from '../models/Expense';
 import {initExpenseCategoryModel} from '../models/ExpenseCategory';
+import {initVendorModel} from '../models/Vendor';
+import {initVendorBillModel} from '../models/VendorBill';
+import {initVendorPaymentModel} from '../models/VendorPayment';
 import "dotenv/config";
 
 const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER || '', process.env.DB_PASSWORD, {
@@ -41,6 +44,9 @@ initTeachingStaffModel(sequelize);
 initNonTeachingStaffModel(sequelize);
 initPayslipModel(sequelize);
 initPayslipPaymentModel(sequelize);
+initVendorModel(sequelize);
+initVendorBillModel(sequelize);
+initVendorPaymentModel(sequelize);
 //Sync the Model with the database
 sequelize.sync({ alter: true })
     .then(() => {

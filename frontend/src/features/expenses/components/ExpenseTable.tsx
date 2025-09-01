@@ -73,6 +73,11 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                 <td className="py-4 px-6 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
                     {expense.name}
+                    {expense.isVendorPayment && (
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        Vendor Payment
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-gray-500">
                     {expense.expenseCategory.name}
@@ -107,21 +112,27 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                   })}
                 </td>
                 <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-500">
-                  {isToday(expense.createdAt) && (
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => onEdit(expense)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <FaEdit />
-                      </button>
-                      <button
-                        onClick={() => onDelete(expense)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
+                  {expense.isVendorPayment ? (
+                    <span className="text-xs text-gray-400 italic">
+                      Manage via Vendor Payments
+                    </span>
+                  ) : (
+                    isToday(expense.createdAt) && (
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => onEdit(expense)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => onDelete(expense)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    )
                   )}
                 </td>
               </tr>

@@ -1,22 +1,21 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import School from './School';
 import User from './User';
-import ExpenseCategory from './ExpenseCategory';
+import Vendor from './Vendor';
 
-class Expense extends Model {
+class VendorBill extends Model {
     public id!: number;
     public amount!: number;
     public name!: string;
     public userId!: number;
     public schoolId!: number;
-    public categoryId!: number; // Now mandatory - references ExpenseCategory
-    public isVendorPayment!: boolean; // Flag to identify vendor payment expenses
+    public vendorId!: number;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
 
-export const initExpenseModel = (sequelize: Sequelize) => {
-    Expense.init(
+export const initVendorBillModel = (sequelize: Sequelize) => {
+    VendorBill.init(
         {
             id: {
                 type: DataTypes.INTEGER,
@@ -47,18 +46,13 @@ export const initExpenseModel = (sequelize: Sequelize) => {
                     key: 'id'
                 }
             },
-            categoryId: {
+            vendorId: {
                 type: DataTypes.INTEGER,
-                allowNull: false, // Now mandatory
+                allowNull: false,
                 references: {
-                    model: ExpenseCategory,
+                    model: Vendor,
                     key: 'id'
                 }
-            },
-            isVendorPayment: {
-                type: DataTypes.BOOLEAN,
-                allowNull: false,
-                defaultValue: false
             },
             createdAt: {
                 type: DataTypes.DATE,
@@ -73,9 +67,9 @@ export const initExpenseModel = (sequelize: Sequelize) => {
         },
         {
             sequelize,
-            modelName: 'Expense'
+            modelName: 'VendorBill'
         }
     );
 };
 
-export default Expense;
+export default VendorBill;

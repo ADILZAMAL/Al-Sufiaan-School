@@ -114,6 +114,11 @@ export const updateExpense = async (req: Request, res: Response) => {
       return sendError(res, 'Expense not found', 404);
     }
     
+    // Check if this is a vendor payment expense
+    if (expense.isVendorPayment) {
+      return sendError(res, 'Vendor payment expenses cannot be edited from here. Please manage them through vendor payments.', 403);
+    }
+    
     const today = new Date();
     const createdAt = new Date(expense.createdAt);
     if (
@@ -157,6 +162,12 @@ export const deleteExpense = async (req: Request, res: Response) => {
     if (!expense) {
       return sendError(res, 'Expense not found', 404);
     }
+    
+    // Check if this is a vendor payment expense
+    if (expense.isVendorPayment) {
+      return sendError(res, 'Vendor payment expenses cannot be deleted from here. Please manage them through vendor payments.', 403);
+    }
+    
     const today = new Date();
     const createdAt = new Date(expense.createdAt);
     if (

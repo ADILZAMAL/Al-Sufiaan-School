@@ -24,6 +24,12 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				label: 'Settings',
 				path: 'expense/settings',
 				icon: <HiOutlineCog />
+			},
+			{
+				key: 'vendors',
+				label: 'Vendors',
+				path: 'expense/vendors',
+				icon: <HiOutlineUsers />
 			}
 		]
 	},
