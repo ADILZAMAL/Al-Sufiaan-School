@@ -11,6 +11,7 @@ class Expense extends Model {
     public schoolId!: number;
     public categoryId!: number; // Now mandatory - references ExpenseCategory
     public isVendorPayment!: boolean; // Flag to identify vendor payment expenses
+    public isPayslipPayment!: boolean; // Flag to identify payslip payment expenses
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
@@ -56,6 +57,11 @@ export const initExpenseModel = (sequelize: Sequelize) => {
                 }
             },
             isVendorPayment: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false
+            },
+            isPayslipPayment: {
                 type: DataTypes.BOOLEAN,
                 allowNull: false,
                 defaultValue: false

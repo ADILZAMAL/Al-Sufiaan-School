@@ -119,6 +119,11 @@ export const updateExpense = async (req: Request, res: Response) => {
       return sendError(res, 'Vendor payment expenses cannot be edited from here. Please manage them through vendor payments.', 403);
     }
     
+    // Check if this is a payslip payment expense
+    if (expense.isPayslipPayment) {
+      return sendError(res, 'Payslip payment expenses cannot be edited from here. Please manage them through payslip payments.', 403);
+    }
+    
     const today = new Date();
     const createdAt = new Date(expense.createdAt);
     if (
@@ -166,6 +171,11 @@ export const deleteExpense = async (req: Request, res: Response) => {
     // Check if this is a vendor payment expense
     if (expense.isVendorPayment) {
       return sendError(res, 'Vendor payment expenses cannot be deleted from here. Please manage them through vendor payments.', 403);
+    }
+    
+    // Check if this is a payslip payment expense
+    if (expense.isPayslipPayment) {
+      return sendError(res, 'Payslip payment expenses cannot be deleted from here. Please manage them through payslip payments.', 403);
     }
     
     const today = new Date();

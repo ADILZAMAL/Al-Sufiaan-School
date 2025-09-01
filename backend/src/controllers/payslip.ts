@@ -401,7 +401,8 @@ export const makePayment = async (req: Request, res: Response) => {
             name: expenseName,
             categoryId: salaryCategory.id,
             userId: userId,
-            schoolId: payslip.schoolId
+            schoolId: payslip.schoolId,
+            isPayslipPayment: true
         }, { transaction });
 
         // Create payment record
