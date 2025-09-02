@@ -14,6 +14,7 @@ import PayslipPayment from './PayslipPayment';
 import Vendor from './Vendor';
 import VendorBill from './VendorBill';
 import VendorPayment from './VendorPayment';
+import FeeCategory from './FeeCategory';
 
 // School associations
 School.hasMany(User, { foreignKey: 'schoolId', as: 'users' });
@@ -28,6 +29,7 @@ School.hasMany(PayslipPayment, { foreignKey: 'schoolId', as: 'payslipPayments' }
 School.hasMany(Vendor, { foreignKey: 'schoolId', as: 'vendors' });
 School.hasMany(VendorBill, { foreignKey: 'schoolId', as: 'vendorBills' });
 School.hasMany(VendorPayment, { foreignKey: 'schoolId', as: 'vendorPayments' });
+School.hasMany(FeeCategory, { foreignKey: 'schoolId', as: 'feeCategories' });
 
 // User associations
 User.belongsTo(School, { foreignKey: 'schoolId', as: 'userSchool' });
@@ -105,4 +107,7 @@ VendorPayment.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 VendorPayment.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 VendorPayment.belongsTo(Expense, { foreignKey: 'expenseId', as: 'expense' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment };
+// FeeCategory associations
+FeeCategory.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, FeeCategory };

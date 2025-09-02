@@ -21,6 +21,7 @@ import AddTeachingStaff from "./features/staff/pages/AddTeachingStaff"
 import AddNonTeachingStaff from "./features/staff/pages/AddNonTeachingStaff"
 import ViewStaffDetails from "./features/staff/pages/ViewStaffDetails"
 import EditStaffDetails from "./features/staff/pages/EditStaffDetails"
+import FeeCategories from "./features/fees/pages/FeeCategories"
 
 
 const router = createBrowserRouter([
@@ -117,6 +118,10 @@ const router = createBrowserRouter([
       {
         path: "staff/edit/:type/:id",
         element: <EditStaffDetails />
+      },
+      {
+        path: "fee/categories",
+        element: <FeeCategories />
       }
     ]
   }
