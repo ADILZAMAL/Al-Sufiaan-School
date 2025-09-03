@@ -1,4 +1,4 @@
-import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCog, HiOutlineCurrencyDollar } from 'react-icons/hi'
+import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCog, HiOutlineCurrencyDollar, HiOutlineTruck } from 'react-icons/hi'
 
 export const DASHBOARD_SIDEBAR_LINKS = [
 	{
@@ -68,6 +68,12 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				label: 'Class Pricing',
 				path: 'fee/class-pricing',
 				icon: <HiOutlineChartBar />
+			},
+			{
+				key: 'transportation-pricing',
+				label: 'Transportation Pricing',
+				path: 'fee/transportation-pricing',
+				icon: <HiOutlineTruck />
 			}
 		]
 	},

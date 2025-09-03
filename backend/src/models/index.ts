@@ -16,6 +16,7 @@ import VendorBill from './VendorBill';
 import VendorPayment from './VendorPayment';
 import FeeCategory from './FeeCategory';
 import ClassFeePricing from './ClassFeePricing';
+import TransportationAreaPricing from './TransportationAreaPricing';
 
 // School associations
 School.hasMany(User, { foreignKey: 'schoolId', as: 'users' });
@@ -32,6 +33,7 @@ School.hasMany(VendorBill, { foreignKey: 'schoolId', as: 'vendorBills' });
 School.hasMany(VendorPayment, { foreignKey: 'schoolId', as: 'vendorPayments' });
 School.hasMany(FeeCategory, { foreignKey: 'schoolId', as: 'feeCategories' });
 School.hasMany(ClassFeePricing, { foreignKey: 'schoolId', as: 'classFeePricing' });
+School.hasMany(TransportationAreaPricing, { foreignKey: 'schoolId', as: 'transportationAreaPricing' });
 
 // User associations
 User.belongsTo(School, { foreignKey: 'schoolId', as: 'userSchool' });
@@ -113,12 +115,15 @@ VendorPayment.belongsTo(Expense, { foreignKey: 'expenseId', as: 'expense' });
 // FeeCategory associations
 FeeCategory.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 FeeCategory.hasMany(ClassFeePricing, { foreignKey: 'feeCategoryId', as: 'classPricing' });
+FeeCategory.hasMany(TransportationAreaPricing, { foreignKey: 'feeCategoryId', as: 'transportationAreaPricing' });
 
 // ClassFeePricing associations
 ClassFeePricing.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 ClassFeePricing.belongsTo(Class, { foreignKey: 'classId', as: 'class' });
 ClassFeePricing.belongsTo(FeeCategory, { foreignKey: 'feeCategoryId', as: 'feeCategory' });
 
-// Add ClassFeePricing to School and Class associations
+// TransportationAreaPricing associations
+TransportationAreaPricing.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+TransportationAreaPricing.belongsTo(FeeCategory, { foreignKey: 'feeCategoryId', as: 'feeCategory' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, FeeCategory, ClassFeePricing };
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, FeeCategory, ClassFeePricing, TransportationAreaPricing };

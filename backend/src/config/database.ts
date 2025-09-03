@@ -17,6 +17,7 @@ import {initVendorBillModel} from '../models/VendorBill';
 import {initVendorPaymentModel} from '../models/VendorPayment';
 import {initFeeCategoryModel} from '../models/FeeCategory';
 import {initClassFeePricingModel} from '../models/ClassFeePricing';
+import {initTransportationAreaPricingModel} from '../models/TransportationAreaPricing';
 import "dotenv/config";
 
 const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER || '', process.env.DB_PASSWORD, {
@@ -51,6 +52,7 @@ initVendorBillModel(sequelize);
 initVendorPaymentModel(sequelize);
 initFeeCategoryModel(sequelize);
 initClassFeePricingModel(sequelize);
+initTransportationAreaPricingModel(sequelize);
 //Sync the Model with the database
 sequelize.sync({ alter: true })
     .then(() => {
