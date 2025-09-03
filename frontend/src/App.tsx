@@ -22,6 +22,8 @@ import AddNonTeachingStaff from "./features/staff/pages/AddNonTeachingStaff"
 import ViewStaffDetails from "./features/staff/pages/ViewStaffDetails"
 import EditStaffDetails from "./features/staff/pages/EditStaffDetails"
 import FeeCategories from "./features/fees/pages/FeeCategories"
+import ClassFeePricing from "./features/fees/pages/ClassFeePricing"
+import FeeLayout from "./features/fees/pages/FeeLayout"
 
 
 const router = createBrowserRouter([
@@ -120,8 +122,22 @@ const router = createBrowserRouter([
         element: <EditStaffDetails />
       },
       {
-        path: "fee/categories",
-        element: <FeeCategories />
+        path: "fee",
+        element: <FeeLayout />,
+        children: [
+          {
+            index: true,
+            element: <FeeCategories />
+          },
+          {
+            path: "categories",
+            element: <FeeCategories />
+          },
+          {
+            path: "class-pricing",
+            element: <ClassFeePricing />
+          }
+        ]
       }
     ]
   }
