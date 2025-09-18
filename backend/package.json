@@ -23,16 +23,16 @@
     "multer": "^2.0.2",
     "mysql2": "^3.9.2",
     "sequelize": "^6.37.1",
-    "sequelize-typescript": "^2.1.6"
-  },
-  "devDependencies": {
+    "sequelize-typescript": "^2.1.6",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.9",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.11.30",
-    "@types/sequelize": "^4.28.20",
+    "@types/sequelize": "^4.28.20"
+  },
+  "devDependencies": {
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.3"
