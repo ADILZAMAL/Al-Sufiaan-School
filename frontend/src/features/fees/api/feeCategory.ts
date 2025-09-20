@@ -7,7 +7,7 @@ import {
   ReorderRequest
 } from '../types';
 
-const API_BASE_URL = 'http://localhost:7000/api';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
 
 // Helper function to get auth token from cookies
 const getAuthToken = (): string | null => {
