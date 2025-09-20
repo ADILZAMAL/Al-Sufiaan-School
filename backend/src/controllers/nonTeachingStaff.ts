@@ -101,14 +101,21 @@ export const createNonTeachingStaff = async (req: Request, res: Response) => {
 
 export const getAllNonTeachingStaff = async (req: Request, res: Response) => {
     try {
-        const { schoolId } = req.query;
+        const { schoolId, active } = req.query;
 
         if (!schoolId) {
             return sendError(res, 'School ID is required', 400);
         }
 
+        const whereClause: any = { schoolId };
+        
+        // Add active filter if provided
+        if (active !== undefined) {
+            whereClause.active = active === 'true';
+        }
+
         const nonTeachingStaff = await NonTeachingStaff.findAll({
-            where: { schoolId },
+            where: whereClause,
             order: [['createdAt', 'DESC']]
         });
 

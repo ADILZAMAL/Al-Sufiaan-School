@@ -22,8 +22,13 @@ export const nonTeachingStaffApi = {
   },
 
   // Get all non-teaching staff for a school
-  getAll: async (schoolId: number): Promise<NonTeachingStaff[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/non-teaching-staff?schoolId=${schoolId}`, {
+  getAll: async (schoolId: number, active?: boolean): Promise<NonTeachingStaff[]> => {
+    let url = `${API_BASE_URL}/api/non-teaching-staff?schoolId=${schoolId}`;
+    if (active !== undefined) {
+      url += `&active=${active}`;
+    }
+    
+    const response = await fetch(url, {
       credentials: 'include'
     });
 
