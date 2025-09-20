@@ -30,21 +30,34 @@ const app = express();
 app.use(cors({
     origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
         // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
+        if (!origin) {
+            console.log('CORS: Allowing request with no origin');
+            return callback(null, true);
+        }
         
         const allowedOrigins = [
+            // Development origins
             'http://localhost:5173',
             'http://localhost:3000',
             'http://127.0.0.1:5173',
             'http://127.0.0.1:3000',
+            // Production origins
+            'https://alsufiaanschool.in',
+            'https://www.alsufiaanschool.in',
+            // Environment variable (fallback)
             process.env.FRONTEND_URL
         ].filter(Boolean);
         
+        console.log(`CORS: Checking origin: ${origin}`);
+        console.log(`CORS: Allowed origins: ${allowedOrigins.join(', ')}`);
+        
         if (allowedOrigins.includes(origin)) {
+            console.log(`CORS: Origin ${origin} is allowed`);
             return callback(null, true);
         }
         
-        return callback(new Error('Not allowed by CORS'));
+        console.error(`CORS: Origin ${origin} is NOT allowed`);
+        return callback(new Error(`CORS policy violation: Origin ${origin} is not allowed`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
