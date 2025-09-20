@@ -250,37 +250,21 @@ export const transportationAreaPricingUtils = {
 
   // Check if pricing is currently active
   isPricingActive: (pricing: TransportationAreaPricing): boolean => {
-    if (!pricing.isActive) return false;
-    
-    const now = new Date();
-    const effectiveFrom = new Date(pricing.effectiveFrom);
-    const effectiveTo = new Date(pricing.effectiveTo);
-    
-    return now >= effectiveFrom && now <= effectiveTo;
+    return pricing.isActive;
   },
 
   // Get pricing status
-  getPricingStatus: (pricing: TransportationAreaPricing): 'active' | 'inactive' | 'expired' => {
-    if (!pricing.isActive) return 'inactive';
-    
-    const now = new Date();
-    const effectiveFrom = new Date(pricing.effectiveFrom);
-    const effectiveTo = new Date(pricing.effectiveTo);
-    
-    if (now < effectiveFrom) return 'inactive';
-    if (now > effectiveTo) return 'expired';
-    return 'active';
+  getPricingStatus: (pricing: TransportationAreaPricing): 'active' | 'inactive' => {
+    return pricing.isActive ? 'active' : 'inactive';
   },
 
   // Get status color for UI
-  getStatusColor: (status: 'active' | 'inactive' | 'expired'): string => {
+  getStatusColor: (status: 'active' | 'inactive'): string => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800';
       case 'inactive':
         return 'bg-gray-100 text-gray-800';
-      case 'expired':
-        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -340,18 +324,6 @@ export const transportationAreaPricingUtils = {
     
     if (!data.academicYear || !transportationAreaPricingUtils.isValidAcademicYear(data.academicYear)) {
       errors.push('Valid academic year is required (format: YYYY-YY)');
-    }
-    
-    if (!data.effectiveFrom) {
-      errors.push('Effective from date is required');
-    }
-    
-    if (!data.effectiveTo) {
-      errors.push('Effective to date is required');
-    }
-    
-    if (data.effectiveFrom && data.effectiveTo && new Date(data.effectiveFrom) >= new Date(data.effectiveTo)) {
-      errors.push('Effective to date must be after effective from date');
     }
     
     return errors;

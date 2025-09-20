@@ -5,8 +5,6 @@ export interface TransportationAreaPricing {
   price: number;
   feeCategoryId: number;
   academicYear: string;
-  effectiveFrom: string;
-  effectiveTo: string;
   isActive: boolean;
   schoolId: number;
   description?: string;
@@ -31,8 +29,6 @@ export interface CreateTransportationAreaPricingRequest {
   price: number;
   feeCategoryId: number;
   academicYear: string;
-  effectiveFrom: string;
-  effectiveTo: string;
   description?: string;
   displayOrder?: number;
 }
@@ -42,8 +38,6 @@ export interface UpdateTransportationAreaPricingRequest {
   price?: number;
   feeCategoryId?: number;
   academicYear?: string;
-  effectiveFrom?: string;
-  effectiveTo?: string;
   description?: string;
   displayOrder?: number;
   isActive?: boolean;
@@ -114,8 +108,6 @@ export interface TransportationAreaPricingFormData {
   price: string;
   feeCategoryId: string;
   academicYear: string;
-  effectiveFrom: string;
-  effectiveTo: string;
   description: string;
   displayOrder: string;
 }

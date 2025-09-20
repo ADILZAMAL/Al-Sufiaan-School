@@ -8,8 +8,6 @@ class TransportationAreaPricing extends Model {
     public price!: number;
     public feeCategoryId!: number;
     public academicYear!: string;
-    public effectiveFrom!: Date;
-    public effectiveTo!: Date;
     public isActive!: boolean;
     public schoolId!: number;
     public description?: string;
@@ -59,21 +57,6 @@ export const initTransportationAreaPricingModel = (sequelize: Sequelize): void =
                 validate: {
                     is: /^\d{4}-\d{2}$/,
                     notEmpty: true
-                }
-            },
-            effectiveFrom: {
-                type: DataTypes.DATE,
-                allowNull: false,
-            },
-            effectiveTo: {
-                type: DataTypes.DATE,
-                allowNull: false,
-                validate: {
-                    isAfterEffectiveFrom(this: TransportationAreaPricing, value: Date) {
-                        if (value <= this.effectiveFrom) {
-                            throw new Error('Effective To date must be after Effective From date');
-                        }
-                    }
                 }
             },
             isActive: {

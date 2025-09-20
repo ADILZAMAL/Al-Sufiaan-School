@@ -147,8 +147,6 @@ export const createTransportationAreaPricing = async (req: AuthenticatedRequest,
             price,
             feeCategoryId,
             academicYear,
-            effectiveFrom,
-            effectiveTo,
             description,
             displayOrder
         } = req.body;
@@ -181,8 +179,6 @@ export const createTransportationAreaPricing = async (req: AuthenticatedRequest,
             price,
             feeCategoryId,
             academicYear,
-            effectiveFrom,
-            effectiveTo,
             description,
             displayOrder: displayOrder || 0,
             schoolId
@@ -326,8 +322,6 @@ export const bulkUpsertTransportationAreaPricing = async (req: AuthenticatedRequ
                 if (existingPricing) {
                     await existingPricing.update({
                         price: data.price,
-                        effectiveFrom: data.effectiveFrom,
-                        effectiveTo: data.effectiveTo,
                         description: data.description,
                         displayOrder: data.displayOrder || 0,
                         isActive: data.isActive !== undefined ? data.isActive : true
@@ -406,8 +400,6 @@ export const copyPricingToNewYear = async (req: AuthenticatedRequest, res: Respo
                         price: pricing.price,
                         feeCategoryId: pricing.feeCategoryId,
                         academicYear: toYear,
-                        effectiveFrom: pricing.effectiveFrom,
-                        effectiveTo: pricing.effectiveTo,
                         description: pricing.description,
                         displayOrder: pricing.displayOrder,
                         schoolId

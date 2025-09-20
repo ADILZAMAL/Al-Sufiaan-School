@@ -17,8 +17,6 @@ const TransportationAreaPricing: React.FC = () => {
     price: '',
     feeCategoryId: '',
     academicYear: '',
-    effectiveFrom: '',
-    effectiveTo: '',
     description: '',
     displayOrder: '0',
   });
@@ -54,8 +52,6 @@ const TransportationAreaPricing: React.FC = () => {
       price: parseFloat(formData.price),
       feeCategoryId: parseInt(formData.feeCategoryId),
       academicYear: formData.academicYear,
-      effectiveFrom: formData.effectiveFrom,
-      effectiveTo: formData.effectiveTo,
       description: formData.description.trim(),
       displayOrder: parseInt(formData.displayOrder) || 0,
     };
@@ -80,8 +76,6 @@ const TransportationAreaPricing: React.FC = () => {
         price: '',
         feeCategoryId: '',
         academicYear: '',
-        effectiveFrom: '',
-        effectiveTo: '',
         description: '',
         displayOrder: '0',
       });
@@ -100,8 +94,6 @@ const TransportationAreaPricing: React.FC = () => {
       price: pricing.price.toString(),
       feeCategoryId: pricing.feeCategoryId.toString(),
       academicYear: pricing.academicYear,
-      effectiveFrom: utils.formatDateForInput(pricing.effectiveFrom),
-      effectiveTo: utils.formatDateForInput(pricing.effectiveTo),
       description: pricing.description || '',
       displayOrder: pricing.displayOrder.toString(),
     });
@@ -240,8 +232,6 @@ const TransportationAreaPricing: React.FC = () => {
                 price: '',
                 feeCategoryId: '',
                 academicYear: utils.getCurrentAcademicYear(),
-                effectiveFrom: '',
-                effectiveTo: '',
                 description: '',
                 displayOrder: '0',
               });
@@ -339,27 +329,6 @@ const TransportationAreaPricing: React.FC = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Effective From *</label>
-                <input
-                  type="date"
-                  value={formData.effectiveFrom}
-                  onChange={(e) => setFormData(prev => ({ ...prev, effectiveFrom: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Effective To *</label>
-                <input
-                  type="date"
-                  value={formData.effectiveTo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, effectiveTo: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  required
-                />
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -416,7 +385,6 @@ const TransportationAreaPricing: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Category</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Academic Year</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effective Period</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -440,10 +408,6 @@ const TransportationAreaPricing: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {pricing.academicYear}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div>{utils.formatDate(pricing.effectiveFrom)}</div>
-                      <div className="text-xs text-gray-500">to {utils.formatDate(pricing.effectiveTo)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColor}`}>
