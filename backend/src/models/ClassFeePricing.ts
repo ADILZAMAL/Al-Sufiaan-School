@@ -9,8 +9,6 @@ class ClassFeePricing extends Model {
     public feeCategoryId!: number;
     public amount!: number;
     public academicYear!: string;
-    public effectiveFrom!: Date;
-    public effectiveTo!: Date;
     public isActive!: boolean;
     public schoolId!: number;
     public readonly createdAt!: Date;
@@ -58,14 +56,6 @@ export const initClassFeePricingModel = (sequelize: Sequelize): void => {
                 validate: {
                     is: /^\d{4}-\d{2}$/ // Format: 2024-25
                 }
-            },
-            effectiveFrom: {
-                type: DataTypes.DATEONLY,
-                allowNull: false,
-            },
-            effectiveTo: {
-                type: DataTypes.DATEONLY,
-                allowNull: false,
             },
             isActive: {
                 type: DataTypes.BOOLEAN,
@@ -122,13 +112,6 @@ export const initClassFeePricingModel = (sequelize: Sequelize): void => {
                     fields: ['classId', 'feeCategoryId', 'academicYear', 'schoolId']
                 }
             ],
-            validate: {
-                effectiveDateRange(this: ClassFeePricing) {
-                    if (this.effectiveFrom >= this.effectiveTo) {
-                        throw new Error('Effective from date must be before effective to date');
-                    }
-                }
-            }
         }
     );
 };

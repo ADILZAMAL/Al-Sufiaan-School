@@ -49,8 +49,6 @@ export interface ClassFeePricing {
   feeCategoryId: number;
   amount: number;
   academicYear: string;
-  effectiveFrom: string;
-  effectiveTo: string;
   isActive: boolean;
   schoolId: number;
   createdAt: string;
@@ -86,15 +84,11 @@ export interface CreateClassFeePricingRequest {
   feeCategoryId: number;
   amount: number;
   academicYear: string;
-  effectiveFrom: string;
-  effectiveTo: string;
 }
 
 export interface UpdateClassFeePricingRequest {
   amount?: number;
   academicYear?: string;
-  effectiveFrom?: string;
-  effectiveTo?: string;
   isActive?: boolean;
 }
 
@@ -162,8 +156,6 @@ export interface ClassFeePricingFormData {
   feeCategoryId: string;
   amount: string;
   academicYear: string;
-  effectiveFrom: string;
-  effectiveTo: string;
 }
 
 export interface ClassFeePricingFilters {

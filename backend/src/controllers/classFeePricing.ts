@@ -17,9 +17,7 @@ export const createClassFeePricing = async (req: Request, res: Response) => {
             classId,
             feeCategoryId,
             amount,
-            academicYear,
-            effectiveFrom,
-            effectiveTo
+            academicYear
         } = req.body;
 
         // Check if the fee category exists and is class-based
@@ -71,8 +69,6 @@ export const createClassFeePricing = async (req: Request, res: Response) => {
             feeCategoryId,
             amount,
             academicYear,
-            effectiveFrom,
-            effectiveTo,
             isActive: true,
             schoolId: req.schoolId
         });
@@ -247,8 +243,6 @@ export const updateClassFeePricing = async (req: Request, res: Response) => {
         const {
             amount,
             academicYear,
-            effectiveFrom,
-            effectiveTo,
             isActive
         } = req.body;
 
@@ -266,8 +260,6 @@ export const updateClassFeePricing = async (req: Request, res: Response) => {
         await classFeePricing.update({
             amount: amount !== undefined ? amount : classFeePricing.amount,
             academicYear: academicYear || classFeePricing.academicYear,
-            effectiveFrom: effectiveFrom || classFeePricing.effectiveFrom,
-            effectiveTo: effectiveTo || classFeePricing.effectiveTo,
             isActive: isActive !== undefined ? isActive : classFeePricing.isActive
         });
 
@@ -341,9 +333,7 @@ export const bulkUpsertClassFeePricing = async (req: Request, res: Response) => 
                 classId,
                 feeCategoryId,
                 amount,
-                academicYear,
-                effectiveFrom,
-                effectiveTo
+                academicYear
             } = pricing;
 
             // Check if pricing already exists
@@ -360,8 +350,6 @@ export const bulkUpsertClassFeePricing = async (req: Request, res: Response) => 
                 // Update existing
                 await existingPricing.update({
                     amount,
-                    effectiveFrom,
-                    effectiveTo,
                     isActive: true
                 });
                 results.push({ action: 'updated', id: existingPricing.id });
@@ -372,8 +360,6 @@ export const bulkUpsertClassFeePricing = async (req: Request, res: Response) => 
                     feeCategoryId,
                     amount,
                     academicYear,
-                    effectiveFrom,
-                    effectiveTo,
                     isActive: true,
                     schoolId: req.schoolId
                 });
@@ -420,8 +406,6 @@ export const copyPricingToNewYear = async (req: Request, res: Response) => {
             feeCategoryId: pricing.feeCategoryId,
             amount: pricing.amount,
             academicYear: toYear,
-            effectiveFrom: pricing.effectiveFrom,
-            effectiveTo: pricing.effectiveTo,
             isActive: true,
             schoolId: req.schoolId
         }));

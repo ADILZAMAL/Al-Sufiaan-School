@@ -19,9 +19,7 @@ const ClassFeePricing: React.FC = () => {
     classId: '',
     feeCategoryId: '',
     amount: '',
-    academicYear: utils.getCurrentAcademicYear(),
-    effectiveFrom: new Date().toISOString().split('T')[0],
-    effectiveTo: new Date(new Date().getFullYear() + 1, 2, 31).toISOString().split('T')[0] // March 31 next year
+    academicYear: utils.getCurrentAcademicYear()
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,9 +29,7 @@ const ClassFeePricing: React.FC = () => {
       classId: parseInt(formData.classId),
       feeCategoryId: parseInt(formData.feeCategoryId),
       amount: parseFloat(formData.amount),
-      academicYear: formData.academicYear,
-      effectiveFrom: formData.effectiveFrom,
-      effectiveTo: formData.effectiveTo
+      academicYear: formData.academicYear
     };
 
     createPricing(data, {
@@ -43,9 +39,7 @@ const ClassFeePricing: React.FC = () => {
           classId: '',
           feeCategoryId: '',
           amount: '',
-          academicYear: utils.getCurrentAcademicYear(),
-          effectiveFrom: new Date().toISOString().split('T')[0],
-          effectiveTo: new Date(new Date().getFullYear() + 1, 2, 31).toISOString().split('T')[0]
+          academicYear: utils.getCurrentAcademicYear()
         });
       }
     });
@@ -166,32 +160,6 @@ const ClassFeePricing: React.FC = () => {
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Effective From
-              </label>
-              <input
-                type="date"
-                value={formData.effectiveFrom}
-                onChange={(e) => setFormData({ ...formData, effectiveFrom: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Effective To
-              </label>
-              <input
-                type="date"
-                value={formData.effectiveTo}
-                onChange={(e) => setFormData({ ...formData, effectiveTo: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
             </div>
 
             <div className="md:col-span-2">
