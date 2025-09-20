@@ -5,7 +5,6 @@ import {
   transportationAreaPricingUtils 
 } from '../api/transportationAreaPricing';
 import {
-  TransportationAreaPricing,
   CreateTransportationAreaPricingRequest,
   UpdateTransportationAreaPricingRequest,
   BulkUpsertTransportationAreaPricingRequest,

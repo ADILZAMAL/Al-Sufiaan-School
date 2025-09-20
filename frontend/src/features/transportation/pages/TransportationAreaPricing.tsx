@@ -262,7 +262,7 @@ const TransportationAreaPricing: React.FC = () => {
               {editingPricing ? 'Edit Transportation Area Pricing' : 'Add New Transportation Area Pricing'}
             </h2>
 
-            {(createError || updateError) && (
+            {(createError || updateError) ? (
               <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
@@ -273,12 +273,16 @@ const TransportationAreaPricing: React.FC = () => {
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-red-800">Error</h3>
                     <div className="mt-2 text-sm text-red-700">
-                      <p>{(createError || updateError)?.message || 'An unexpected error occurred'}</p>
+                      <p>{
+                        (createError instanceof Error ? createError.message : String(createError)) ||
+                        (updateError instanceof Error ? updateError.message : String(updateError)) ||
+                        'An unexpected error occurred'
+                      }</p>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>

@@ -6,7 +6,6 @@ import {
   classFeePricingUtils 
 } from '../api/classFeePricing';
 import {
-  ClassFeePricing,
   CreateClassFeePricingRequest,
   UpdateClassFeePricingRequest,
   BulkUpsertClassFeePricingRequest,

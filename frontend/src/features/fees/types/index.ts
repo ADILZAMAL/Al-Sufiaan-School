@@ -242,3 +242,25 @@ export interface ClassFeePricingFiltersProps {
   feeCategories: FeeCategory[];
   academicYears: AcademicYear[];
 }
+
+export interface FeeCategoriesResponse {
+  success: boolean;
+  data: FeeCategory[];
+  message: string;
+}
+
+export interface FeeCategoryResponse {
+  success: boolean;
+  data: FeeCategory;
+  message: string;
+}
+
+export interface FeeCategoryFilters {
+  isActive?: boolean;
+  feeType?: 'One-time' | 'Annual' | 'Monthly' | 'Quarterly';
+  pricingType?: 'Fixed' | 'Class-based' | 'Area-based';
+}
+
+export interface ReorderRequest {
+  categoryOrders: { id: number; displayOrder: number }[];
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
   FeeCategory, 
@@ -26,7 +26,6 @@ const FeeCategoryForm: React.FC<FeeCategoryFormProps> = ({
     register,
     handleSubmit,
     watch,
-    setValue,
     formState: { errors },
     reset
   } = useForm<FeeCategoryFormData>({

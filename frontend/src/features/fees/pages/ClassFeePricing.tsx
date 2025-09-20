@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useClassFeePricingManager } from '../hooks/useClassFeePricing';
-import { classFeePricingUtils } from '../api/classFeePricing';
 import { CreateClassFeePricingRequest } from '../types';
 
 const ClassFeePricing: React.FC = () => {
@@ -78,8 +77,7 @@ const ClassFeePricing: React.FC = () => {
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Add New Class Fee Pricing</h2>
           
-          {/* Error Message */}
-          {createError && (
+          {createError ? (
             <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
@@ -95,7 +93,7 @@ const ClassFeePricing: React.FC = () => {
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
