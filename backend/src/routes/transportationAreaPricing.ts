@@ -36,12 +36,6 @@ const createValidation = [
     body('academicYear')
         .matches(/^\d{4}-\d{2}$/)
         .withMessage('Academic year must be in format YYYY-YY (e.g., 2024-25)'),
-    body('effectiveFrom')
-        .isISO8601()
-        .withMessage('Effective from must be a valid date'),
-    body('effectiveTo')
-        .isISO8601()
-        .withMessage('Effective to must be a valid date'),
     body('description')
         .optional()
         .isLength({ max: 500 })
@@ -71,14 +65,6 @@ const updateValidation = [
         .optional()
         .matches(/^\d{4}-\d{2}$/)
         .withMessage('Academic year must be in format YYYY-YY (e.g., 2024-25)'),
-    body('effectiveFrom')
-        .optional()
-        .isISO8601()
-        .withMessage('Effective from must be a valid date'),
-    body('effectiveTo')
-        .optional()
-        .isISO8601()
-        .withMessage('Effective to must be a valid date'),
     body('description')
         .optional()
         .isLength({ max: 500 })
@@ -112,13 +98,7 @@ const bulkUpsertValidation = [
         .withMessage('Fee category ID must be a positive integer for each item'),
     body('pricingData.*.academicYear')
         .matches(/^\d{4}-\d{2}$/)
-        .withMessage('Academic year must be in format YYYY-YY for each item'),
-    body('pricingData.*.effectiveFrom')
-        .isISO8601()
-        .withMessage('Effective from must be a valid date for each item'),
-    body('pricingData.*.effectiveTo')
-        .isISO8601()
-        .withMessage('Effective to must be a valid date for each item')
+        .withMessage('Academic year must be in format YYYY-YY for each item')
 ];
 
 const copyPricingValidation = [
