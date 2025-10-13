@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HiX, HiCalculator, HiCheck } from 'react-icons/hi';
-import { PayslipFormData, PayslipFormErrors, MONTHS, YEARS } from '../types';
+import { PayslipFormData, PayslipFormErrors, MONTHS } from '../types';
 import { payslipApi } from '../api/payslips';
 import { TeachingStaff, NonTeachingStaff } from '../../staff/types';
 import Toast from '../../../components/common/Toast';
@@ -106,13 +106,6 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
       console.error('Error checking existing payslip:', error);
     } finally {
       setIsChecking(false);
-    }
-  };
-
-  const handleChange = (field: keyof PayslipFormData, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -284,13 +277,6 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
                       )}
                     </div>
                   </div>
-                </div>
-
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-blue-700">
-                    <strong>Sequential Generation:</strong> Payslips must be generated in order. 
-                    The system automatically determines the next month to ensure no gaps in payroll records.
-                  </p>
                 </div>
               </div>
             )}
