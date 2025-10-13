@@ -9,7 +9,8 @@ import {
     makePayment,
     getPaymentHistory,
     getPayslipWithPayments,
-    deletePayment
+    deletePayment,
+    getNextAvailableMonth
 } from '../controllers/payslip';
 import verifyToken from '../middleware/auth';
 
@@ -23,6 +24,9 @@ router.post('/generate', generatePayslip);
 
 // GET /api/payslips/staff/:staffType/:staffId - Get all payslips for a specific staff member
 router.get('/staff/:staffType/:staffId', getPayslipsByStaff);
+
+// GET /api/payslips/staff/:staffType/:staffId/next-available-month - Get next available month for payslip generation
+router.get('/staff/:staffType/:staffId/next-available-month', getNextAvailableMonth);
 
 // GET /api/payslips/check/:staffType/:staffId/:month/:year - Check if payslip exists
 router.get('/check/:staffType/:staffId/:month/:year', checkPayslipExists);

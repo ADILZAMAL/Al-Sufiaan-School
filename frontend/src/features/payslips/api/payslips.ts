@@ -178,5 +178,24 @@ export const payslipApi = {
     if (!body.success) {
       throw new Error(body.message || 'Failed to delete payment');
     }
+  },
+
+  // Get next available month for payslip generation
+  getNextAvailableMonth: async (staffType: 'teaching' | 'non-teaching', staffId: number): Promise<{
+    nextAvailableMonth: number;
+    nextAvailableYear: number;
+    nextAvailableMonthName: string;
+    lastGeneratedMonth: string | null;
+    canGenerate: boolean;
+  }> => {
+    const response = await fetch(`${API_BASE_URL}/api/payslips/staff/${staffType}/${staffId}/next-available-month`, {
+      credentials: 'include'
+    });
+
+    const body = await response.json();
+    if (!body.success) {
+      throw new Error(body.message || 'Failed to get next available month');
+    }
+    return body.data;
   }
 };

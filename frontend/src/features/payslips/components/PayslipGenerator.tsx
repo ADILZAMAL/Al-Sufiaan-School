@@ -23,8 +23,8 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
   const [formData, setFormData] = useState<PayslipFormData>({
     staffId: staff.id!,
     staffType,
-    month: new Date().getMonth() + 1,
-    year: new Date().getFullYear(),
+    month: 0, // Will be set by next available month
+    year: 0, // Will be set by next available month
     workingDays: 26,
     absentDays: 0,
     casualLeave: 0,
@@ -34,8 +34,16 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
 
   const [errors, setErrors] = useState<PayslipFormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingNextMonth, setIsLoadingNextMonth] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [existingPayslip, setExistingPayslip] = useState<any>(null);
+  const [nextAvailableMonth, setNextAvailableMonth] = useState<{
+    nextAvailableMonth: number;
+    nextAvailableYear: number;
+    nextAvailableMonthName: string;
+    lastGeneratedMonth: string | null;
+    canGenerate: boolean;
+  } | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'SUCCESS' | 'ERROR' } | null>(null);
 
   // Calculate salary preview
@@ -48,11 +56,41 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
       )
     : null;
 
+  // Fetch next available month when component opens
+  useEffect(() => {
+    if (isOpen && staff.id) {
+      fetchNextAvailableMonth();
+    }
+  }, [isOpen, staff.id, staffType]);
+
+  // Check existing payslip when month/year changes
   useEffect(() => {
     if (formData.month && formData.year) {
       checkExistingPayslip();
     }
   }, [formData.month, formData.year]);
+
+  const fetchNextAvailableMonth = async () => {
+    setIsLoadingNextMonth(true);
+    try {
+      const result = await payslipApi.getNextAvailableMonth(staffType, staff.id!);
+      setNextAvailableMonth(result);
+      
+      // Set the form data to the next available month
+      setFormData(prev => ({
+        ...prev,
+        month: result.nextAvailableMonth,
+        year: result.nextAvailableYear
+      }));
+    } catch (error: any) {
+      setToast({
+        message: error.message || 'Failed to get next available month',
+        type: 'ERROR'
+      });
+    } finally {
+      setIsLoadingNextMonth(false);
+    }
+  };
 
   const checkExistingPayslip = async () => {
     setIsChecking(true);
@@ -211,53 +249,60 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
           {/* Period Selection */}
           <div className="mb-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Payslip Period</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Month *
-                </label>
-                <select
-                  value={formData.month}
-                  onChange={(e) => handleChange('month', parseInt(e.target.value))}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.month ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">Select Month</option>
-                  {MONTHS.map(month => (
-                    <option key={month.value} value={month.value}>
-                      {month.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.month && (
-                  <p className="mt-1 text-sm text-red-600">{errors.month}</p>
-                )}
+            
+            {/* Loading Next Available Month */}
+            {isLoadingNextMonth && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                  <p className="text-sm text-blue-600">Determining next available month...</p>
+                </div>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Year *
-                </label>
-                <select
-                  value={formData.year}
-                  onChange={(e) => handleChange('year', parseInt(e.target.value))}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.year ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">Select Year</option>
-                  {YEARS.map(year => (
-                    <option key={year.value} value={year.value}>
-                      {year.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.year && (
-                  <p className="mt-1 text-sm text-red-600">{errors.year}</p>
-                )}
+            {/* Next Available Month Display */}
+            {nextAvailableMonth && !isLoadingNextMonth && (
+              <div className="space-y-4">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-green-800">Generating Payslip For:</h4>
+                      <p className="text-lg font-semibold text-green-900">
+                        {nextAvailableMonth.nextAvailableMonthName} {nextAvailableMonth.nextAvailableYear}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      {nextAvailableMonth.lastGeneratedMonth && (
+                        <p className="text-xs text-green-600">
+                          Last generated: {nextAvailableMonth.lastGeneratedMonth}
+                        </p>
+                      )}
+                      {!nextAvailableMonth.lastGeneratedMonth && (
+                        <p className="text-xs text-green-600">
+                          First payslip for this staff member
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm text-blue-700">
+                    <strong>Sequential Generation:</strong> Payslips must be generated in order. 
+                    The system automatically determines the next month to ensure no gaps in payroll records.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Error State */}
+            {!nextAvailableMonth && !isLoadingNextMonth && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">
+                  Unable to determine next available month. Please try again.
+                </p>
+              </div>
+            )}
 
             {/* Existing Payslip Warning */}
             {isChecking && (

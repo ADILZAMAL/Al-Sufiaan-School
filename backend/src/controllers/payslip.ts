@@ -43,6 +43,73 @@ const getStaffDetails = async (staffId: number, staffType: 'teaching' | 'non-tea
     }
 };
 
+// Helper function to calculate next available month for a staff member
+const calculateNextAvailableMonth = async (staffId: number, staffType: 'teaching' | 'non-teaching') => {
+    // Get the latest payslip for this staff member
+    const latestPayslip = await Payslip.findOne({
+        where: { 
+            staffId, 
+            staffType 
+        },
+        order: [['year', 'DESC'], ['month', 'DESC']]
+    });
+
+    const currentDate = new Date();
+    let nextMonth: number;
+    let nextYear: number;
+    let lastGeneratedMonth: string | null = null;
+
+    if (!latestPayslip) {
+        // No previous payslips - use previous month from current date
+        let previousMonth = currentDate.getMonth(); // 0-11 (getMonth() returns 0-based)
+        let previousYear = currentDate.getFullYear();
+        
+        // Handle January case (previous month would be December of previous year)
+        if (previousMonth === 0) {
+            previousMonth = 12;
+            previousYear = previousYear - 1;
+        }
+        
+        nextMonth = previousMonth;
+        nextYear = previousYear;
+    } else {
+        // Calculate next month based on latest payslip
+        lastGeneratedMonth = `${getMonthName(latestPayslip.month)} ${latestPayslip.year}`;
+        
+        if (latestPayslip.month === 12) {
+            // December -> January of next year
+            nextMonth = 1;
+            nextYear = latestPayslip.year + 1;
+        } else {
+            // Any other month -> next month same year
+            nextMonth = latestPayslip.month + 1;
+            nextYear = latestPayslip.year;
+        }
+    }
+
+    // Validate that we're not trying to generate for a future month
+    // Get previous month from current date (max allowed month)
+    let maxAllowedMonth = currentDate.getMonth(); // 0-11
+    let maxAllowedYear = currentDate.getFullYear();
+
+    if (maxAllowedMonth === 0) {
+        maxAllowedMonth = 12;
+        maxAllowedYear = maxAllowedYear - 1;
+    }
+
+    // Check if we can generate (not beyond previous month)
+    const canGenerate = !(nextYear > maxAllowedYear || 
+        (nextYear === maxAllowedYear && nextMonth > maxAllowedMonth));
+
+    return {
+        nextAvailableMonth: nextMonth,
+        nextAvailableYear: nextYear,
+        nextAvailableMonthName: getMonthName(nextMonth),
+        lastGeneratedMonth: lastGeneratedMonth,
+        canGenerate: canGenerate
+    };
+};
+
 export const generatePayslip = async (req: Request, res: Response) => {
     try {
         const {
@@ -96,6 +163,28 @@ export const generatePayslip = async (req: Request, res: Response) => {
 
         if (existingPayslip) {
             return sendError(res, 'Payslip already exists for this staff member and month', 400);
+        }
+
+        // Validate sequential month generation
+        const nextAvailableData = await calculateNextAvailableMonth(staffId, staffType);
+        
+        if (!nextAvailableData.canGenerate) {
+            return sendError(res, 'Cannot generate payslip for future months. All payslips are up to date.', 400);
+        }
+
+        // Validate that the requested month/year matches the expected sequential month
+        if (month !== nextAvailableData.nextAvailableMonth || year !== nextAvailableData.nextAvailableYear) {
+            const expectedMonthName = nextAvailableData.nextAvailableMonthName;
+            const requestedMonthName = getMonthName(month);
+            const lastGeneratedMonth = nextAvailableData.lastGeneratedMonth || 'None';
+            
+            return sendError(res, 
+                `Invalid month sequence. Expected: ${expectedMonthName} ${nextAvailableData.nextAvailableYear}, ` +
+                `Requested: ${requestedMonthName} ${year}. ` +
+                `Last generated: ${lastGeneratedMonth}. ` +
+                `Payslips must be generated in sequential order.`, 
+                400
+            );
         }
 
         // Get staff details
@@ -593,6 +682,33 @@ export const deletePayment = async (req: Request, res: Response) => {
     } catch (error: any) {
         await transaction.rollback();
         console.error('Error deleting payment:', error);
+        return sendError(res, 'Internal server error', 500);
+    }
+};
+
+export const getNextAvailableMonth = async (req: Request, res: Response) => {
+    try {
+        const { staffType, staffId } = req.params;
+
+        if (!staffType || !staffId) {
+            return sendError(res, 'Staff type and ID are required', 400);
+        }
+
+        if (!['teaching', 'non-teaching'].includes(staffType)) {
+            return sendError(res, 'Invalid staff type. Must be "teaching" or "non-teaching"', 400);
+        }
+
+        // Use the helper function to calculate next available month
+        const nextAvailableData = await calculateNextAvailableMonth(parseInt(staffId), staffType as 'teaching' | 'non-teaching');
+        
+        if (!nextAvailableData.canGenerate) {
+            return sendError(res, 'Cannot generate payslip for future months. All payslips are up to date.', 400);
+        }
+
+        return sendSuccess(res, nextAvailableData, 'Next available month retrieved successfully');
+
+    } catch (error: any) {
+        console.error('Error getting next available month:', error);
         return sendError(res, 'Internal server error', 500);
     }
 };
