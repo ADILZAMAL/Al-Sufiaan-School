@@ -38,6 +38,16 @@ const Inventory = () => {
     },
   });
 
+  const verifyMutation = useMutation(apiClient.verifyTransaction, {
+    onSuccess: () => {
+      showToast({ message: "Transaction verified successfully!", type: "SUCCESS" });
+      queryClient.invalidateQueries("fetchRecentTransactions");
+    },
+    onError: (error: Error) => {
+      showToast({ message: error.message, type: "ERROR" });
+    },
+  });
+
   const onSubmit = handleSubmit((data) => {
     mutation.mutate(data);
   });
@@ -76,6 +86,10 @@ const Inventory = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleVerifyTransaction = (transactionId: number) => {
+    verifyMutation.mutate(transactionId);
   };
 
   return (
@@ -180,7 +194,13 @@ const Inventory = () => {
                         Sold By
                       </th>
                       <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Mode of Payment
+                      </th>
+                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Total Amount
+                      </th>
+                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Verified
                       </th>
                       <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         
@@ -191,25 +211,73 @@ const Inventory = () => {
                     {recentTransactions?.map((transaction: TransactionType) => (
                       <React.Fragment key={transaction.id}>
                         <tr 
-                          className="hover:bg-gray-50 cursor-pointer"
-                          onClick={() => toggleTransactionExpansion(transaction.id)}
+                          className="hover:bg-gray-50"
                         >
-                          <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-900">
+                          <td 
+                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-900 cursor-pointer"
+                            onClick={() => toggleTransactionExpansion(transaction.id)}
+                          >
                             {formatDate(transaction.createdAt)}
                           </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <td 
+                            className="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 cursor-pointer"
+                            onClick={() => toggleTransactionExpansion(transaction.id)}
+                          >
                             {transaction.studentName}
                           </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-500">
+                          <td 
+                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
+                            onClick={() => toggleTransactionExpansion(transaction.id)}
+                          >
                             {transaction.className} - {transaction.sectionName}
                           </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-600">
+                          <td 
+                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-600 cursor-pointer"
+                            onClick={() => toggleTransactionExpansion(transaction.id)}
+                          >
                             {transaction.soldBy}
                           </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-900 font-medium">
+                          <td 
+                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-600 cursor-pointer"
+                            onClick={() => toggleTransactionExpansion(transaction.id)}
+                          >
+                            {transaction.modeOfPayment}
+                          </td>
+                          <td 
+                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-900 font-medium cursor-pointer"
+                            onClick={() => toggleTransactionExpansion(transaction.id)}
+                          >
                             ₹{transaction.totalAmount.toFixed(2)}
                           </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-400">
+                          <td className="py-4 px-6 whitespace-nowrap text-sm">
+                            {transaction.isVerified ? (
+                              <div className="flex items-center">
+                                <span className="text-green-600 text-lg" title={`Verified by ${transaction.verifiedBy}`}>
+                                  ✓
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-400">Not Verified</span>
+                                {userRole === 'SUPER_ADMIN' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleVerifyTransaction(transaction.id);
+                                    }}
+                                    className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition"
+                                    disabled={verifyMutation.isLoading}
+                                  >
+                                    {verifyMutation.isLoading ? 'Verifying...' : 'Verify'}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td 
+                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-400 cursor-pointer"
+                            onClick={() => toggleTransactionExpansion(transaction.id)}
+                          >
                             {expandedTransactions.has(transaction.id) ? (
                               <FaChevronUp />
                             ) : (
@@ -219,7 +287,7 @@ const Inventory = () => {
                         </tr>
                         {expandedTransactions.has(transaction.id) && (
                           <tr>
-                            <td colSpan={6} className="px-6 py-4 bg-gray-50">
+                            <td colSpan={8} className="px-6 py-4 bg-gray-50">
                               <div className="space-y-3">
                                 <div className="flex justify-between items-center">
                                   <h4 className="font-semibold text-gray-800">Products Purchased:</h4>

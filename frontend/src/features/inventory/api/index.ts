@@ -33,6 +33,9 @@ export type TransactionType = {
     totalAmount: number;
     soldBy: string;
     userId: number;
+    isVerified?: boolean;
+    verifiedBy?: string;
+    verifiedAt?: string;
     createdAt: string;
     transactionItems: TransactionItemType[];
 }
@@ -114,4 +117,20 @@ export const fetchTransactions = async (page: number = 1, limit: number = 20) =>
         throw new Error(body.error.message)
     }
     return body.data;
+}
+
+export const verifyTransaction = async (transactionId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/transactions/${transactionId}/verify`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        }
+    })
+
+    const body = await response.json()
+    if(!body.success) {
+        throw new Error(body.error?.message || body.message)
+    }
+    return body
 }

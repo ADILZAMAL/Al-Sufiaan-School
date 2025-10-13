@@ -42,6 +42,12 @@ router.get('/recent', verifyToken, async (req: Request, res: Response) => {
           model: User,
           as: 'user',
           attributes: ['firstName', 'lastName']
+        },
+        {
+          model: User,
+          as: 'verifier',
+          attributes: ['firstName', 'lastName'],
+          required: false
         }
       ],
       order: [['createdAt', 'DESC']],
@@ -62,6 +68,9 @@ router.get('/recent', verifyToken, async (req: Request, res: Response) => {
         totalAmount: totalAmount,
         soldBy: transaction.user ? `${transaction.user.firstName} ${transaction.user.lastName}` : 'Unknown',
         userId: transaction.userId,
+        isVerified: transaction.isVerified,
+        verifiedBy: transaction.verifier ? `${transaction.verifier.firstName} ${transaction.verifier.lastName}` : null,
+        verifiedAt: transaction.verifiedAt,
         createdAt: transaction.createdAt,
         transactionItems: transaction.items.map((item: any) => ({
           productName: item.product.name,
@@ -114,6 +123,12 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
           model: User,
           as: 'user',
           attributes: ['firstName', 'lastName']
+        },
+        {
+          model: User,
+          as: 'verifier',
+          attributes: ['firstName', 'lastName'],
+          required: false
         }
       ],
       order: [['createdAt', 'DESC']],
@@ -135,6 +150,9 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
         totalAmount: totalAmount,
         soldBy: transaction.user ? `${transaction.user.firstName} ${transaction.user.lastName}` : 'Unknown',
         userId: transaction.userId,
+        isVerified: transaction.isVerified,
+        verifiedBy: transaction.verifier ? `${transaction.verifier.firstName} ${transaction.verifier.lastName}` : null,
+        verifiedAt: transaction.verifiedAt,
         createdAt: transaction.createdAt,
         transactionItems: transaction.items.map((item: any) => ({
           productName: item.product.name,
@@ -255,5 +273,60 @@ router.post(
     }
   }
 );
+
+// PUT verify transaction (SUPER_ADMIN only)
+router.put('/:id/verify', verifyToken, async (req: Request, res: Response) => {
+  try {
+    // Check if user is SUPER_ADMIN
+    if (req.userRole !== 'SUPER_ADMIN') {
+      return res.status(403).json({ 
+        success: false, 
+        error: { code: 'FORBIDDEN', message: 'Only SUPER_ADMIN can verify transactions' } 
+      });
+    }
+
+    const transactionId = parseInt(req.params.id);
+    
+    const transaction = await Transaction.findOne({
+      where: { 
+        id: transactionId, 
+        schoolId: req.schoolId 
+      }
+    });
+
+    if (!transaction) {
+      return res.status(404).json({ 
+        success: false, 
+        error: { code: 'TRANSACTION_NOT_FOUND', message: 'Transaction not found' } 
+      });
+    }
+
+    if (transaction.isVerified) {
+      return res.status(400).json({ 
+        success: false, 
+        error: { code: 'ALREADY_VERIFIED', message: 'Transaction is already verified' } 
+      });
+    }
+
+    // Update transaction with verification data
+    await transaction.update({
+      isVerified: true,
+      verifiedBy: req.userId,
+      verifiedAt: new Date()
+    });
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Transaction verified successfully' 
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ 
+      success: false, 
+      error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' } 
+    });
+  }
+});
 
 export default router;

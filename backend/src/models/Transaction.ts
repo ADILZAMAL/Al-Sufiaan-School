@@ -15,6 +15,9 @@ class Transaction extends Model {
   public modeOfPayment!: string;
   public userId!: number;
   public schoolId!: number;
+  public isVerified!: boolean;
+  public verifiedBy!: number | null;
+  public verifiedAt!: Date | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -77,6 +80,23 @@ export const initTransactionModel = (sequelize: Sequelize): void => {
           model: School,
           key: 'id'
         }
+      },
+      isVerified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      verifiedBy: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: User,
+          key: 'id'
+        }
+      },
+      verifiedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
       },
       createdAt: {
         type: DataTypes.DATE,
