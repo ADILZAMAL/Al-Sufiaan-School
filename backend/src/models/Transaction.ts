@@ -20,13 +20,6 @@ class Transaction extends Model {
   public verifiedAt!: Date | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
-
-  // public static associate(models: any) {
-    // one-to-many relationship with TransactionItem
-    // Transaction.hasMany(models.TransactionItem, { foreignKey: 'transactionId'});
-    // Transaction.belongsTo(models.School, { foreignKey: 'schoolId', as: 'school' });
-    // Transaction.belongsToMany(models.Product, { through: models.TransactionItem });
-  // }
 }
 
 export const initTransactionModel = (sequelize: Sequelize): void => {
