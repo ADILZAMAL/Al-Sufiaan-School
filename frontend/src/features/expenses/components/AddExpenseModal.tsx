@@ -23,6 +23,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     categoryId: null,
   });
   const [amountError, setAmountError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Fetch expense categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery(
@@ -33,7 +34,10 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     }
   );
 
-  const handleAddExpense = () => {
+  const handleAddExpense = async () => {
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
     const amount = parseFloat(newExpense.amount);
     if (isNaN(amount) || amount <= 0) {
       setAmountError("Please enter a valid amount");
@@ -45,21 +49,30 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       return;
     }
 
-    apiClient
-      .addExpense({
-        name: newExpense.name,
+    if (!newExpense.name.trim()) {
+      setAmountError("Please enter an expense name");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setAmountError(null);
+
+    try {
+      await apiClient.addExpense({
+        name: newExpense.name.trim(),
         amount: newExpense.amount,
         categoryId: newExpense.categoryId
-      })
-      .then(() => {
-        onExpenseAdded();
-        onClose();
-        setNewExpense({ name: "", amount: "", categoryId: null });
-      })
-      .catch((error) => {
-        console.error("Error adding expense:", error);
-        setAmountError(error.message || "Failed to add expense");
       });
+      
+      onExpenseAdded();
+      onClose();
+      setNewExpense({ name: "", amount: "", categoryId: null });
+    } catch (error) {
+      console.error("Error adding expense:", error);
+      setAmountError(error instanceof Error ? error.message : "Failed to add expense");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -124,17 +137,28 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         </div>
         <div className="flex justify-end space-x-4 mt-6">
           <button
-            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 transition"
+            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 transition disabled:opacity-50"
             onClick={onClose}
+            disabled={isSubmitting}
           >
             Cancel
           </button>
           <button
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
             onClick={handleAddExpense}
-            disabled={categoriesLoading || categories.length === 0}
+            disabled={categoriesLoading || categories.length === 0 || isSubmitting || !newExpense.name.trim()}
           >
-            Add Expense
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Adding...
+              </>
+            ) : (
+              "Add Expense"
+            )}
           </button>
         </div>
       </div>
