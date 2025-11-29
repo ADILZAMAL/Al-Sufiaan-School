@@ -17,6 +17,19 @@ export const onboardSchool = async (req: Request, res: Response) => {
   }
 };
 
+export const getAllSchools = async (req: Request, res: Response) => {
+  try {
+    const schools = await School.findAll({
+      attributes: ['id', 'name', 'sid'],
+      order: [['name', 'ASC']]
+    });
+    sendSuccess(res, schools, 'Schools fetched successfully');
+  } catch (error) {
+    console.log('Error fetching schools', error);
+    sendError(res, 'An error occurred while fetching schools');
+  }
+};
+
 export const getSchoolById = async (req: Request, res: Response) => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) {

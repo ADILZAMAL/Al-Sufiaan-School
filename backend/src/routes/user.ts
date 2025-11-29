@@ -1,24 +1,18 @@
 import express, {Request, Response} from 'express';
 import {check} from 'express-validator';
-import { changePassword, registerNewUser } from '../controllers/user';
+import { 
+    changePassword, 
+    getAllUsers, 
+    getUserById, 
+    createUser, 
+    updateUser, 
+    deleteUser, 
+    updateProfile,
+    getCurrentUser 
+} from '../controllers/user';
 import auth from '../middleware/auth';
+import { requireSuperAdmin, canModifyUser } from '../middleware/roleAuth';
 const router = express.Router();
-
-// router.post(
-//     "/register",
-//     [
-//         check('firstName', 'First Name is required').isString(),
-//         check('lastName', 'Last Name is required').isString(),
-//         check('email', 'Email is required').isEmail(),
-//         check('sid', 'Sid is required').isLength({
-//             min: 3
-//         }),
-//         check('password', 'Password with 6 or more character is required').isLength({
-//             min: 6
-//         })
-//     ],
-//     registerNewUser
-//     )
 
 router.post(
     "/change-password",
@@ -33,5 +27,62 @@ router.post(
     ],
     changePassword
 )
+
+// Get current user
+router.get("/me", auth, getCurrentUser);
+
+// Get all users (SUPER_ADMIN only)
+router.get("/", auth, requireSuperAdmin, getAllUsers);
+
+// Get user by ID
+router.get("/:id", auth, canModifyUser, getUserById);
+
+// Create new user (SUPER_ADMIN only)
+router.post(
+    "/",
+    auth,
+    requireSuperAdmin,
+    [
+        check('firstName', 'First Name is required').isString().notEmpty(),
+        check('lastName', 'Last Name is required').isString().notEmpty(),
+        check('email', 'Email is required').isEmail(),
+        check('password', 'Password with 6 or more characters is required').isLength({
+            min: 6
+        }),
+        check('role', 'Role is required').isIn(['SUPER_ADMIN', 'ADMIN', 'CASHIER']),
+        check('schoolId', 'School ID is required').isInt()
+    ],
+    createUser
+);
+
+// Update user (SUPER_ADMIN or self)
+router.put(
+    "/:id",
+    auth,
+    canModifyUser,
+    [
+        check('firstName', 'First Name is required').optional().isString().notEmpty(),
+        check('lastName', 'Last Name is required').optional().isString().notEmpty(),
+        check('email', 'Email is required').optional().isEmail(),
+        check('role', 'Invalid role').optional().isIn(['SUPER_ADMIN', 'ADMIN', 'CASHIER']),
+        check('status', 'Invalid status').optional().isIn(['ACTIVE', 'INACTIVE'])
+    ],
+    updateUser
+);
+
+// Update own profile
+router.put(
+    "/profile/me",
+    auth,
+    [
+        check('firstName', 'First Name is required').optional().isString().notEmpty(),
+        check('lastName', 'Last Name is required').optional().isString().notEmpty(),
+        check('email', 'Email is required').optional().isEmail()
+    ],
+    updateProfile
+);
+
+// Delete user (SUPER_ADMIN only)
+router.delete("/:id", auth, requireSuperAdmin, deleteUser);
 
 export default router;

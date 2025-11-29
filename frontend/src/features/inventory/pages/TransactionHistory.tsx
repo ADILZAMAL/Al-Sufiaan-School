@@ -1,14 +1,17 @@
 import React, { useMemo, useState } from "react";
-import { useQuery } from "react-query";
+import { useQuery, useMutation, useQueryClient } from "react-query";
 import * as apiClient from "../api";
 import { TransactionType } from "../api";
-import { FaChevronDown, FaChevronUp, FaSearch } from "react-icons/fa";
+import { FaChevronDown, FaChevronUp, FaSearch, FaCheck, FaClock, FaCheckCircle } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 const TransactionHistory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedTransactions, setExpandedTransactions] = useState<Set<number>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
+  const [verifyingTransactions, setVerifyingTransactions] = useState<Set<number>>(new Set());
+  
+  const queryClient = useQueryClient();
 
   const { data: transactionData, isLoading } = useQuery(
     ["fetchTransactions", currentPage],
@@ -51,6 +54,93 @@ const TransactionHistory = () => {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     setExpandedTransactions(new Set()); // Reset expanded rows when changing pages
+  };
+
+  // Mutation for verifying transactions
+  const verifyTransactionMutation = useMutation(
+    (transactionId: number) => apiClient.verifyTransaction(transactionId),
+    {
+      onMutate: (transactionId) => {
+        setVerifyingTransactions(prev => new Set(prev).add(transactionId));
+      },
+      onSuccess: () => {
+        // Refetch transactions to get updated data
+        queryClient.invalidateQueries(["fetchTransactions"]);
+      },
+      onError: (error: any) => {
+        console.error("Error verifying transaction:", error);
+        alert(error.message || "Failed to verify transaction");
+      },
+      onSettled: (_, __, transactionId) => {
+        setVerifyingTransactions(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(transactionId);
+          return newSet;
+        });
+      }
+    }
+  );
+
+  const handleVerifyTransaction = (transactionId: number) => {
+    if (window.confirm("Are you sure you want to verify this transaction?")) {
+      verifyTransactionMutation.mutate(transactionId);
+    }
+  };
+
+  const renderVerificationStatus = (transaction: TransactionType) => {
+    if (transaction.isVerified) {
+      return (
+        <div className="flex items-center space-x-1">
+          <FaCheckCircle className="text-green-500 text-sm" />
+          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+            Verified
+          </span>
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center space-x-1">
+          <FaClock className="text-yellow-500 text-sm" />
+          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+            Pending
+          </span>
+        </div>
+      );
+    }
+  };
+
+  const renderVerificationAction = (transaction: TransactionType) => {
+    if (transaction.isVerified) {
+      return (
+        <span className="text-xs text-gray-500">
+          Verified by {transaction.verifiedBy}
+        </span>
+      );
+    } else {
+      const isVerifying = verifyingTransactions.has(transaction.id);
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleVerifyTransaction(transaction.id);
+          }}
+          disabled={isVerifying}
+          className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+        >
+          {isVerifying ? (
+            <>
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+              <span>Verifying...</span>
+            </>
+          ) : (
+            <>
+              <FaCheck className="text-xs" />
+              <span>Verify</span>
+            </>
+          )}
+        </button>
+      );
+    }
   };
 
   return (
@@ -110,6 +200,12 @@ const TransactionHistory = () => {
                         Total Amount
                       </th>
                       <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Action
+                      </th>
+                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         
                       </th>
                     </tr>
@@ -139,6 +235,12 @@ const TransactionHistory = () => {
                           <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-900 font-medium">
                             ₹{transaction.totalAmount.toFixed(2)}
                           </td>
+                          <td className="py-4 px-6 whitespace-nowrap text-sm">
+                            {renderVerificationStatus(transaction)}
+                          </td>
+                          <td className="py-4 px-6 whitespace-nowrap text-sm">
+                            {renderVerificationAction(transaction)}
+                          </td>
                           <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-400">
                             {expandedTransactions.has(transaction.id) ? (
                               <FaChevronUp />
@@ -149,7 +251,7 @@ const TransactionHistory = () => {
                         </tr>
                         {expandedTransactions.has(transaction.id) && (
                           <tr>
-                            <td colSpan={7} className="px-6 py-4 bg-gray-50">
+                            <td colSpan={9} className="px-6 py-4 bg-gray-50">
                               <div className="space-y-3">
                                 <div className="flex justify-between items-center">
                                   <h4 className="font-semibold text-gray-800">Products Purchased:</h4>
@@ -170,12 +272,29 @@ const TransactionHistory = () => {
                                   ))}
                                 </div>
                                 <div className="flex justify-between items-center pt-2 border-t">
-                                  <span className="text-sm font-medium text-gray-800">
-                                    Total Amount: ₹{transaction.totalAmount.toFixed(2)}
-                                  </span>
-                                  <span className="text-sm text-gray-600">
-                                    Payment: {transaction.modeOfPayment}
-                                  </span>
+                                  <div className="flex flex-col space-y-1">
+                                    <span className="text-sm font-medium text-gray-800">
+                                      Total Amount: ₹{transaction.totalAmount.toFixed(2)}
+                                    </span>
+                                    <span className="text-sm text-gray-600">
+                                      Payment: {transaction.modeOfPayment}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col items-end space-y-1">
+                                    <div className="flex items-center space-x-2">
+                                      {renderVerificationStatus(transaction)}
+                                    </div>
+                                    {transaction.isVerified && transaction.verifiedBy && (
+                                      <span className="text-xs text-gray-500">
+                                        Verified by {transaction.verifiedBy}
+                                        {transaction.verifiedAt && (
+                                          <span className="block">
+                                            on {formatDate(transaction.verifiedAt)}
+                                          </span>
+                                        )}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </td>

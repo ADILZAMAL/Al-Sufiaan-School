@@ -36,7 +36,7 @@ School.hasMany(ClassFeePricing, { foreignKey: 'schoolId', as: 'classFeePricing' 
 School.hasMany(TransportationAreaPricing, { foreignKey: 'schoolId', as: 'transportationAreaPricing' });
 
 // User associations
-User.belongsTo(School, { foreignKey: 'schoolId', as: 'userSchool' });
+User.belongsTo(School, { foreignKey: 'schoolId', as: 'School' });
 User.hasMany(Expense, { foreignKey: 'userId', as: 'expenses' });
 User.hasMany(Payslip, { foreignKey: 'generatedBy', as: 'generatedPayslips' });
 User.hasMany(PayslipPayment, { foreignKey: 'paidBy', as: 'paymentsMade' });

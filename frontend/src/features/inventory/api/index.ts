@@ -33,9 +33,9 @@ export type TransactionType = {
     totalAmount: number;
     soldBy: string;
     userId: number;
-    isVerified?: boolean;
-    verifiedBy?: string;
-    verifiedAt?: string;
+    isVerified: boolean;
+    verifiedBy: string | null;
+    verifiedAt: string | null;
     createdAt: string;
     transactionItems: TransactionItemType[];
 }

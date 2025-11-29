@@ -1,8 +1,9 @@
 import express, { Router, Request, Response } from 'express';
-import { getSchoolById, onboardSchool } from '../controllers/school';
+import { getSchoolById, getAllSchools, onboardSchool } from '../controllers/school';
 import { check } from 'express-validator'
 const router: Router = express.Router()
 
+router.get("/", getAllSchools)
 router.get("/:id",getSchoolById)
 
 router.post("/onboard", [

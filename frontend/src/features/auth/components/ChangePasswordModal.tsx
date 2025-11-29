@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from 'react-query';
-import * as apiClient from '../api';
+import {changePassword} from '../../users/api';
 import { useAppContext } from '../../../providers/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { ChangePasswordFormData } from '../types';
@@ -18,7 +18,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
-    const mutation = useMutation(apiClient.changePassword, {
+    const mutation = useMutation(changePassword, {
         onSuccess: async () => {
             showToast({ message: 'Password changed successfully', type: 'SUCCESS' });
             await queryClient.invalidateQueries("validateToken");

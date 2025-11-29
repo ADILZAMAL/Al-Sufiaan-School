@@ -9,8 +9,11 @@ class User extends Model {
     public lastName!: string;
     public role!: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER';
     public schoolId!: number;
+    public status!: 'ACTIVE' | 'INACTIVE';
+    public lastLogin?: Date;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
+    public readonly deletedAt?: Date;
 }
 
 export const initUserModel = (sequelize: Sequelize) => {
@@ -49,6 +52,15 @@ export const initUserModel = (sequelize: Sequelize) => {
                 key: 'id'
             }
         },
+        status: {
+            type: DataTypes.ENUM('ACTIVE', 'INACTIVE'),
+            allowNull: false,
+            defaultValue: 'ACTIVE',
+        },
+        lastLogin: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
         createdAt: {
             type: DataTypes.DATE,
             allowNull: false,
@@ -62,6 +74,7 @@ export const initUserModel = (sequelize: Sequelize) => {
     }, {
         sequelize,
         modelName: 'User',
+        paranoid: true,
         indexes: [
           {
             name: 'user_email_index',
