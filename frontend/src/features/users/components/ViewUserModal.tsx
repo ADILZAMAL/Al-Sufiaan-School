@@ -30,12 +30,6 @@ const ViewUserModal: React.FC<ViewUserModalProps> = ({ user, onClose }) => {
     }
   };
 
-  const getStatusBadgeColor = (status: string) => {
-    return status === 'ACTIVE' 
-      ? 'bg-green-100 text-green-800' 
-      : 'bg-red-100 text-red-800';
-  };
-
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -78,17 +72,6 @@ const ViewUserModal: React.FC<ViewUserModalProps> = ({ user, onClose }) => {
               <div className="bg-gray-50 px-3 py-2 rounded-md">
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
                   {user.role}
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <div className="bg-gray-50 px-3 py-2 rounded-md">
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(user.status)}`}>
-                  {user.status}
                 </span>
               </div>
             </div>

@@ -120,8 +120,7 @@ export const createUser = async (req: Request, res: Response) => {
       firstName,
       lastName,
       role,
-      schoolId,
-      status: 'ACTIVE'
+      schoolId
     });
 
     // Return user without password
@@ -152,7 +151,7 @@ export const updateUser = async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.params.id);
     const currentUser = await User.findByPk(req.userId);
-    const { firstName, lastName, email, role, status } = req.body;
+    const { firstName, lastName, email, role } = req.body;
 
     const user = await User.findByPk(userId);
     if (!user) {
@@ -172,11 +171,10 @@ export const updateUser = async (req: Request, res: Response) => {
       }
     }
 
-    // Only super admin can change role and status
+    // Only super admin can change role
     const updateData: any = { firstName, lastName, email };
     if (currentUser?.role === 'SUPER_ADMIN') {
       if (role) updateData.role = role;
-      if (status) updateData.status = status;
     }
 
     await user.update(updateData);

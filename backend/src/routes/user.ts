@@ -64,8 +64,7 @@ router.put(
         check('firstName', 'First Name is required').optional().isString().notEmpty(),
         check('lastName', 'Last Name is required').optional().isString().notEmpty(),
         check('email', 'Email is required').optional().isEmail(),
-        check('role', 'Invalid role').optional().isIn(['SUPER_ADMIN', 'ADMIN', 'CASHIER']),
-        check('status', 'Invalid status').optional().isIn(['ACTIVE', 'INACTIVE'])
+        check('role', 'Invalid role').optional().isIn(['SUPER_ADMIN', 'ADMIN', 'CASHIER'])
     ],
     updateUser
 );

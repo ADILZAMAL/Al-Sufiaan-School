@@ -5,7 +5,6 @@ export interface User {
   lastName: string;
   role: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER';
   schoolId: number;
-  status: 'ACTIVE' | 'INACTIVE';
   lastLogin?: string;
   createdAt: string;
   updatedAt: string;
@@ -30,7 +29,6 @@ export interface UpdateUserData {
   lastName?: string;
   email?: string;
   role?: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER';
-  status?: 'ACTIVE' | 'INACTIVE';
 }
 
 export interface UpdateProfileData {

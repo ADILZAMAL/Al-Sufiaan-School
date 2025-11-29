@@ -60,11 +60,6 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const getStatusBadgeColor = (status: string) => {
-    return status === 'ACTIVE' 
-      ? 'bg-green-100 text-green-800' 
-      : 'bg-red-100 text-red-800';
-  };
 
   if (isLoading) {
     return (
@@ -113,9 +108,6 @@ const UserManagement: React.FC = () => {
                 Role
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 School
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -137,11 +129,6 @@ const UserManagement: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
                     {user.role}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(user.status)}`}>
-                    {user.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
