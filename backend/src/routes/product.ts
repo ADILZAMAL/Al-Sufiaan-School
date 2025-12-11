@@ -2,6 +2,7 @@ import express, {Request, Response} from 'express'
 import verifyToken, { requireRole } from '../middleware/auth'
 import Product from '../models/Product'
 import {check, validationResult} from 'express-validator'
+import { Op } from 'sequelize'
 
 const router = express.Router()
 
@@ -29,7 +30,10 @@ router.get("/", verifyToken,async (req: Request, res: Response) => {
     try {
         let products = await Product.findAll({
             where: {
-                schoolId: req.schoolId
+                schoolId: req.schoolId,
+                qty: {
+                    [Op.gt]: 0
+                }
             }
         })
         res.status(200).send({success: true, data: products})
