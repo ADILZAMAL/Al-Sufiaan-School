@@ -17,6 +17,7 @@ import VendorPayment from './VendorPayment';
 import FeeCategory from './FeeCategory';
 import ClassFeePricing from './ClassFeePricing';
 import TransportationAreaPricing from './TransportationAreaPricing';
+import Student from './Student';
 
 // School associations
 School.hasMany(User, { foreignKey: 'schoolId', as: 'users' });
@@ -34,6 +35,7 @@ School.hasMany(VendorPayment, { foreignKey: 'schoolId', as: 'vendorPayments' });
 School.hasMany(FeeCategory, { foreignKey: 'schoolId', as: 'feeCategories' });
 School.hasMany(ClassFeePricing, { foreignKey: 'schoolId', as: 'classFeePricing' });
 School.hasMany(TransportationAreaPricing, { foreignKey: 'schoolId', as: 'transportationAreaPricing' });
+School.hasMany(Student, { foreignKey: 'schoolId', as: 'students' });
 
 // User associations
 User.belongsTo(School, { foreignKey: 'schoolId', as: 'School' });
@@ -127,4 +129,17 @@ ClassFeePricing.belongsTo(FeeCategory, { foreignKey: 'feeCategoryId', as: 'feeCa
 TransportationAreaPricing.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 TransportationAreaPricing.belongsTo(FeeCategory, { foreignKey: 'feeCategoryId', as: 'feeCategory' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, FeeCategory, ClassFeePricing, TransportationAreaPricing };
+// Student associations
+Student.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+Student.belongsTo(Class, { foreignKey: 'classId', as: 'class' });
+Student.belongsTo(Section, { foreignKey: 'sectionId', as: 'section' });
+Student.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+Student.belongsTo(User, { foreignKey: 'updatedBy', as: 'updater' });
+
+// Additional Class associations for students
+Class.hasMany(Student, { foreignKey: 'classId', as: 'students' });
+
+// Section associations for students
+Section.hasMany(Student, { foreignKey: 'sectionId', as: 'students' });
+
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, FeeCategory, ClassFeePricing, TransportationAreaPricing, Student };

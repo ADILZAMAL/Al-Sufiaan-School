@@ -10,13 +10,13 @@ import {
     updateProfile,
     getCurrentUser 
 } from '../controllers/user';
-import auth from '../middleware/auth';
+import verifyToken from '../middleware/auth';
 import { requireSuperAdmin, canModifyUser } from '../middleware/roleAuth';
 const router = express.Router();
 
 router.post(
     "/change-password",
-    auth,
+    verifyToken,
     [
         check('oldPassword', 'Old Password is required').isLength({
             min: 6
@@ -29,18 +29,18 @@ router.post(
 )
 
 // Get current user
-router.get("/me", auth, getCurrentUser);
+router.get("/me", verifyToken, getCurrentUser);
 
 // Get all users (SUPER_ADMIN only)
-router.get("/", auth, requireSuperAdmin, getAllUsers);
+router.get("/", verifyToken, requireSuperAdmin, getAllUsers);
 
 // Get user by ID
-router.get("/:id", auth, canModifyUser, getUserById);
+router.get("/:id", verifyToken, canModifyUser, getUserById);
 
 // Create new user (SUPER_ADMIN only)
 router.post(
     "/",
-    auth,
+    verifyToken,
     requireSuperAdmin,
     [
         check('firstName', 'First Name is required').isString().notEmpty(),
@@ -58,7 +58,7 @@ router.post(
 // Update user (SUPER_ADMIN or self)
 router.put(
     "/:id",
-    auth,
+    verifyToken,
     canModifyUser,
     [
         check('firstName', 'First Name is required').optional().isString().notEmpty(),
@@ -72,7 +72,7 @@ router.put(
 // Update own profile
 router.put(
     "/profile/me",
-    auth,
+    verifyToken,
     [
         check('firstName', 'First Name is required').optional().isString().notEmpty(),
         check('lastName', 'Last Name is required').optional().isString().notEmpty(),
@@ -82,6 +82,6 @@ router.put(
 );
 
 // Delete user (SUPER_ADMIN only)
-router.delete("/:id", auth, requireSuperAdmin, deleteUser);
+router.delete("/:id", verifyToken, requireSuperAdmin, deleteUser);
 
 export default router;
