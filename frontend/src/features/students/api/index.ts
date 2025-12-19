@@ -1,11 +1,10 @@
 import {
   Student,
-  StudentsResponse,
+  StudentListResponse,
   StudentResponse,
   CreateStudentRequest,
-  UpdateStudentRequest,
   StudentFilters,
-  ApiError
+  UpdateStudentRequest
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
@@ -74,17 +73,17 @@ export const studentApi = {
   },
 
   // Get students by class
-  getStudentsByClass: async (classId: number): Promise<StudentsResponse> => {
+  getStudentsByClass: async (classId: number): Promise<StudentListResponse> => {
     return await apiRequest(`/students/by-class/${classId}`);
   },
 
   // Get students by section
-  getStudentsBySection: async (sectionId: number): Promise<StudentsResponse> => {
+  getStudentsBySection: async (sectionId: number): Promise<StudentListResponse> => {
     return await apiRequest(`/students/by-section/${sectionId}`);
   },
 
   // Search students
-  searchStudents: async (query: string): Promise<StudentsResponse> => {
+  searchStudents: async (query: string): Promise<StudentListResponse> => {
     return await apiRequest(`/students/search?q=${encodeURIComponent(query)}`);
   },
 
@@ -142,7 +141,7 @@ export const studentApi = {
   },
 
   // Update student status (batch update)
-  updateStudentStatus: async (studentIds: number[], status: Student['status']): Promise<{
+  updateStudentStatus: async (studentIds: number[], status: string): Promise<{
     success: boolean;
     message: string;
     updated: number;
@@ -164,7 +163,6 @@ export const studentApi = {
     if (filters.search) params.append('search', filters.search);
     if (filters.classId) params.append('classId', filters.classId.toString());
     if (filters.sectionId) params.append('sectionId', filters.sectionId.toString());
-    if (filters.status) params.append('status', filters.status);
     if (filters.gender) params.append('gender', filters.gender);
 
     const response = await fetch(`${API_BASE_URL}/api/students/export?${params.toString()}`, {
