@@ -26,6 +26,7 @@ import ClassFeePricing from "./features/fees/pages/ClassFeePricing"
 import FeeLayout from "./features/fees/pages/FeeLayout"
 import TransportationAreaPricing from "./features/transportation/pages/TransportationAreaPricing"
 import UserManagement from "./features/users/pages/UserManagement"
+import StudentPage from "./features/students/pages/StudentPage"
 
 
 const router = createBrowserRouter([
@@ -148,6 +149,10 @@ const router = createBrowserRouter([
       {
         path: "users",
         element: <UserManagement />
+      },
+      {
+        path: "students",
+        element: <StudentPage />
       }
     ]
   }
