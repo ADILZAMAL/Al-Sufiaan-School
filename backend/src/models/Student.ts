@@ -40,21 +40,21 @@ export enum Religion {
 
 
 class Student extends Model {
-  public id!: string;
-  public schoolId!: string; //Foreign Key
+  public id!: number;
+  public schoolId!: number; //Foreign Key
   public admissionNumber!: string;
   public lastName!: string;
   public firstName!: string;
   public email?: string;
-  public phone?: string;
+  public phone!: string;
   public dateOfBirth!: Date;
   public gender!: Gender;
   public bloodGroup!: BloodGroup;
   public religion!: Religion;
   public aadhaarNumber!: string;
-  public classId!: string; //Foreign Key
-  public sectionId!: string; //Foreign Key
-  public rollNumber!: string;
+  public classId!: number; //Foreign Key
+  public sectionId!: number; //Foreign Key
+  public rollNumber!: number;
   public address!: string;
   public city!: string;
   public state!: string;
@@ -68,7 +68,7 @@ class Student extends Model {
   public guardianName?: string;
   public guardianRelation?: string;
   public guardianPhone?: string;
-  public createdBy!: string;
+  public createdBy!: number; //Foreign Key
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -77,18 +77,6 @@ class Student extends Model {
   // Virtual field for full name
   get fullName(): string {
     return `${this.firstName} ${this.lastName}`;
-  }
-
-  // Virtual field for age
-  get age(): number {
-    const today = new Date();
-    const birthDate = new Date(this.dateOfBirth);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
   }
 }
 
@@ -156,7 +144,7 @@ Student.init(
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
       validate: {
         is: {
           args: [/^(\+91)?[6-9]\d{9}$/],
@@ -188,7 +176,7 @@ Student.init(
     },
     aadhaarNumber: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
       validate: {
         is: {
           args: [/^[0-9]{12}$/],
@@ -206,7 +194,7 @@ Student.init(
     },
     sectionId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
         model: Section,
         key: 'id',

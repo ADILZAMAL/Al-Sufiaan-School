@@ -19,7 +19,8 @@ export const getAllStudents = async (req: Request, res: Response) => {
       include: [
         { association: 'school', attributes: ['id', 'name'] },
         { association: 'class', attributes: ['id', 'name'] },
-        { association: 'section', attributes: ['id', 'name'] }
+        { association: 'section', attributes: ['id', 'name'] },
+        { association: 'creator', attributes: ['firstName', 'lastName'] } // Including createdBy user details
       ],
       order: [['firstName', 'ASC'], ['lastName', 'ASC']]
     });
