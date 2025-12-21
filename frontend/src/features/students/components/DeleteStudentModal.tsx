@@ -69,7 +69,7 @@ const DeleteStudentModal: React.FC<DeleteStudentModalProps> = ({
                       {student.firstName} {student.lastName}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Admission No: {student.admissionNo}
+                      Admission No: {student.admissionNumber}
                     </p>
                     <p className="text-sm text-gray-500">
                       Class: {student.classId}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Edit2, Phone, MapPin, Calendar, Mail, Home, Users } from 'lucide-react';
+import { X } from 'lucide-react';
 import { studentApi } from '../api';
 import { useAppContext } from '../../../providers/AppContext'; 
 import { Student, UpdateStudentRequest, Gender, Religion, BloodGroup, StudentFormData } from '../types';

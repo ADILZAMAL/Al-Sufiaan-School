@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaSearch, FaUserGraduate, FaFilter, FaDownload } from "react-icons/fa";
-import { FiUsers, FiTrendingUp, FiUserCheck, FiUserX } from 'react-icons/fi';
+import { FiUsers, FiTrendingUp, FiUserCheck } from 'react-icons/fi';
 import StudentList from '../components/StudentList';
 import AddStudentModal from '../components/AddStudentModal';
 import EditStudentModal from '../components/EditStudentModal';

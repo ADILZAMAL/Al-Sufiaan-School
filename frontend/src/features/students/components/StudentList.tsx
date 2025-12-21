@@ -25,10 +25,6 @@ const StudentList: React.FC<StudentListProps> = ({
     setShowViewModal(true);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
   const getFullName = (student: Student) => {
     return `${student.firstName} ${student.lastName}`;
   };

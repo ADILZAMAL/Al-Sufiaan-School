@@ -48,7 +48,6 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [sections, setSections] = useState<Array<{ id: number; name: string }>>([]);
-  const [documents, setDocuments] = useState<{ [key: string]: File | null }>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -211,7 +210,6 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
       guardianRelation: '',
       guardianPhone: ''
     });
-    setDocuments({});
     setSections([]);
     onClose();
   };
