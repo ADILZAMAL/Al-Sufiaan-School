@@ -24,6 +24,8 @@ import studentRouter from './routes/student'
 import sequelize from './config/database';
 import './models'; // Import for associations
 import cookieParser from "cookie-parser";
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 
 const app = express();
 
@@ -72,6 +74,12 @@ app.use(express.urlencoded({extended: true}));
 
 // Serve static files for uploaded photos
 app.use('/uploads', express.static('uploads'));
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Al-Sufiaan School API Documentation'
+}));
 
 //Authenticate connection
 sequelize.authenticate()
