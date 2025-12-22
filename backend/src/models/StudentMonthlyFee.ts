@@ -26,8 +26,6 @@ class StudentMonthlyFee extends Model{
   public status!: StudentMonthlyFeeStatus;
   public discountReason?: string;
   public generatedAt!: Date;
-  public createdAt!: Date;
-  public updatedAt!: Date;
   public generatedBy!: number;
 
   // Virtual field for academic session
@@ -48,8 +46,8 @@ export const initStudentMonthlyFeeModel = (sequelize: Sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-          model: Student,
-          key: 'id',
+        model: Student,
+        key: 'id',
       },
       onUpdate: 'CASCADE',
       onDelete: 'RESTRICT',
