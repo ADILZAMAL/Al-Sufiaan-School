@@ -27,7 +27,7 @@ export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
           key: "id",
           },
           onDelete: "RESTRICT",
-          onUpdate: 'CASACADE'
+          onUpdate: 'CASCADE'
         },
       feeCategoryId: {
         type: DataTypes.INTEGER,

@@ -18,6 +18,9 @@ import FeeCategory from './FeeCategory';
 import ClassFeePricing from './ClassFeePricing';
 import TransportationAreaPricing from './TransportationAreaPricing';
 import Student from './Student';
+import StudentMonthlyFee from './StudentMonthlyFee';
+import StudentMonthlyFeeItem from './StudentMonthlyFeeItem';
+import StudentFeePayment from './StudentFeePayment';
 
 // School associations
 School.hasMany(User, { foreignKey: 'schoolId', as: 'users' });
@@ -142,4 +145,30 @@ Class.hasMany(Student, { foreignKey: 'classId', as: 'students' });
 // Section associations for students
 Section.hasMany(Student, { foreignKey: 'sectionId', as: 'students' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, FeeCategory, ClassFeePricing, TransportationAreaPricing, Student };
+// StudentMonthlyFee associations
+StudentMonthlyFee.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+StudentMonthlyFee.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+StudentMonthlyFee.hasMany(StudentMonthlyFeeItem, { foreignKey: 'studentMonthlyFeeId', as: 'feeItems' });
+
+// StudentMonthlyFeeItem associations
+StudentMonthlyFeeItem.belongsTo(StudentMonthlyFee, { foreignKey: 'studentMonthlyFeeId', as: 'studentMonthlyFee' });
+StudentMonthlyFeeItem.belongsTo(FeeCategory, { foreignKey: 'feeCategoryId', as: 'feeCategory' });
+
+// Additional School associations
+School.hasMany(StudentMonthlyFee, { foreignKey: 'schoolId', as: 'studentMonthlyFees' });
+
+// Additional Student associations
+Student.hasMany(StudentMonthlyFee, { foreignKey: 'studentId', as: 'monthlyFees' });
+
+// StudentFeePayment associations
+StudentFeePayment.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+StudentFeePayment.belongsTo(StudentMonthlyFee, { foreignKey: 'studentMonthlyFeeId', as: 'studentMonthlyFee' });
+StudentFeePayment.belongsTo(User, { foreignKey: 'receivedBy', as: 'receiver' });
+StudentFeePayment.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+
+// Additional associations for StudentFeePayment
+Student.hasMany(StudentFeePayment, { foreignKey: 'studentId', as: 'feePayments' });
+StudentMonthlyFee.hasMany(StudentFeePayment, { foreignKey: 'studentMonthlyFeeId', as: 'payments' });
+School.hasMany(StudentFeePayment, { foreignKey: 'schoolId', as: 'studentFeePayments' });
+
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, FeeCategory, ClassFeePricing, TransportationAreaPricing, Student, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment };
