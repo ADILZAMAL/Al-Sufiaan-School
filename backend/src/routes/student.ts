@@ -13,6 +13,7 @@ import {
   deleteStudent,
   getStudentsByClass
 } from '../controllers/student';
+import { generateMonthlyFee } from '../controllers/monthlyFee';
 
 const router = Router();
 
@@ -199,6 +200,13 @@ router.get('/:id', verifyToken, getStudentById);
 // Student routes - Write access for authorized roles
 router.put('/:id', verifyToken, updateStudent);
 router.delete('/:id', verifyToken, deleteStudent);
+
+// Student routes - Fees
+router.post(
+  '/students/:studentId/fees/generate',
+  verifyToken,
+  generateMonthlyFee
+)
 
 export default router;
 

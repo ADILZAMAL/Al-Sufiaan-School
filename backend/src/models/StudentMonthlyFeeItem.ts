@@ -3,12 +3,15 @@ import sequelize from "../config/database";
 import StudentMonthlyFee from "./StudentMonthlyFee";
 import FeeCategory from "./FeeCategory";
 
+export interface StudentMonthlyFeeItemCreationAttributes {
+  feeCategoryId: number;
+  amount: number;
+}
 class StudentMonthlyFeeItem extends Model {
     public id!: number;
     public studentMonthlyFeeId!: number;
     public feeCategoryId!: number | null;
-    public configuredAmount!: number;
-    public finalAmount!: number;
+    public amount!: number;
 }
 
 export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
@@ -38,11 +41,7 @@ export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
         },
         onDelete: "SET NULL"
       },
-      configuredAmount: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-      },
-      finalAmount: {
+      amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
       },
