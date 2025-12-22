@@ -12,36 +12,17 @@ interface GenerateFeeRequest {
   month: number;
   calendarYear: number;
   hostel?: boolean;
+  newAdmission?: boolean;
   transportationAreaId?: number;
   discount?: number;
   discountReason?: string;
 }
-
-interface CalculatedFeeItem {
-  feeCategoryId: number;
-  categoryName: string;
-  configuredAmount: number;
-  finalAmount: number;
-  remarks?: string;
-}
-
-interface GenerateFeeRequest {
-  month: number;
-  calendarYear: number;
-  hostel?: boolean;
-  transportationAreaId?: number;
-  discount?: number;
-  discountReason?: string;
-}
-
-
 
 export const generateMonthlyFee = async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
-    const { month, calendarYear, hostel = false, transportationAreaId, discount = 0, discountReason }: GenerateFeeRequest = req.body;
+    const { month, calendarYear, hostel = false, transportationAreaId, discount = 0, discountReason, newAdmission = false }: GenerateFeeRequest = req.body;
     const userId = parseInt(req.userId);
-    const schoolId = parseInt(req.schoolId);
 
     // Validate inputs
     if (!studentId) {
@@ -57,6 +38,10 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
 
     if (discount < 0) {
       return sendError(res, "Discount cannot be negative", 400);
+    }
+
+    if(hostel && transportationAreaId){
+      return sendError(res, "Student cannot have both hostel and transportation services", 400);  
     }
 
     //Check duplicate
@@ -87,7 +72,8 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
     const feeItems: StudentMonthlyFeeItemCreationAttributes[] = await calculateFeeItems(
       student.classId,
       hostel,
-      transportationAreaId
+      transportationAreaId,
+      newAdmission
     );
 
     if (feeItems.length === 0) {
@@ -133,12 +119,13 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
       include: [
         {
           model: StudentMonthlyFeeItem,
-          include: [FeeCategory],
+          as: 'feeItems',
+          attributes: ['id', 'feeCategoryId', 'amount']
         },
       ],
     });
 
-    return sendSuccess(res, 201);
+    return sendSuccess(res, createdFeeWithItems, "Fee generated successfully", 201);
   } catch (error) {
     console.error("Error generating monthly fee:", error);
     return sendError(res, "Failed to generate monthly fee", 500);
@@ -148,7 +135,8 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
 async function calculateFeeItems(
   classId: number,
   hostel: boolean,
-  transportationAreaId?: number
+  transportationAreaId?: number,
+  newAdmission?: boolean
 ): Promise<StudentMonthlyFeeItemCreationAttributes[]> {
   const feeItems: StudentMonthlyFeeItemCreationAttributes[] = [];
 
@@ -199,6 +187,17 @@ async function calculateFeeItems(
             amount: parseFloat(transportPricing.price.toString()),
           });
         }
+      }
+    }
+
+    // 4. New Admission Fee (if newAdmission is true)
+    if (newAdmission) {
+      const admissionCategory = categoryMap.get("Admission Fee");
+      if (admissionCategory) {
+          feeItems.push({
+            feeCategoryId: admissionCategory.id,
+            amount: parseFloat(admissionCategory.fixedAmount.toString()),
+          });
       }
     }
 

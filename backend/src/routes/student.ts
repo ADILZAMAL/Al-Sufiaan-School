@@ -203,7 +203,7 @@ router.delete('/:id', verifyToken, deleteStudent);
 
 // Student routes - Fees
 router.post(
-  '/students/:studentId/fees/generate',
+  '/:studentId/fees/generate',
   verifyToken,
   generateMonthlyFee
 )

@@ -44,11 +44,7 @@ export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
       amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
-      },
-      remarks: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
+      }
     },
     {
       sequelize,
