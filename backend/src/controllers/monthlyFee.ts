@@ -6,7 +6,14 @@ import StudentMonthlyFeeItem from "../models/StudentMonthlyFeeItem";
 import FeeCategory from "../models/FeeCategory";
 import ClassFeePricing from "../models/ClassFeePricing";
 import TransportationAreaPricing from "../models/TransportationAreaPricing";
+import StudentFeePayment from "../models/StudentFeePayment";
 import {StudentMonthlyFeeItemCreationAttributes} from "../models/StudentMonthlyFeeItem";
+
+const MONTH_NAMES = [
+  '', 'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL',
+  'MAY', 'JUNE', 'JULY', 'AUGUST',
+  'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+];
 
 interface GenerateFeeRequest {
   month: number;
@@ -300,3 +307,132 @@ async function calculateFeeItems(
 //     return errorResponse(res, "Failed to update monthly fee status", 500);
 //   }
 // };
+
+// Helper function to generate timeline from admission
+function generateTimelineFromAdmission(
+  admissionMonth: number,
+  admissionYear: number,
+  monthsCount = 18
+) {
+  const timeline = [];
+
+  let month = admissionMonth;
+  let year = admissionYear;
+
+  for (let i = 0; i < monthsCount; i++) {
+    timeline.push({
+      month,
+      calendarYear: year,
+      label: `${MONTH_NAMES[month]} ${year}`,
+    });
+
+    month++;
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+
+  return timeline;
+}
+
+// Service function to get student fee timeline
+export async function getStudentFeeTimeline(studentId: number) {
+  // 1️⃣ Fetch student
+  const student = await Student.findByPk(studentId);
+
+  if (!student) {
+    throw new Error('Student not found');
+  }
+
+  const admissionDate = new Date(student.createdAt);
+  const admissionMonth = admissionDate.getMonth() + 1;
+  const admissionYear = admissionDate.getFullYear();
+
+  // 2️⃣ Generate timeline from admission
+  const timeline = generateTimelineFromAdmission(
+    admissionMonth,
+    admissionYear,
+    18
+  );
+
+  // 3️⃣ Fetch generated monthly fees
+  const monthlyFees = await StudentMonthlyFee.findAll({
+    where: { studentId },
+    include: [
+      {
+        model: StudentFeePayment,
+        as: 'payments',
+        attributes: ['amountPaid'],
+      },
+    ],
+  });
+
+  // 4️⃣ Build lookup map
+  const feeMap = new Map<string, any>();
+
+  for (const fee of monthlyFees) {
+    const key = `${fee.calendarYear}-${fee.month}`;
+
+    const paidAmount =
+      fee.payments?.reduce(
+        (sum: number, p: any) => sum + Number(p.amountPaid),
+        0
+      ) ?? 0;
+
+    const totalPayable = Number(fee.totalPayableAmount);
+    const dueAmount = totalPayable - paidAmount;
+
+    feeMap.set(key, {
+      id: fee.id,
+      status: fee.status.toLowerCase(),
+      totalPayableAmount: totalPayable,
+      paidAmount,
+      dueAmount,
+    });
+  }
+
+  // 5️⃣ Merge timeline with DB data
+  return timeline.map((t) => {
+    const key = `${t.calendarYear}-${t.month}`;
+    const fee = feeMap.get(key);
+
+    if (!fee) {
+      return {
+        ...t,
+        status: 'not_generated',
+      };
+    }
+
+    return {
+      ...t,
+      status: fee.status,
+      monthlyFeeId: fee.id,
+      totalPayableAmount: fee.totalPayableAmount,
+      paidAmount: fee.paidAmount,
+      dueAmount: fee.dueAmount,
+    };
+  });
+}
+
+// Controller to get student fee timeline
+export async function getStudentFeeTimelineController(req: Request, res: Response) {
+  console.log('Fetching student fee timeline for studentId:', req.params.studentId);
+  const studentId = parseInt(req.params.studentId);
+
+  if (!studentId) {
+    return sendError(res, 'studentId is requiredss', 400);
+  }
+
+  try {
+    const timeline = await getStudentFeeTimeline(studentId);
+
+    return sendSuccess(res, timeline, 'Student fee timeline retrieved successfully');
+  } catch (error) {
+    console.error('Error fetching student fee timeline:', error);
+    if (error instanceof Error && error.message === 'Student not found') {
+      return sendError(res, 'Student not found', 404);
+    }
+    return sendError(res, 'Failed to fetch student fee timeline', 500);
+  }
+}

@@ -62,7 +62,7 @@ initStudentMonthlyFeeModel(sequelize);
 initStudentMonthlyFeeItemModel(sequelize);
 initStudentFeePaymentModel(sequelize);
 //Sync the Model with the database
-sequelize.sync({alter: true})
+sequelize.sync()
     .then(() => {
         console.log('Database synced!')
     })

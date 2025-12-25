@@ -3,6 +3,7 @@ import sequelize from '../config/database';
 import Student from './Student';
 import School from './School';
 import User from './User';
+import StudentFeePayment from './StudentFeePayment';
 
 
 /* ===========================
@@ -27,6 +28,9 @@ class StudentMonthlyFee extends Model{
   public discountReason?: string;
   public generatedAt!: Date;
   public generatedBy!: number;
+
+  // Association properties
+  public readonly payments?: StudentFeePayment[];
 
   // Virtual field for academic session
   get getAcademicYear(): string {

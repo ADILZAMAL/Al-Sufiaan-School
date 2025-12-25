@@ -13,7 +13,7 @@ import {
   deleteStudent,
   getStudentsByClass
 } from '../controllers/student';
-import { generateMonthlyFee } from '../controllers/monthlyFee';
+import { generateMonthlyFee, getStudentFeeTimelineController } from '../controllers/monthlyFee';
 
 const router = Router();
 
@@ -208,7 +208,10 @@ router.post(
   generateMonthlyFee
 )
 
+router.get(
+  '/:studentId/fees/timeline',
+  verifyToken,
+  getStudentFeeTimelineController
+)
+
 export default router;
-
-
-
