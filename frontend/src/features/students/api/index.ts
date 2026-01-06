@@ -203,3 +203,13 @@ export const studentApi = {
     return await response.json();
   }
 };
+
+// Export individual functions for convenience
+export const getStudents = studentApi.getStudents;
+export const getStudentById = async (id: number): Promise<Student> => {
+  const response = await studentApi.getStudent(id);
+  return response.data as Student;
+};
+export const createStudent = studentApi.createStudent;
+export const updateStudent = studentApi.updateStudent;
+export const deleteStudent = studentApi.deleteStudent;

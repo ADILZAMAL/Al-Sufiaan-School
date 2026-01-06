@@ -417,7 +417,6 @@ export async function getStudentFeeTimeline(studentId: number) {
 
 // Controller to get student fee timeline
 export async function getStudentFeeTimelineController(req: Request, res: Response) {
-  console.log('Fetching student fee timeline for studentId:', req.params.studentId);
   const studentId = parseInt(req.params.studentId);
 
   if (!studentId) {

@@ -27,6 +27,7 @@ import FeeLayout from "./features/fees/pages/FeeLayout"
 import TransportationAreaPricing from "./features/transportation/pages/TransportationAreaPricing"
 import UserManagement from "./features/users/pages/UserManagement"
 import StudentPage from "./features/students/pages/StudentPage"
+import ViewStudentProfile from "./features/students/pages/ViewStudentProfile"
 
 
 const router = createBrowserRouter([
@@ -152,7 +153,16 @@ const router = createBrowserRouter([
       },
       {
         path: "students",
-        element: <StudentPage />
+        children: [
+          {
+            index: true,
+            element: <StudentPage />
+          },
+          {
+            path: ":id",
+            element: <ViewStudentProfile />
+          }
+        ]
       }
     ]
   }

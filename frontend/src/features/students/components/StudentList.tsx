@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiEdit, FiTrash2, FiEye, FiUser, FiPhone, FiMail } from 'react-icons/fi';
 import { Student, Gender } from '../types';
-import ViewStudentModal from './ViewStudentModal';
 
 interface StudentListProps {
   students: Student[];
@@ -16,13 +16,10 @@ const StudentList: React.FC<StudentListProps> = ({
   onEdit, 
   onDelete 
 }) => {
-  // Modal states
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [showViewModal, setShowViewModal] = useState(false);
+  const navigate = useNavigate();
 
   const handleView = (student: Student) => {
-    setSelectedStudent(student);
-    setShowViewModal(true);
+    navigate(`/dashboard/students/${student.id}`);
   };
 
   const getFullName = (student: Student) => {
@@ -176,14 +173,6 @@ const StudentList: React.FC<StudentListProps> = ({
         </div>
       </div>
 
-      {/* View Modal */}
-      {showViewModal && selectedStudent && (
-        <ViewStudentModal
-          student={selectedStudent}
-          isOpen={showViewModal}
-          onClose={() => setShowViewModal(false)}
-        />
-      )}
     </div>
   );
 };
