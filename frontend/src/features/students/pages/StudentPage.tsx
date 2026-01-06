@@ -201,8 +201,6 @@ const StudentPage: React.FC = () => {
           <StudentList
             students={filteredStudents}
             loading={loading}
-            onEdit={handleEditStudent}
-            onDelete={handleDeleteStudent}
           />
         </div>
       </div>

@@ -1,20 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiEdit, FiTrash2, FiEye, FiUser, FiPhone, FiMail } from 'react-icons/fi';
+import { FiUser, FiPhone, FiMail } from 'react-icons/fi';
 import { Student, Gender } from '../types';
 
 interface StudentListProps {
   students: Student[];
   loading?: boolean;
-  onEdit: (student: Student) => void;
-  onDelete: (student: Student) => void;
 }
 
 const StudentList: React.FC<StudentListProps> = ({ 
   students, 
-  loading = false, 
-  onEdit, 
-  onDelete 
+  loading = false
 }) => {
   const navigate = useNavigate();
 
@@ -70,15 +66,12 @@ const StudentList: React.FC<StudentListProps> = ({
                     <span>Contact</span>
                   </div>
                 </th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {students.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16">
+                  <td colSpan={6} className="px-6 py-16">
                     <div className="flex flex-col items-center justify-center space-y-4">
                       <div className="bg-gray-100 rounded-full p-4">
                         <FiUser className="h-8 w-8 text-gray-400" />
@@ -92,7 +85,11 @@ const StudentList: React.FC<StudentListProps> = ({
                 </tr>
               ) : (
                 students.map((student, index) => (
-                  <tr key={student.id} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-colors duration-150 border-b border-gray-50">
+                  <tr 
+                    key={student.id} 
+                    onClick={() => handleView(student)}
+                    className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-colors duration-150 border-b border-gray-50 cursor-pointer"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-8 w-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
@@ -139,31 +136,6 @@ const StudentList: React.FC<StudentListProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 font-medium">{student.phone}</div>
                       <p className="text-xs text-gray-500 mt-1">Mobile</p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex items-center justify-center space-x-1">
-                        <button
-                          onClick={() => handleView(student)}
-                          className="inline-flex items-center justify-center p-2 rounded-lg text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 group"
-                          title="View Details"
-                        >
-                          <FiEye className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                        </button>
-                        <button
-                          onClick={() => onEdit(student)}
-                          className="inline-flex items-center justify-center p-2 rounded-lg text-green-600 hover:bg-green-50 hover:text-green-700 transition-colors duration-150 group"
-                          title="Edit Student"
-                        >
-                          <FiEdit className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                        </button>
-                        <button
-                          onClick={() => onDelete(student)}
-                          className="inline-flex items-center justify-center p-2 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-150 group"
-                          title="Delete Student"
-                        >
-                          <FiTrash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))
