@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBriefcase, FiUserCheck, FiClock, FiEdit } from 'react-icons/fi';
 // import { useQuery } from '@tanstack/react-query';
 import { useQuery } from "react-query";
 import { getStudentById } from '../api';
 import { Student } from '../types';
+import EditStudentModal from '../components/EditStudentModal';
 
 const formatDateOnly = (iso: string) =>
   new Date(iso).toLocaleDateString('en-CA', {
@@ -23,8 +24,9 @@ const getCreator = (student: Student) => {
 const ViewStudentProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const { data: student, isLoading, error } = useQuery({
+  const { data: student, isLoading, error, refetch } = useQuery({
     queryKey: ['student', id],
     queryFn: () => getStudentById(Number(id)),
     enabled: !!id,
@@ -70,7 +72,7 @@ const ViewStudentProfile: React.FC = () => {
               <p className="mt-1 text-sm text-gray-500">View and manage student information</p>
             </div>
             <button
-              onClick={() => navigate(`/dashboard/students/edit/${id}`)}
+              onClick={() => setIsEditModalOpen(true)}
               className="flex items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
               <FiEdit className="h-4 w-4" />
@@ -334,6 +336,19 @@ const ViewStudentProfile: React.FC = () => {
               </div>
             </div>
           </div>
+
+      {/* Edit Student Modal */}
+      {student && (
+        <EditStudentModal
+          student={student}
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSuccess={() => {
+            refetch();
+            setIsEditModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };
