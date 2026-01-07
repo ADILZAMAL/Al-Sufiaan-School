@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaUserGraduate, FaFilter, FaDownload } from "react-icons/fa";
+import { FaPlus, FaSearch, FaUserGraduate, FaFilter } from "react-icons/fa";
 import { FiUsers, FiTrendingUp, FiUserCheck } from 'react-icons/fi';
 import StudentList from '../components/StudentList';
 import AddStudentModal from '../components/AddStudentModal';
@@ -88,12 +88,6 @@ const StudentPage: React.FC = () => {
                   Student Management
                 </h1>
                 <p className="text-blue-100 mt-2">Manage student records, enrollment, and academic information</p>
-              </div>
-              <div className="hidden md:flex items-center gap-4">
-                <button className="bg-white/20 backdrop-blur text-white px-4 py-2 rounded-lg hover:bg-white/30 transition-colors flex items-center gap-2">
-                  <FaDownload />
-                  Export
-                </button>
               </div>
             </div>
           </div>
