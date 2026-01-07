@@ -209,6 +209,9 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
               <th className="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Action
               </th>
+              <th className="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                History
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -222,21 +225,7 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                   {/* Main Row */}
                   <tr className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {hasPayments && (
-                          <button
-                            onClick={() => toggleRow(rowKey)}
-                            className="mr-2 text-gray-400 hover:text-gray-600 transition-colors"
-                          >
-                            {isExpanded ? (
-                              <FiChevronDown className="h-4 w-4" />
-                            ) : (
-                              <FiChevronRight className="h-4 w-4" />
-                            )}
-                          </button>
-                        )}
-                        <span className="text-sm font-medium text-gray-900">{entry.label}</span>
-                      </div>
+                      <span className="text-sm font-medium text-gray-900">{entry.label}</span>
                     </td>
                     
                     {entry.status === 'not_generated' ? (
@@ -315,6 +304,21 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                               title="Collect Payment"
                             >
                               Collect
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center whitespace-nowrap">
+                          {hasPayments && (
+                            <button
+                              onClick={() => toggleRow(rowKey)}
+                              className="text-gray-400 hover:text-gray-600 transition-colors"
+                              title={isExpanded ? 'Collapse' : 'Expand'}
+                            >
+                              {isExpanded ? (
+                                <FiChevronDown className="h-4 w-4" />
+                              ) : (
+                                <FiChevronRight className="h-4 w-4" />
+                              )}
                             </button>
                           )}
                         </td>
