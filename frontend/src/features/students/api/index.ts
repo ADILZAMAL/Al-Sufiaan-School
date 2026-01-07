@@ -245,6 +245,23 @@ export const studentApi = {
       method: 'POST',
       body: JSON.stringify(feeData),
     });
+  },
+
+  // Collect fee payment for a student
+  collectFeePayment: async (studentId: number, monthlyFeeId: number, paymentData: {
+    amountPaid: number;
+    paymentMode: string;
+    referenceNumber?: string;
+    remarks?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data: any;
+  }> => {
+    return await apiRequest(`/students/${studentId}/fees/${monthlyFeeId}/collect`, {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
   }
 };
 
@@ -259,3 +276,4 @@ export const updateStudent = studentApi.updateStudent;
 export const deleteStudent = studentApi.deleteStudent;
 export const getStudentFeeTimeline = studentApi.getStudentFeeTimeline;
 export const generateMonthlyFee = studentApi.generateMonthlyFee;
+export const collectFeePayment = studentApi.collectFeePayment;

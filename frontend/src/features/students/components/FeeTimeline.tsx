@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus } from 'react-icons/fi';
-import { generateMonthlyFee } from '../api';
+import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus, FiDollarSign } from 'react-icons/fi';
+import { generateMonthlyFee, collectFeePayment } from '../api';
 import GenerateFeeModal from './GenerateFeeModal';
+import CollectFeeModal from './CollectFeeModal';
 
 interface FeeItem {
   feeType: string;
@@ -36,9 +37,11 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
   studentId,
   onRefresh 
 }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<FeeTimelineEntry | null>(null);
   const [generatingFee, setGeneratingFee] = useState(false);
+  const [collectingPayment, setCollectingPayment] = useState(false);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -97,9 +100,26 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
     }
   };
 
+  const handleCollectPayment = async (paymentData: any) => {
+    setCollectingPayment(true);
+    try {
+      await collectFeePayment(studentId, selectedEntry!.monthlyFeeId!, paymentData);
+      onRefresh();
+    } catch (error: any) {
+      throw error;
+    } finally {
+      setCollectingPayment(false);
+    }
+  };
+
   const openGenerateModal = (entry: FeeTimelineEntry) => {
     setSelectedEntry(entry);
-    setIsModalOpen(true);
+    setIsGenerateModalOpen(true);
+  };
+
+  const openCollectModal = (entry: FeeTimelineEntry) => {
+    setSelectedEntry(entry);
+    setIsCollectModalOpen(true);
   };
 
   if (loading) {
@@ -231,7 +251,19 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap">
-                      {getStatusBadge(entry.status)}
+                      <div className="flex items-center justify-center space-x-2">
+                        {entry.status !== 'paid' && (
+                          <button
+                            onClick={() => openCollectModal(entry)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded transition-colors"
+                            title="Collect Payment"
+                          >
+                            <FiDollarSign className="h-3 w-3 mr-1" />
+                            Collect
+                          </button>
+                        )}
+                        {getStatusBadge(entry.status)}
+                      </div>
                     </td>
                   </>
                 )}
@@ -244,9 +276,9 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
       {/* Generate Fee Modal */}
       {selectedEntry && (
         <GenerateFeeModal
-          isOpen={isModalOpen}
+          isOpen={isGenerateModalOpen}
           onClose={() => {
-            setIsModalOpen(false);
+            setIsGenerateModalOpen(false);
             setSelectedEntry(null);
           }}
           onGenerate={handleGenerateFee}
@@ -254,6 +286,23 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
           calendarYear={selectedEntry.calendarYear}
           label={selectedEntry.label}
           loading={generatingFee}
+        />
+      )}
+
+      {/* Collect Fee Modal */}
+      {selectedEntry && selectedEntry.status !== 'not_generated' && (
+        <CollectFeeModal
+          isOpen={isCollectModalOpen}
+          onClose={() => {
+            setIsCollectModalOpen(false);
+            setSelectedEntry(null);
+          }}
+          onCollect={handleCollectPayment}
+          month={selectedEntry.label}
+          totalPayableAmount={selectedEntry.totalPayableAmount || 0}
+          paidAmount={selectedEntry.paidAmount || 0}
+          dueAmount={selectedEntry.dueAmount || 0}
+          loading={collectingPayment}
         />
       )}
     </div>

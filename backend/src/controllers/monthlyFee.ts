@@ -6,6 +6,7 @@ import StudentMonthlyFeeItem, { FeeItemType, StudentMonthlyFeeItemCreationAttrib
 import ClassFeePricing from "../models/ClassFeePricing";
 import TransportationAreaPricing from "../models/TransportationAreaPricing";
 import StudentFeePayment from "../models/StudentFeePayment";
+import User from "../models/User";
 
 const MONTH_NAMES = [
   '', 'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL',
@@ -475,5 +476,98 @@ export async function getStudentFeeTimelineController(req: Request, res: Respons
       return sendError(res, 'Student not found', 404);
     }
     return sendError(res, 'Failed to fetch student fee timeline', 500);
+  }
+}
+
+// Controller to collect fee payment
+export async function collectFeePaymentController(req: Request, res: Response) {
+  const { studentId, monthlyFeeId } = req.params;
+  const { amountPaid, paymentMode, referenceNumber, remarks } = req.body;
+  const userId = parseInt(req.userId);
+
+  if (!amountPaid || amountPaid <= 0) {
+    return sendError(res, 'Amount paid must be greater than 0', 400);
+  }
+
+  if (!paymentMode || paymentMode.trim() === '') {
+    return sendError(res, 'Payment mode is required', 400);
+  }
+
+  try {
+    // Verify the monthly fee exists and belongs to the student
+    const monthlyFee = await StudentMonthlyFee.findOne({
+      where: {
+        id: monthlyFeeId,
+        studentId: studentId,
+      },
+      include: [
+        {
+          model: StudentFeePayment,
+          as: 'payments',
+          attributes: ['amountPaid'],
+        },
+      ],
+    });
+
+    if (!monthlyFee) {
+      return sendError(res, 'Monthly fee not found', 404);
+    }
+
+    const totalPayable = Number(monthlyFee.totalPayableAmount);
+    
+    // Calculate total already paid
+    const alreadyPaid = monthlyFee.payments?.reduce((sum: number, p: any) => sum + Number(p.amountPaid), 0) || 0;
+    const dueAmount = totalPayable - alreadyPaid;
+
+    // Validate payment amount
+    if (amountPaid > dueAmount) {
+      return sendError(res, `Amount paid cannot exceed due amount of ₹${dueAmount.toLocaleString('en-IN')}`, 400);
+    }
+
+    // Create payment record
+    const payment = await StudentFeePayment.create({
+      studentId: parseInt(studentId),
+      studentMonthlyFeeId: parseInt(monthlyFeeId),
+      amountPaid,
+      paymentDate: new Date(),
+      paymentMode: paymentMode.trim(),
+      referenceNumber: referenceNumber || null,
+      receivedBy: userId,
+      remarks: remarks || null,
+    });
+
+    // Recalculate paid amount and update status
+    const newTotalPaid = alreadyPaid + amountPaid;
+    let newStatus = StudentMonthlyFeeStatus.UNPAID;
+
+    if (newTotalPaid >= totalPayable) {
+      newStatus = StudentMonthlyFeeStatus.PAID;
+    } else if (newTotalPaid > 0) {
+      newStatus = StudentMonthlyFeeStatus.PARTIAL;
+    }
+
+    await monthlyFee.update({ status: newStatus });
+
+    // Fetch the updated fee with payments
+    const updatedFee = await StudentMonthlyFee.findByPk(monthlyFeeId, {
+      include: [
+        {
+          model: StudentFeePayment,
+          as: 'payments',
+          include: [
+            {
+              model: User,
+              as: 'receiver',
+              attributes: ['id', 'firstName', 'lastName'],
+            },
+          ],
+        },
+      ],
+    });
+
+    return sendSuccess(res, updatedFee, 'Payment collected successfully', 201);
+  } catch (error) {
+    console.error('Error collecting fee payment:', error);
+    return sendError(res, 'Failed to collect payment', 500);
   }
 }
