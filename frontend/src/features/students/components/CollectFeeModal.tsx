@@ -36,7 +36,7 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
   dueAmount,
   loading = false,
 }) => {
-  const [amountPaid, setAmountPaid] = useState('');
+  const [amountPaid, setAmountPaid] = useState(0);
   const [paymentMode, setPaymentMode] = useState('Cash');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [remarks, setRemarks] = useState('');
@@ -46,11 +46,19 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       // Reset form
-      setAmountPaid('');
+      setAmountPaid(0);
       setPaymentMode('Cash');
       setReferenceNumber('');
       setRemarks('');
       setError('');
+      
+      // Focus and select the amount input after modal opens
+      setTimeout(() => {
+        if (amountInputRef.current) {
+          amountInputRef.current.focus();
+          amountInputRef.current.select();
+        }
+      }, 100);
     }
   }, [isOpen]);
 
@@ -58,14 +66,12 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
     e.preventDefault();
     setError('');
 
-    const amount = parseFloat(amountPaid);
-
-    if (!amountPaid || amount <= 0) {
+    if (!amountPaid || amountPaid <= 0) {
       setError('Amount paid must be greater than 0');
       return;
     }
 
-    if (amount > dueAmount) {
+    if (amountPaid > dueAmount) {
       setError(`Amount cannot exceed due amount of ₹${dueAmount.toLocaleString('en-IN')}`);
       return;
     }
@@ -77,7 +83,7 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
 
     try {
       await onCollect({
-        amountPaid: amount,
+        amountPaid,
         paymentMode,
         referenceNumber: referenceNumber || undefined,
         remarks: remarks || undefined,
@@ -147,13 +153,14 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
                 <input
                   type="number"
                   id="amountPaid"
+                  ref={amountInputRef}
                   value={amountPaid}
-                  onChange={(e) => setAmountPaid(e.target.value)}
+                  onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
                   min="0"
                   max={dueAmount}
                   step="0.01"
                   className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter amount..."
+                  placeholder="0.00"
                   disabled={loading}
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
