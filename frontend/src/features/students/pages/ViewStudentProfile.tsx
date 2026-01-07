@@ -33,13 +33,17 @@ const ViewStudentProfile: React.FC = () => {
     enabled: !!id,
   });
 
-  const { data: feeTimelineData, isLoading: timelineLoading } = useQuery({
+  const { data: feeTimelineData, isLoading: timelineLoading, refetch: refetchTimeline } = useQuery({
     queryKey: ['studentFeeTimeline', id],
     queryFn: () => getStudentFeeTimeline(Number(id)),
     enabled: !!id,
   });
 
   const feeTimeline = feeTimelineData?.data || [];
+
+  const handleFeeTimelineRefresh = () => {
+    refetchTimeline();
+  };
 
   if (isLoading) {
     return (
@@ -93,15 +97,6 @@ const ViewStudentProfile: React.FC = () => {
 
       {/* Main Content */}
       <div className="p-6 space-y-8">
-        {/* Fee Timeline Section */}
-        <div>
-          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center pb-2 border-b border-gray-200">
-            <FiDollarSign className="h-5 w-5 mr-2 text-green-600" />
-            Fee Payment Timeline
-          </h3>
-          <FeeTimeline timeline={feeTimeline} loading={timelineLoading} />
-        </div>
-
         {/* Student Profile Card */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg">
           <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
@@ -129,7 +124,8 @@ const ViewStudentProfile: React.FC = () => {
               <div className="mt-3 text-sm text-gray-500">
                 Gender: <span className="font-medium">{student.gender}</span> | 
                 DOB: <span className="font-medium">{formatDateOnly(student.dateOfBirth)}</span> | 
-                Blood Group: <span className="font-medium">{student.bloodGroup || 'N/A'}</span>
+                Blood Group: <span className="font-medium">{student.bloodGroup || 'N/A'}</span> | 
+                Aadhaar: <span className="font-medium">{student.aadhaarNumber || 'N/A'}</span>
               </div>
             </div>
           </div>
@@ -137,54 +133,6 @@ const ViewStudentProfile: React.FC = () => {
 
         {/* Content */}
         <div className="space-y-8">
-          {/* Basic Information */}
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center pb-2 border-b border-gray-200">
-              <FiUser className="h-5 w-5 mr-2 text-blue-600" />
-              Personal Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Full Name</label>
-                <div className="flex items-center">
-                  <FiUser className="h-4 w-4 text-gray-400 mr-2" />
-                  <p className="text-sm text-gray-900 font-medium">{student.firstName} {student.lastName}</p>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Admission Number</label>
-                <p className="text-sm text-gray-900 font-semibold bg-blue-50 px-3 py-2 rounded-lg">{student.admissionNumber}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Roll Number</label>
-                <p className="text-sm text-gray-900 font-semibold bg-purple-50 px-3 py-2 rounded-lg">{student.rollNumber}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Class & Section</label>
-                <p className="text-sm text-gray-900 font-semibold bg-green-50 px-3 py-2 rounded-lg">{getClassName(student)}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Gender</label>
-                <p className="text-sm text-gray-900 font-medium">{student.gender}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Date of Birth</label>
-                <div className="flex items-center">
-                  <FiCalendar className="h-4 w-4 text-gray-400 mr-2" />
-                  <p className="text-sm text-gray-900">{formatDateOnly(student.dateOfBirth)}</p>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Blood Group</label>
-                <p className="text-sm text-gray-900 font-medium">{student.bloodGroup || 'N/A'}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Aadhaar Number</label>
-                <p className="text-sm text-gray-900 font-medium">{student.aadhaarNumber || 'N/A'}</p>
-              </div>
-            </div>
-          </div>
-
           {/* Contact Information */}
           <div>
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center pb-2 border-b border-gray-200">
@@ -221,6 +169,20 @@ const ViewStudentProfile: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Fee Timeline Section */}
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center pb-2 border-b border-gray-200">
+              <FiDollarSign className="h-5 w-5 mr-2 text-green-600" />
+              Fee Payment Timeline
+            </h3>
+            <FeeTimeline 
+              timeline={feeTimeline} 
+              loading={timelineLoading} 
+              studentId={Number(id)}
+              onRefresh={handleFeeTimelineRefresh}
+            />
           </div>
 
           {/* Address Information */}

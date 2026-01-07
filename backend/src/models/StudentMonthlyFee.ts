@@ -4,6 +4,7 @@ import Student from './Student';
 import School from './School';
 import User from './User';
 import StudentFeePayment from './StudentFeePayment';
+import StudentMonthlyFeeItem from './StudentMonthlyFeeItem';
 
 
 /* ===========================
@@ -30,6 +31,7 @@ class StudentMonthlyFee extends Model{
   public generatedBy!: number;
 
   // Association properties
+  public readonly feeItems?: StudentMonthlyFeeItem[];
   public readonly payments?: StudentFeePayment[];
 
   // Virtual field for academic session

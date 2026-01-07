@@ -212,12 +212,39 @@ export const studentApi = {
       label: string;
       status: 'not_generated' | 'unpaid' | 'partial' | 'paid';
       monthlyFeeId?: number;
+      totalConfiguredAmount?: number;
+      totalAdjustment?: number;
       totalPayableAmount?: number;
       paidAmount?: number;
       dueAmount?: number;
+      discountReason?: string | null;
+      feeItems?: Array<{
+        feeType: string;
+        amount: number;
+      }> | null;
     }>;
   }> => {
     return await apiRequest(`/students/${studentId}/fees/timeline`);
+  },
+
+  // Generate monthly fee for a student
+  generateMonthlyFee: async (studentId: number, feeData: {
+    month: number;
+    calendarYear: number;
+    hostel?: boolean;
+    newAdmission?: boolean;
+    transportationAreaId?: number;
+    discount?: number;
+    discountReason?: string;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data: any;
+  }> => {
+    return await apiRequest(`/students/${studentId}/fees/generate`, {
+      method: 'POST',
+      body: JSON.stringify(feeData),
+    });
   }
 };
 
@@ -231,3 +258,4 @@ export const createStudent = studentApi.createStudent;
 export const updateStudent = studentApi.updateStudent;
 export const deleteStudent = studentApi.deleteStudent;
 export const getStudentFeeTimeline = studentApi.getStudentFeeTimeline;
+export const generateMonthlyFee = studentApi.generateMonthlyFee;

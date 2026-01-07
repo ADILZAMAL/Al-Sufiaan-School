@@ -162,7 +162,7 @@ async function calculateFeeItems(
     if (hostel) {
       // TODO: Get hostel fee from configuration or settings
       // For now, using a default value - you may want to add this to a settings table
-      const hostelFeeAmount = 5000; // Default hostel fee
+      const hostelFeeAmount = 3000; // Default hostel fee
       feeItems.push({
         feeType: FeeItemType.HOSTEL_FEE,
         amount: hostelFeeAmount,
@@ -296,9 +296,31 @@ async function calculateFeeItems(
 function generateTimelineFromAdmission(
   admissionMonth: number,
   admissionYear: number,
-  monthsCount = 18
+  lastGeneratedMonth?: number,
+  lastGeneratedYear?: number
 ) {
   const timeline = [];
+  
+  // Determine the end month/year - always use month after last generated fee
+  let endMonth: number;
+  let endYear: number;
+  
+  if (lastGeneratedMonth && lastGeneratedYear) {
+    // Calculate the month after the last generated fee
+    endMonth = lastGeneratedMonth + 1;
+    endYear = lastGeneratedYear;
+    if (endMonth > 12) {
+      endMonth = 1;
+      endYear++;
+    }
+  } else {
+    // No fees generated yet, show only the admission month
+    endMonth = admissionMonth;
+    endYear = admissionYear;
+  }
+  
+  // Calculate months from admission to end date
+  const monthsCount = (endYear - admissionYear) * 12 + (endMonth - admissionMonth) + 1;
 
   let month = admissionMonth;
   let year = admissionYear;
@@ -333,24 +355,42 @@ export async function getStudentFeeTimeline(studentId: number) {
   const admissionMonth = admissionDate.getMonth() + 1;
   const admissionYear = admissionDate.getFullYear();
 
-  // 2️⃣ Generate timeline from admission
-  const timeline = generateTimelineFromAdmission(
-    admissionMonth,
-    admissionYear,
-    18
-  );
-
-  // 3️⃣ Fetch generated monthly fees
+  // 2️⃣ Fetch generated monthly fees
   const monthlyFees = await StudentMonthlyFee.findAll({
     where: { studentId },
     include: [
+      {
+        model: StudentMonthlyFeeItem,
+        as: 'feeItems',
+        attributes: ['feeType', 'amount'],
+      },
       {
         model: StudentFeePayment,
         as: 'payments',
         attributes: ['amountPaid'],
       },
     ],
+    order: [['calendarYear', 'DESC'], ['month', 'DESC']],
   });
+
+  // Find the most recently generated fee
+  let lastGeneratedMonth: number | undefined;
+  let lastGeneratedYear: number | undefined;
+  
+  if (monthlyFees.length > 0) {
+    // Get the first one (already ordered DESC)
+    const lastFee = monthlyFees[0];
+    lastGeneratedMonth = lastFee.month;
+    lastGeneratedYear = lastFee.calendarYear;
+  }
+
+  // 3️⃣ Generate timeline from admission (past months + next pending month)
+  const timeline = generateTimelineFromAdmission(
+    admissionMonth,
+    admissionYear,
+    lastGeneratedMonth,
+    lastGeneratedYear
+  );
 
   // 4️⃣ Build lookup map
   const feeMap = new Map<string, any>();
@@ -367,12 +407,22 @@ export async function getStudentFeeTimeline(studentId: number) {
     const totalPayable = Number(fee.totalPayableAmount);
     const dueAmount = totalPayable - paidAmount;
 
+    // Extract fee items as array
+    const feeItemsArray = fee.feeItems?.map((item: any) => ({
+      feeType: item.feeType,
+      amount: Number(item.amount),
+    })) || [];
+
     feeMap.set(key, {
       id: fee.id,
       status: fee.status.toLowerCase(),
+      totalConfiguredAmount: Number(fee.totalConfiguredAmount),
+      totalAdjustment: Number(fee.totalAdjustment),
       totalPayableAmount: totalPayable,
       paidAmount,
       dueAmount,
+      discountReason: fee.discountReason,
+      feeItems: feeItemsArray,
     });
   }
 
@@ -382,19 +432,27 @@ export async function getStudentFeeTimeline(studentId: number) {
     const fee = feeMap.get(key);
 
     if (!fee) {
-      return {
-        ...t,
-        status: 'not_generated',
-      };
+    return {
+      ...t,
+      status: 'not_generated',
+      feeItems: null,
+      totalConfiguredAmount: null,
+      totalAdjustment: null,
+      discountReason: null,
+    };
     }
 
     return {
       ...t,
       status: fee.status,
       monthlyFeeId: fee.id,
+      totalConfiguredAmount: fee.totalConfiguredAmount,
+      totalAdjustment: fee.totalAdjustment,
       totalPayableAmount: fee.totalPayableAmount,
       paidAmount: fee.paidAmount,
       dueAmount: fee.dueAmount,
+      discountReason: fee.discountReason,
+      feeItems: fee.feeItems,
     };
   });
 }

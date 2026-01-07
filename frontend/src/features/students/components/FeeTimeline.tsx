@@ -1,5 +1,12 @@
-import React from 'react';
-import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiDollarSign } from 'react-icons/fi';
+import React, { useState } from 'react';
+import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus } from 'react-icons/fi';
+import { generateMonthlyFee } from '../api';
+import GenerateFeeModal from './GenerateFeeModal';
+
+interface FeeItem {
+  feeType: string;
+  amount: number;
+}
 
 interface FeeTimelineEntry {
   month: number;
@@ -7,17 +14,32 @@ interface FeeTimelineEntry {
   label: string;
   status: 'not_generated' | 'unpaid' | 'partial' | 'paid';
   monthlyFeeId?: number;
+  totalConfiguredAmount?: number;
+  totalAdjustment?: number;
   totalPayableAmount?: number;
   paidAmount?: number;
   dueAmount?: number;
+  discountReason?: string | null;
+  feeItems?: FeeItem[] | null;
 }
 
 interface FeeTimelineProps {
   timeline: FeeTimelineEntry[];
   loading?: boolean;
+  studentId: number;
+  onRefresh: () => void;
 }
 
-const FeeTimeline: React.FC<FeeTimelineProps> = ({ timeline, loading }) => {
+const FeeTimeline: React.FC<FeeTimelineProps> = ({ 
+  timeline, 
+  loading, 
+  studentId,
+  onRefresh 
+}) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<FeeTimelineEntry | null>(null);
+  const [generatingFee, setGeneratingFee] = useState(false);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
@@ -52,22 +74,32 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({ timeline, loading }) => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return 'bg-green-50 border-green-200';
-      case 'partial':
-        return 'bg-yellow-50 border-yellow-200';
-      case 'unpaid':
-        return 'bg-red-50 border-red-200';
-      case 'not_generated':
-      default:
-        return 'bg-gray-50 border-gray-200';
+  const getFeeItemAmount = (feeItems: FeeItem[] | null | undefined, feeType: string): number => {
+    if (!feeItems) return 0;
+    const item = feeItems.find(item => item.feeType === feeType);
+    return item ? item.amount : 0;
+  };
+
+  const formatCurrency = (amount: number | undefined): string => {
+    if (amount === undefined || amount === null) return '-';
+    return `₹${amount.toLocaleString('en-IN')}`;
+  };
+
+  const handleGenerateFee = async (feeData: any) => {
+    setGeneratingFee(true);
+    try {
+      await generateMonthlyFee(studentId, feeData);
+      onRefresh();
+    } catch (error: any) {
+      throw error;
+    } finally {
+      setGeneratingFee(false);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return `₹${amount.toLocaleString('en-IN')}`;
+  const openGenerateModal = (entry: FeeTimelineEntry) => {
+    setSelectedEntry(entry);
+    setIsModalOpen(true);
   };
 
   if (loading) {
@@ -88,81 +120,142 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({ timeline, loading }) => {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-          <p className="text-xs font-medium text-green-600 mb-1">Paid</p>
-          <p className="text-2xl font-bold text-green-700">
-            {timeline.filter(t => t.status === 'paid').length}
-          </p>
-        </div>
-        <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
-          <p className="text-xs font-medium text-yellow-600 mb-1">Partial</p>
-          <p className="text-2xl font-bold text-yellow-700">
-            {timeline.filter(t => t.status === 'partial').length}
-          </p>
-        </div>
-        <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-          <p className="text-xs font-medium text-red-600 mb-1">Unpaid</p>
-          <p className="text-2xl font-bold text-red-700">
-            {timeline.filter(t => t.status === 'unpaid').length}
-          </p>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-          <p className="text-xs font-medium text-gray-600 mb-1">Not Generated</p>
-          <p className="text-2xl font-bold text-gray-700">
-            {timeline.filter(t => t.status === 'not_generated').length}
-          </p>
-        </div>
-      </div>
-
-      {/* Timeline Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {timeline.map((entry, index) => (
-          <div
-            key={`${entry.calendarYear}-${entry.month}-${index}`}
-            className={`rounded-lg border p-4 transition-all hover:shadow-md ${getStatusColor(entry.status)}`}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-gray-900">{entry.label}</h4>
-              {getStatusBadge(entry.status)}
-            </div>
-
-            {entry.status !== 'not_generated' && (
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Total:</span>
-                  <span className="font-medium text-gray-900">
-                    {entry.totalPayableAmount ? formatCurrency(entry.totalPayableAmount) : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Paid:</span>
-                  <span className="font-medium text-green-700">
-                    {entry.paidAmount !== undefined ? formatCurrency(entry.paidAmount) : '₹0'}
-                  </span>
-                </div>
-                {entry.dueAmount !== undefined && entry.dueAmount > 0 && (
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-200 mt-2">
-                    <span className="text-gray-700 font-medium">Due:</span>
-                    <span className="font-bold text-red-600">
-                      {formatCurrency(entry.dueAmount)}
-                    </span>
-                  </div>
+    <div className="space-y-6">
+      {/* Fee Table */}
+      <div className="overflow-x-auto border border-gray-200 rounded-lg">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Month/Year
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Tuition
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Hostel
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Transport
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Admission
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Total
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Discount
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Payable
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Paid
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Due
+              </th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Status
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {timeline.map((entry, index) => (
+              <tr key={`${entry.calendarYear}-${entry.month}-${index}`} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className="text-sm font-medium text-gray-900">{entry.label}</span>
+                </td>
+                
+                {entry.status === 'not_generated' ? (
+                  <>
+                    <td colSpan={9} className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => openGenerateModal(entry)}
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                      >
+                        <FiPlus className="mr-1 h-4 w-4" />
+                        Generate Fee
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {getStatusBadge(entry.status)}
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <span className="text-sm text-gray-900">
+                        {formatCurrency(getFeeItemAmount(entry.feeItems, 'TUITION_FEE'))}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <span className="text-sm text-gray-900">
+                        {formatCurrency(getFeeItemAmount(entry.feeItems, 'HOSTEL_FEE'))}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <span className="text-sm text-gray-900">
+                        {formatCurrency(getFeeItemAmount(entry.feeItems, 'TRANSPORT_FEE'))}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <span className="text-sm text-gray-900">
+                        {formatCurrency(getFeeItemAmount(entry.feeItems, 'ADMISSION_FEE'))}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <span className="text-sm font-semibold text-gray-900">
+                        {formatCurrency(entry.totalConfiguredAmount)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <span className={`text-sm ${entry.totalAdjustment && entry.totalAdjustment > 0 ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
+                        {formatCurrency(entry.totalAdjustment)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <span className="text-sm font-semibold text-gray-900">
+                        {formatCurrency(entry.totalPayableAmount)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <span className={`text-sm ${entry.paidAmount && entry.paidAmount > 0 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+                        {formatCurrency(entry.paidAmount)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <span className={`text-sm font-semibold ${entry.dueAmount && entry.dueAmount > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                        {formatCurrency(entry.dueAmount)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      {getStatusBadge(entry.status)}
+                    </td>
+                  </>
                 )}
-              </div>
-            )}
-
-            {entry.status === 'not_generated' && (
-              <div className="flex items-center text-gray-500 text-sm mt-2">
-                <FiDollarSign className="mr-1 h-4 w-4" />
-                <span>Fee not yet generated</span>
-              </div>
-            )}
-          </div>
-        ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+
+      {/* Generate Fee Modal */}
+      {selectedEntry && (
+        <GenerateFeeModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedEntry(null);
+          }}
+          onGenerate={handleGenerateFee}
+          month={selectedEntry.month}
+          calendarYear={selectedEntry.calendarYear}
+          label={selectedEntry.label}
+          loading={generatingFee}
+        />
+      )}
     </div>
   );
 };
