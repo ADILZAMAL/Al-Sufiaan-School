@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus, FiDollarSign } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus, FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import { generateMonthlyFee, collectFeePayment } from '../api';
 import GenerateFeeModal from './GenerateFeeModal';
 import CollectFeeModal from './CollectFeeModal';
@@ -7,6 +7,16 @@ import CollectFeeModal from './CollectFeeModal';
 interface FeeItem {
   feeType: string;
   amount: number;
+}
+
+interface PaymentDetail {
+  id: number;
+  amountPaid: number;
+  paymentDate: Date;
+  paymentMode: string;
+  referenceNumber: string | null;
+  remarks: string | null;
+  receivedBy: string | null;
 }
 
 interface FeeTimelineEntry {
@@ -22,6 +32,7 @@ interface FeeTimelineEntry {
   dueAmount?: number;
   discountReason?: string | null;
   feeItems?: FeeItem[] | null;
+  payments?: PaymentDetail[];
 }
 
 interface FeeTimelineProps {
@@ -42,6 +53,17 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
   const [selectedEntry, setSelectedEntry] = useState<FeeTimelineEntry | null>(null);
   const [generatingFee, setGeneratingFee] = useState(false);
   const [collectingPayment, setCollectingPayment] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRow = (key: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(key)) {
+      newExpanded.delete(key);
+    } else {
+      newExpanded.add(key);
+    }
+    setExpandedRows(newExpanded);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -86,6 +108,11 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
   const formatCurrency = (amount: number | undefined): string => {
     if (amount === undefined || amount === null) return '-';
     return `₹${amount.toLocaleString('en-IN')}`;
+  };
+
+  const formatDate = (date: Date): string => {
+    const d = new Date(date);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   const handleGenerateFee = async (feeData: any) => {
@@ -146,134 +173,206 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Month/Year
               </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Tuition
               </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Hostel
               </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Transport
               </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Admn
               </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Total
               </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Disc
               </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Payable
               </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Paid
               </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Due
               </th>
-              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Status
               </th>
-              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Action
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {timeline.map((entry, index) => (
-              <tr key={`${entry.calendarYear}-${entry.month}-${index}`} className="hover:bg-gray-50 transition-colors">
-                <td className="px-2 py-2 whitespace-nowrap">
-                  <span className="text-xs font-medium text-gray-900">{entry.label}</span>
-                </td>
-                
-                {entry.status === 'not_generated' ? (
-                  <>
-                    <td colSpan={9} className="px-2 py-2 text-center">
-                      <button
-                        onClick={() => openGenerateModal(entry)}
-                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
-                      >
-                        <FiPlus className="mr-1 h-3 w-3" />
-                        Generate Fee
-                      </button>
+            {timeline.map((entry, index) => {
+              const rowKey = `${entry.calendarYear}-${entry.month}-${index}`;
+              const isExpanded = expandedRows.has(rowKey);
+              const hasPayments = entry.payments && entry.payments.length > 0;
+
+              return (
+                <React.Fragment key={rowKey}>
+                  {/* Main Row */}
+                  <tr className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {hasPayments && (
+                          <button
+                            onClick={() => toggleRow(rowKey)}
+                            className="mr-2 text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            {isExpanded ? (
+                              <FiChevronDown className="h-4 w-4" />
+                            ) : (
+                              <FiChevronRight className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+                        <span className="text-sm font-medium text-gray-900">{entry.label}</span>
+                      </div>
                     </td>
-                    <td className="px-2 py-2 text-center">
-                      {getStatusBadge(entry.status)}
-                    </td>
-                    <td className="px-2 py-2 text-center">
-                      -
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td className="px-2 py-2 text-right whitespace-nowrap">
-                      <span className="text-xs text-gray-900">
-                        {formatCurrency(getFeeItemAmount(entry.feeItems, 'TUITION_FEE'))}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap">
-                      <span className="text-xs text-gray-900">
-                        {formatCurrency(getFeeItemAmount(entry.feeItems, 'HOSTEL_FEE'))}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap">
-                      <span className="text-xs text-gray-900">
-                        {formatCurrency(getFeeItemAmount(entry.feeItems, 'TRANSPORT_FEE'))}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap">
-                      <span className="text-xs text-gray-900">
-                        {formatCurrency(getFeeItemAmount(entry.feeItems, 'ADMISSION_FEE'))}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap">
-                      <span className="text-xs font-semibold text-gray-900">
-                        {formatCurrency(entry.totalConfiguredAmount)}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap">
-                      <span className={`text-xs ${entry.totalAdjustment && entry.totalAdjustment > 0 ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
-                        {formatCurrency(entry.totalAdjustment)}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap">
-                      <span className="text-xs font-semibold text-gray-900">
-                        {formatCurrency(entry.totalPayableAmount)}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap">
-                      <span className={`text-xs ${entry.paidAmount && entry.paidAmount > 0 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-                        {formatCurrency(entry.paidAmount)}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap">
-                      <span className={`text-xs font-semibold ${entry.dueAmount && entry.dueAmount > 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                        {formatCurrency(entry.dueAmount)}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-center whitespace-nowrap">
-                      {getStatusBadge(entry.status)}
-                    </td>
-                    <td className="px-2 py-2 text-center whitespace-nowrap">
-                      {entry.status !== 'paid' && (
-                      <button
-                        onClick={() => openCollectModal(entry)}
-                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
-                        title="Collect Payment"
-                      >
-                        Collect
-                      </button>
-                      )}
-                    </td>
-                  </>
-                )}
-              </tr>
-            ))}
+                    
+                    {entry.status === 'not_generated' ? (
+                      <>
+                        <td colSpan={9} className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => openGenerateModal(entry)}
+                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                          >
+                            <FiPlus className="mr-1 h-4 w-4" />
+                            Generate Fee
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {getStatusBadge(entry.status)}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          -
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className="text-sm text-gray-900">
+                            {formatCurrency(getFeeItemAmount(entry.feeItems, 'TUITION_FEE'))}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className="text-sm text-gray-900">
+                            {formatCurrency(getFeeItemAmount(entry.feeItems, 'HOSTEL_FEE'))}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className="text-sm text-gray-900">
+                            {formatCurrency(getFeeItemAmount(entry.feeItems, 'TRANSPORT_FEE'))}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className="text-sm text-gray-900">
+                            {formatCurrency(getFeeItemAmount(entry.feeItems, 'ADMISSION_FEE'))}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className="text-sm font-semibold text-gray-900">
+                            {formatCurrency(entry.totalConfiguredAmount)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className={`text-sm ${entry.totalAdjustment && entry.totalAdjustment > 0 ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
+                            {formatCurrency(entry.totalAdjustment)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className="text-sm font-semibold text-gray-900">
+                            {formatCurrency(entry.totalPayableAmount)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className={`text-sm ${entry.paidAmount && entry.paidAmount > 0 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+                            {formatCurrency(entry.paidAmount)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className={`text-sm font-semibold ${entry.dueAmount && entry.dueAmount > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                            {formatCurrency(entry.dueAmount)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center whitespace-nowrap">
+                          {getStatusBadge(entry.status)}
+                        </td>
+                        <td className="px-4 py-3 text-center whitespace-nowrap">
+                          {entry.status !== 'paid' && (
+                            <button
+                              onClick={() => openCollectModal(entry)}
+                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                              title="Collect Payment"
+                            >
+                              Collect
+                            </button>
+                          )}
+                        </td>
+                      </>
+                    )}
+                  </tr>
+
+                  {/* Payment History Row (Expandable) */}
+                  {isExpanded && hasPayments && (
+                    <tr className="bg-gray-50">
+                      <td colSpan={12} className="px-4 py-3">
+                        <div className="ml-6">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-2">Payment History</h4>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead>
+                                <tr className="text-left text-xs text-gray-500 uppercase">
+                                  <th className="pb-2 pr-4">Date</th>
+                                  <th className="pb-2 pr-4">Amount</th>
+                                  <th className="pb-2 pr-4">Mode</th>
+                                  <th className="pb-2 pr-4">Reference</th>
+                                  <th className="pb-2 pr-4">Received By</th>
+                                  <th className="pb-2">Remarks</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200">
+                                {entry.payments!.map((payment) => (
+                                  <tr key={payment.id} className="text-sm">
+                                    <td className="py-2 pr-4 text-gray-900">
+                                      {formatDate(payment.paymentDate)}
+                                    </td>
+                                    <td className="py-2 pr-4 text-gray-900">
+                                      {formatCurrency(payment.amountPaid)}
+                                    </td>
+                                    <td className="py-2 pr-4 text-gray-900">
+                                      {payment.paymentMode}
+                                    </td>
+                                    <td className="py-2 pr-4 text-gray-900">
+                                      {payment.referenceNumber || '-'}
+                                    </td>
+                                    <td className="py-2 pr-4 text-gray-900">
+                                      {payment.receivedBy || '-'}
+                                    </td>
+                                    <td className="py-2 text-gray-600">
+                                      {payment.remarks || '-'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

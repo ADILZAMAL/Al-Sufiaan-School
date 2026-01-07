@@ -222,6 +222,15 @@ export const studentApi = {
         feeType: string;
         amount: number;
       }> | null;
+      payments?: Array<{
+        id: number;
+        amountPaid: number;
+        paymentDate: Date;
+        paymentMode: string;
+        referenceNumber: string | null;
+        remarks: string | null;
+        receivedBy: string | null;
+      }>;
     }>;
   }> => {
     return await apiRequest(`/students/${studentId}/fees/timeline`);

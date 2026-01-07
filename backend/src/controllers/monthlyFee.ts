@@ -368,7 +368,13 @@ export async function getStudentFeeTimeline(studentId: number) {
       {
         model: StudentFeePayment,
         as: 'payments',
-        attributes: ['amountPaid'],
+        include: [
+          {
+            model: User,
+            as: 'receiver',
+            attributes: ['id', 'firstName', 'lastName'],
+          },
+        ],
       },
     ],
     order: [['calendarYear', 'DESC'], ['month', 'DESC']],
@@ -414,6 +420,17 @@ export async function getStudentFeeTimeline(studentId: number) {
       amount: Number(item.amount),
     })) || [];
 
+    // Format payment details
+    const paymentDetails = fee.payments?.map((p: any) => ({
+      id: p.id,
+      amountPaid: Number(p.amountPaid),
+      paymentDate: p.paymentDate,
+      paymentMode: p.paymentMode,
+      referenceNumber: p.referenceNumber,
+      remarks: p.remarks,
+      receivedBy: p.receiver ? `${p.receiver.firstName} ${p.receiver.lastName}` : null,
+    })) || [];
+
     feeMap.set(key, {
       id: fee.id,
       status: fee.status.toLowerCase(),
@@ -424,6 +441,7 @@ export async function getStudentFeeTimeline(studentId: number) {
       dueAmount,
       discountReason: fee.discountReason,
       feeItems: feeItemsArray,
+      payments: paymentDetails,
     });
   }
 
@@ -454,6 +472,7 @@ export async function getStudentFeeTimeline(studentId: number) {
       dueAmount: fee.dueAmount,
       discountReason: fee.discountReason,
       feeItems: fee.feeItems,
+      payments: fee.payments,
     };
   });
 }
