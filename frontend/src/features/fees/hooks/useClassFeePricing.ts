@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { 
   classFeePricingApi, 
-  feeCategoriesApi, 
   classesApi,
   classFeePricingUtils 
 } from '../api/classFeePricing';
@@ -17,7 +16,6 @@ import {
 export const QUERY_KEYS = {
   CLASS_FEE_PRICING: 'classFeePricing',
   CLASS_FEE_PRICING_BY_CLASS: 'classFeePricingByClass',
-  FEE_CATEGORIES: 'feeCategories',
   CLASSES: 'classes',
 } as const;
 
@@ -54,18 +52,6 @@ export const useClassFeePricingById = (id: number) => {
     {
       enabled: !!id,
       staleTime: 5 * 60 * 1000,
-    }
-  );
-};
-
-// Hook for fetching fee categories
-export const useFeeCategories = (classBased: boolean = false) => {
-  return useQuery(
-    [QUERY_KEYS.FEE_CATEGORIES, classBased],
-    () => classBased ? feeCategoriesApi.getClassBased() : feeCategoriesApi.getAll(),
-    {
-      staleTime: 10 * 60 * 1000, // 10 minutes
-      cacheTime: 30 * 60 * 1000, // 30 minutes
     }
   );
 };
@@ -190,7 +176,6 @@ export const useClassFeePricingManager = (filters?: ClassFeePricingFilters) => {
 
   // Queries
   const classFeePricingQuery = useClassFeePricing(filters);
-  const feeCategoriesQuery = useFeeCategories(true); // Only class-based categories
   const classesQuery = useClasses();
 
   // Mutations
@@ -246,19 +231,16 @@ export const useClassFeePricingManager = (filters?: ClassFeePricingFilters) => {
   return {
     // Data
     classFeePricing: classFeePricingQuery.data || [],
-    feeCategories: feeCategoriesQuery.data || [],
     classes: classesQuery.data || [],
 
     // Loading states
-    isLoading: classFeePricingQuery.isLoading || feeCategoriesQuery.isLoading || classesQuery.isLoading,
+    isLoading: classFeePricingQuery.isLoading || classesQuery.isLoading,
     isLoadingPricing: classFeePricingQuery.isLoading,
-    isLoadingCategories: feeCategoriesQuery.isLoading,
     isLoadingClasses: classesQuery.isLoading,
 
     // Error states
-    error: classFeePricingQuery.error || feeCategoriesQuery.error || classesQuery.error,
+    error: classFeePricingQuery.error || classesQuery.error,
     pricingError: classFeePricingQuery.error,
-    categoriesError: feeCategoriesQuery.error,
     classesError: classesQuery.error,
 
     // Mutations

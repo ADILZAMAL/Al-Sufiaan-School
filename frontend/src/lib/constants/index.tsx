@@ -64,12 +64,6 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 		icon: <HiOutlineCurrencyDollar />,
 		children: [
 			{
-				key: 'fee-categories',
-				label: 'Fee Categories',
-				path: 'fee/categories',
-				icon: <HiOutlineCog />
-			},
-			{
 				key: 'class-pricing',
 				label: 'Class Pricing',
 				path: 'fee/class-pricing',

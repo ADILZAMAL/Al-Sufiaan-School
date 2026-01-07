@@ -152,41 +152,6 @@ export const transportationAreaPricingApi = {
   },
 };
 
-// Fee Categories API for transportation (area-based only)
-export const transportationFeeCategoriesApi = {
-  // Get area-based fee categories only
-  getAreaBased: async (): Promise<any[]> => {
-    const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
-    const queryString = buildQueryString({ isActive: true, pricingType: 'Area-based' });
-    const url = `${API_BASE_URL}/api/fee-categories?${queryString}`;
-    
-    const response = await fetch(url, {
-      credentials: "include"
-    });
-    const body = await response.json();
-    if (!body.success) {
-      throw new Error(body.error?.message || body.message);
-    }
-    return body.data;
-  },
-
-  // Get all fee categories
-  getAll: async (filters?: { isActive?: boolean; pricingType?: string }): Promise<any[]> => {
-    const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
-    const queryString = filters ? buildQueryString(filters) : '';
-    const url = queryString ? `${API_BASE_URL}/api/fee-categories?${queryString}` : `${API_BASE_URL}/api/fee-categories`;
-    
-    const response = await fetch(url, {
-      credentials: "include"
-    });
-    const body = await response.json();
-    if (!body.success) {
-      throw new Error(body.error?.message || body.message);
-    }
-    return body.data;
-  },
-};
-
 // Utility functions for transportation area pricing
 export const transportationAreaPricingUtils = {
   // Calculate total amount for an area
@@ -316,10 +281,6 @@ export const transportationAreaPricingUtils = {
     
     if (!data.price || data.price <= 0) {
       errors.push('Price must be greater than 0');
-    }
-    
-    if (!data.feeCategoryId) {
-      errors.push('Fee category is required');
     }
     
     if (!data.academicYear || !transportationAreaPricingUtils.isValidAcademicYear(data.academicYear)) {

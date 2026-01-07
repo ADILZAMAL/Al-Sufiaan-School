@@ -15,7 +15,6 @@ const TransportationAreaPricing: React.FC = () => {
   const [formData, setFormData] = useState({
     areaName: '',
     price: '',
-    feeCategoryId: '',
     academicYear: '',
     description: '',
     displayOrder: '0',
@@ -24,7 +23,6 @@ const TransportationAreaPricing: React.FC = () => {
   const {
     transportationAreaPricing,
     pagination,
-    feeCategories,
     stats,
     isLoading,
     isCreating,
@@ -50,7 +48,6 @@ const TransportationAreaPricing: React.FC = () => {
     const data = {
       areaName: formData.areaName.trim(),
       price: parseFloat(formData.price),
-      feeCategoryId: parseInt(formData.feeCategoryId),
       academicYear: formData.academicYear,
       description: formData.description.trim(),
       displayOrder: parseInt(formData.displayOrder) || 0,
@@ -74,7 +71,6 @@ const TransportationAreaPricing: React.FC = () => {
       setFormData({
         areaName: '',
         price: '',
-        feeCategoryId: '',
         academicYear: '',
         description: '',
         displayOrder: '0',
@@ -92,7 +88,6 @@ const TransportationAreaPricing: React.FC = () => {
     setFormData({
       areaName: pricing.areaName,
       price: pricing.price.toString(),
-      feeCategoryId: pricing.feeCategoryId.toString(),
       academicYear: pricing.academicYear,
       description: pricing.description || '',
       displayOrder: pricing.displayOrder.toString(),
@@ -182,21 +177,6 @@ const TransportationAreaPricing: React.FC = () => {
               </select>
             </div>
 
-            {/* Fee Category Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fee Category</label>
-              <select
-                value={filters.feeCategoryId || ''}
-                onChange={(e) => handleFilterChange('feeCategoryId', e.target.value ? parseInt(e.target.value) : undefined)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-              >
-                <option value="">All Categories</option>
-                {feeCategories.map(category => (
-                  <option key={category.id} value={category.id}>{category.name}</option>
-                ))}
-              </select>
-            </div>
-
             {/* Area Name Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Area Name</label>
@@ -230,7 +210,6 @@ const TransportationAreaPricing: React.FC = () => {
               setFormData({
                 areaName: '',
                 price: '',
-                feeCategoryId: '',
                 academicYear: utils.getCurrentAcademicYear(),
                 description: '',
                 displayOrder: '0',
@@ -287,7 +266,7 @@ const TransportationAreaPricing: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Transport Fee Price (₹) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -297,21 +276,6 @@ const TransportationAreaPricing: React.FC = () => {
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                   required
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fee Category *</label>
-                <select
-                  value={formData.feeCategoryId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, feeCategoryId: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  required
-                >
-                  <option value="">Select Fee Category</option>
-                  {feeCategories.map(category => (
-                    <option key={category.id} value={category.id}>{category.name}</option>
-                  ))}
-                </select>
               </div>
 
               <div>
@@ -382,8 +346,7 @@ const TransportationAreaPricing: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transport Fee</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Academic Year</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -401,10 +364,6 @@ const TransportationAreaPricing: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {utils.formatCurrency(pricing.price)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {pricing.feeCategory?.name}
-                      <div className="text-xs text-gray-500">{pricing.feeCategory?.feeType}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {pricing.academicYear}

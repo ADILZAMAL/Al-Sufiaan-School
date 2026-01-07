@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import TransportationAreaPricing from '../models/TransportationAreaPricing';
-import FeeCategory from '../models/FeeCategory';
 import School from '../models/School';
 import { sendSuccess, sendError } from '../utils/response';
 
@@ -17,7 +16,6 @@ export const getAllTransportationAreaPricing = async (req: AuthenticatedRequest,
         const schoolId = req.schoolId;
         const { 
             academicYear, 
-            feeCategoryId, 
             areaName, 
             isActive,
             page = 1, 
@@ -29,19 +27,11 @@ export const getAllTransportationAreaPricing = async (req: AuthenticatedRequest,
         const whereClause: any = { schoolId };
         
         if (academicYear) whereClause.academicYear = academicYear;
-        if (feeCategoryId) whereClause.feeCategoryId = feeCategoryId;
         if (areaName) whereClause.areaName = { [require('sequelize').Op.iLike]: `%${areaName}%` };
         if (isActive !== undefined) whereClause.isActive = isActive === 'true';
 
         const { rows: transportationAreaPricing, count } = await TransportationAreaPricing.findAndCountAll({
             where: whereClause,
-            include: [
-                {
-                    model: FeeCategory,
-                    as: 'feeCategory',
-                    attributes: ['id', 'name', 'feeType', 'pricingType', 'isMandatory']
-                }
-            ],
             order: [['displayOrder', 'ASC'], ['areaName', 'ASC'], ['createdAt', 'DESC']],
             limit: Number(limit),
             offset
@@ -69,14 +59,7 @@ export const getTransportationAreaPricingById = async (req: AuthenticatedRequest
         const schoolId = req.schoolId;
 
         const transportationAreaPricing = await TransportationAreaPricing.findOne({
-            where: { id, schoolId },
-            include: [
-                {
-                    model: FeeCategory,
-                    as: 'feeCategory',
-                    attributes: ['id', 'name', 'feeType', 'pricingType', 'isMandatory']
-                }
-            ]
+            where: { id, schoolId }
         });
 
         if (!transportationAreaPricing) {
@@ -109,13 +92,6 @@ export const getTransportationAreaPricingByArea = async (req: AuthenticatedReque
 
         const transportationAreaPricing = await TransportationAreaPricing.findAll({
             where: whereClause,
-            include: [
-                {
-                    model: FeeCategory,
-                    as: 'feeCategory',
-                    attributes: ['id', 'name', 'feeType', 'pricingType', 'isMandatory']
-                }
-            ],
             order: [['displayOrder', 'ASC'], ['createdAt', 'DESC']]
         });
 
@@ -145,54 +121,34 @@ export const createTransportationAreaPricing = async (req: AuthenticatedRequest,
         const {
             areaName,
             price,
-            feeCategoryId,
             academicYear,
             description,
             displayOrder
         } = req.body;
 
-        // Check if fee category exists and belongs to the school
-        const feeCategory = await FeeCategory.findOne({
-            where: { id: feeCategoryId, schoolId }
-        });
-
-        if (!feeCategory) {
-            return sendError(res, 'Fee category not found', 404);
-        }
-
-        // Check for existing pricing with same area, fee category, and academic year
+        // Check for existing pricing with same area and academic year
         const existingPricing = await TransportationAreaPricing.findOne({
             where: {
                 areaName,
-                feeCategoryId,
                 academicYear,
                 schoolId
             }
         });
 
         if (existingPricing) {
-            return sendError(res, 'Transportation area pricing already exists for this area, fee category, and academic year', 409);
+            return sendError(res, 'Transportation area pricing already exists for this area and academic year', 409);
         }
 
         const transportationAreaPricing = await TransportationAreaPricing.create({
             areaName,
             price,
-            feeCategoryId,
             academicYear,
             description,
             displayOrder: displayOrder || 0,
             schoolId
         });
 
-        const createdPricing = await TransportationAreaPricing.findByPk(transportationAreaPricing.id, {
-            include: [
-                {
-                    model: FeeCategory,
-                    as: 'feeCategory',
-                    attributes: ['id', 'name', 'feeType', 'pricingType', 'isMandatory']
-                }
-            ]
-        });
+        const createdPricing = await TransportationAreaPricing.findByPk(transportationAreaPricing.id);
 
         return sendSuccess(res, createdPricing, 'Transportation area pricing created successfully', 201);
     } catch (error) {
@@ -221,23 +177,11 @@ export const updateTransportationAreaPricing = async (req: AuthenticatedRequest,
             return sendError(res, 'Transportation area pricing not found', 404);
         }
 
-        // If updating fee category, check if it exists and belongs to the school
-        if (updateData.feeCategoryId) {
-            const feeCategory = await FeeCategory.findOne({
-                where: { id: updateData.feeCategoryId, schoolId }
-            });
-
-            if (!feeCategory) {
-                return sendError(res, 'Fee category not found', 404);
-            }
-        }
-
         // Check for conflicts if updating key fields
-        if (updateData.areaName || updateData.feeCategoryId || updateData.academicYear) {
+        if (updateData.areaName || updateData.academicYear) {
             const conflictCheck = await TransportationAreaPricing.findOne({
                 where: {
                     areaName: updateData.areaName || transportationAreaPricing.areaName,
-                    feeCategoryId: updateData.feeCategoryId || transportationAreaPricing.feeCategoryId,
                     academicYear: updateData.academicYear || transportationAreaPricing.academicYear,
                     schoolId,
                     id: { [require('sequelize').Op.ne]: id }
@@ -245,21 +189,13 @@ export const updateTransportationAreaPricing = async (req: AuthenticatedRequest,
             });
 
             if (conflictCheck) {
-                return sendError(res, 'Transportation area pricing already exists for this area, fee category, and academic year', 409);
+                return sendError(res, 'Transportation area pricing already exists for this area and academic year', 409);
             }
         }
 
         await transportationAreaPricing.update(updateData);
 
-        const updatedPricing = await TransportationAreaPricing.findByPk(id, {
-            include: [
-                {
-                    model: FeeCategory,
-                    as: 'feeCategory',
-                    attributes: ['id', 'name', 'feeType', 'pricingType', 'isMandatory']
-                }
-            ]
-        });
+        const updatedPricing = await TransportationAreaPricing.findByPk(id);
 
         return sendSuccess(res, updatedPricing, 'Transportation area pricing updated successfully');
     } catch (error) {
@@ -313,7 +249,6 @@ export const bulkUpsertTransportationAreaPricing = async (req: AuthenticatedRequ
                 const existingPricing = await TransportationAreaPricing.findOne({
                     where: {
                         areaName: data.areaName,
-                        feeCategoryId: data.feeCategoryId,
                         academicYear: data.academicYear,
                         schoolId
                     }
@@ -388,7 +323,6 @@ export const copyPricingToNewYear = async (req: AuthenticatedRequest, res: Respo
                 const existingInNewYear = await TransportationAreaPricing.findOne({
                     where: {
                         areaName: pricing.areaName,
-                        feeCategoryId: pricing.feeCategoryId,
                         academicYear: toYear,
                         schoolId
                     }
@@ -398,7 +332,6 @@ export const copyPricingToNewYear = async (req: AuthenticatedRequest, res: Respo
                     await TransportationAreaPricing.create({
                         areaName: pricing.areaName,
                         price: pricing.price,
-                        feeCategoryId: pricing.feeCategoryId,
                         academicYear: toYear,
                         description: pricing.description,
                         displayOrder: pricing.displayOrder,

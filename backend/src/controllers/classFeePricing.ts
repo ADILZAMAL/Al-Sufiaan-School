@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import ClassFeePricing from '../models/ClassFeePricing';
-import FeeCategory from '../models/FeeCategory';
 import Class from '../models/Class';
 import { sendSuccess, sendError } from '../utils/response';
 
-// Create a new class fee pricing
+// Create a new class fee pricing (tuition fee)
 export const createClassFeePricing = async (req: Request, res: Response) => {
     try {
         const errors = validationResult(req);
@@ -15,27 +14,9 @@ export const createClassFeePricing = async (req: Request, res: Response) => {
 
         const {
             classId,
-            feeCategoryId,
             amount,
             academicYear
         } = req.body;
-
-        // Check if the fee category exists and is class-based
-        const feeCategory = await FeeCategory.findOne({
-            where: {
-                id: feeCategoryId,
-                schoolId: req.schoolId,
-                isActive: true
-            }
-        });
-
-        if (!feeCategory) {
-            return sendError(res, 'Fee category not found', 404);
-        }
-
-        if (feeCategory.pricingType !== 'Class-based') {
-            return sendError(res, 'Fee category must be class-based for class pricing', 400);
-        }
 
         // Check if class exists
         const classExists = await Class.findOne({
@@ -53,7 +34,6 @@ export const createClassFeePricing = async (req: Request, res: Response) => {
         const existingPricing = await ClassFeePricing.findOne({
             where: {
                 classId,
-                feeCategoryId,
                 academicYear,
                 schoolId: req.schoolId,
                 isActive: true
@@ -61,12 +41,11 @@ export const createClassFeePricing = async (req: Request, res: Response) => {
         });
 
         if (existingPricing) {
-            return sendError(res, 'Pricing already exists for this class and fee category in the academic year', 409);
+            return sendError(res, 'Tuition fee pricing already exists for this class in the academic year', 409);
         }
 
         const classFeePricing = await ClassFeePricing.create({
             classId,
-            feeCategoryId,
             amount,
             academicYear,
             isActive: true,
@@ -80,16 +59,11 @@ export const createClassFeePricing = async (req: Request, res: Response) => {
                     model: Class,
                     as: 'class',
                     attributes: ['id', 'name']
-                },
-                {
-                    model: FeeCategory,
-                    as: 'feeCategory',
-                    attributes: ['id', 'name', 'feeType', 'pricingType']
                 }
             ]
         });
 
-        sendSuccess(res, createdPricing, 'Class fee pricing created successfully', 201);
+        sendSuccess(res, createdPricing, 'Class tuition fee pricing created successfully', 201);
     } catch (error: any) {
         console.error('Error creating class fee pricing:', error);
         sendError(res, 'Failed to create class fee pricing', 500, error.message);
@@ -99,7 +73,7 @@ export const createClassFeePricing = async (req: Request, res: Response) => {
 // Get all class fee pricing
 export const getAllClassFeePricing = async (req: Request, res: Response) => {
     try {
-        const { classId, feeCategoryId, academicYear, isActive } = req.query;
+        const { classId, academicYear, isActive } = req.query;
         
         const whereClause: any = {
             schoolId: req.schoolId
@@ -107,10 +81,6 @@ export const getAllClassFeePricing = async (req: Request, res: Response) => {
 
         if (classId) {
             whereClause.classId = classId;
-        }
-
-        if (feeCategoryId) {
-            whereClause.feeCategoryId = feeCategoryId;
         }
 
         if (academicYear) {
@@ -128,14 +98,9 @@ export const getAllClassFeePricing = async (req: Request, res: Response) => {
                     model: Class,
                     as: 'class',
                     attributes: ['id', 'name']
-                },
-                {
-                    model: FeeCategory,
-                    as: 'feeCategory',
-                    attributes: ['id', 'name', 'feeType', 'pricingType', 'isMandatory']
                 }
             ],
-            order: [['academicYear', 'DESC'], ['classId', 'ASC'], ['feeCategoryId', 'ASC']]
+            order: [['academicYear', 'DESC'], ['classId', 'ASC']]
         });
 
         sendSuccess(res, classFeePricing, 'Class fee pricing retrieved successfully');
@@ -160,11 +125,6 @@ export const getClassFeePricing = async (req: Request, res: Response) => {
                     model: Class,
                     as: 'class',
                     attributes: ['id', 'name']
-                },
-                {
-                    model: FeeCategory,
-                    as: 'feeCategory',
-                    attributes: ['id', 'name', 'feeType', 'pricingType', 'isMandatory']
                 }
             ]
         });
@@ -203,20 +163,12 @@ export const getClassFeePricingByClass = async (req: Request, res: Response) => 
                     model: Class,
                     as: 'class',
                     attributes: ['id', 'name']
-                },
-                {
-                    model: FeeCategory,
-                    as: 'feeCategory',
-                    attributes: ['id', 'name', 'feeType', 'pricingType', 'isMandatory', 'displayOrder']
                 }
             ],
-            order: [
-                [{ model: FeeCategory, as: 'feeCategory' }, 'displayOrder', 'ASC'],
-                [{ model: FeeCategory, as: 'feeCategory' }, 'name', 'ASC']
-            ]
+            order: [['academicYear', 'DESC']]
         });
 
-        // Calculate total amount
+        // Calculate total amount (tuition fee)
         const totalAmount = classFeePricing.reduce((sum, pricing) => sum + parseFloat(pricing.amount.toString()), 0);
 
         sendSuccess(res, {
@@ -270,11 +222,6 @@ export const updateClassFeePricing = async (req: Request, res: Response) => {
                     model: Class,
                     as: 'class',
                     attributes: ['id', 'name']
-                },
-                {
-                    model: FeeCategory,
-                    as: 'feeCategory',
-                    attributes: ['id', 'name', 'feeType', 'pricingType']
                 }
             ]
         });
@@ -331,7 +278,6 @@ export const bulkUpsertClassFeePricing = async (req: Request, res: Response) => 
         for (const pricing of pricingData) {
             const {
                 classId,
-                feeCategoryId,
                 amount,
                 academicYear
             } = pricing;
@@ -340,7 +286,6 @@ export const bulkUpsertClassFeePricing = async (req: Request, res: Response) => 
             const existingPricing = await ClassFeePricing.findOne({
                 where: {
                     classId,
-                    feeCategoryId,
                     academicYear,
                     schoolId: req.schoolId
                 }
@@ -357,7 +302,6 @@ export const bulkUpsertClassFeePricing = async (req: Request, res: Response) => 
                 // Create new
                 const newPricing = await ClassFeePricing.create({
                     classId,
-                    feeCategoryId,
                     amount,
                     academicYear,
                     isActive: true,
@@ -403,7 +347,6 @@ export const copyPricingToNewYear = async (req: Request, res: Response) => {
 
         const newPricingData = existingPricing.map(pricing => ({
             classId: pricing.classId,
-            feeCategoryId: pricing.feeCategoryId,
             amount: pricing.amount,
             academicYear: toYear,
             isActive: true,

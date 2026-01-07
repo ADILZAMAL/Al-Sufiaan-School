@@ -3,7 +3,6 @@ export interface TransportationAreaPricing {
   id: number;
   areaName: string;
   price: number;
-  feeCategoryId: number;
   academicYear: string;
   isActive: boolean;
   schoolId: number;
@@ -11,23 +10,12 @@ export interface TransportationAreaPricing {
   displayOrder: number;
   createdAt: string;
   updatedAt: string;
-  
-  // Associated data
-  feeCategory?: {
-    id: number;
-    name: string;
-    feeType: string;
-    pricingType: string;
-    isMandatory: boolean;
-    displayOrder?: number;
-  };
 }
 
 // API Request Types
 export interface CreateTransportationAreaPricingRequest {
   areaName: string;
   price: number;
-  feeCategoryId: number;
   academicYear: string;
   description?: string;
   displayOrder?: number;
@@ -36,7 +24,6 @@ export interface CreateTransportationAreaPricingRequest {
 export interface UpdateTransportationAreaPricingRequest {
   areaName?: string;
   price?: number;
-  feeCategoryId?: number;
   academicYear?: string;
   description?: string;
   displayOrder?: number;
@@ -106,7 +93,6 @@ export interface TransportationAreaPricingStatsResponse {
 export interface TransportationAreaPricingFormData {
   areaName: string;
   price: string;
-  feeCategoryId: string;
   academicYear: string;
   description: string;
   displayOrder: string;
@@ -114,7 +100,6 @@ export interface TransportationAreaPricingFormData {
 
 export interface TransportationAreaPricingFilters {
   academicYear?: string;
-  feeCategoryId?: number;
   areaName?: string;
   isActive?: boolean;
   page?: number;
@@ -123,9 +108,7 @@ export interface TransportationAreaPricingFilters {
 
 // Table/Display Types
 export interface TransportationAreaPricingTableRow extends TransportationAreaPricing {
-  feeCategoryName: string;
   feeType: string;
-  isMandatory: boolean;
 }
 
 export interface TransportationAreaSummary {
@@ -157,7 +140,6 @@ export type TransportationAreaPricingStatus = 'active' | 'inactive' | 'expired';
 
 export interface TransportationAreaPricingStats {
   totalAreas: number;
-  totalFeeCategories: number;
   totalPricingRecords: number;
   averagePricePerArea: number;
   academicYears: string[];
@@ -183,11 +165,6 @@ export interface TransportationAreaPricingFormProps {
 export interface TransportationAreaPricingFiltersProps {
   filters: TransportationAreaPricingFilters;
   onFiltersChange: (filters: TransportationAreaPricingFilters) => void;
-  feeCategories: Array<{
-    id: number;
-    name: string;
-    feeType: string;
-  }>;
   academicYears: AcademicYear[];
 }
 

@@ -1,12 +1,10 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import School from './School';
-import FeeCategory from './FeeCategory';
 
 class TransportationAreaPricing extends Model {
     public id!: number;
     public areaName!: string;
     public price!: number;
-    public feeCategoryId!: number;
     public academicYear!: string;
     public isActive!: boolean;
     public schoolId!: number;
@@ -16,7 +14,6 @@ class TransportationAreaPricing extends Model {
     public readonly updatedAt!: Date;
 
     // Associated data
-    public readonly feeCategory?: any;
     public readonly school?: any;
 }
 
@@ -41,14 +38,6 @@ export const initTransportationAreaPricingModel = (sequelize: Sequelize): void =
                 allowNull: false,
                 validate: {
                     min: 0
-                }
-            },
-            feeCategoryId: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-                references: {
-                    model: FeeCategory,
-                    key: 'id'
                 }
             },
             academicYear: {
@@ -102,10 +91,6 @@ export const initTransportationAreaPricingModel = (sequelize: Sequelize): void =
                     fields: ['schoolId']
                 },
                 {
-                    name: 'transportation_area_pricing_fee_category_index',
-                    fields: ['feeCategoryId']
-                },
-                {
                     name: 'transportation_area_pricing_academic_year_index',
                     fields: ['academicYear']
                 },
@@ -119,8 +104,8 @@ export const initTransportationAreaPricingModel = (sequelize: Sequelize): void =
                 },
                 {
                     unique: true,
-                    fields: ['areaName', 'feeCategoryId', 'academicYear', 'schoolId'],
-                    name: 'unique_area_fee_category_year_school'
+                    fields: ['areaName', 'academicYear', 'schoolId'],
+                    name: 'unique_area_year_school'
                 }
             ]
         }

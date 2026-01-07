@@ -5,7 +5,6 @@ import { CreateClassFeePricingRequest } from '../types';
 const ClassFeePricing: React.FC = () => {
   const {
     classFeePricing,
-    feeCategories,
     classes,
     isLoading,
     createPricing,
@@ -17,7 +16,6 @@ const ClassFeePricing: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     classId: '',
-    feeCategoryId: '',
     amount: '',
     academicYear: utils.getCurrentAcademicYear()
   });
@@ -27,7 +25,6 @@ const ClassFeePricing: React.FC = () => {
     
     const data: CreateClassFeePricingRequest = {
       classId: parseInt(formData.classId),
-      feeCategoryId: parseInt(formData.feeCategoryId),
       amount: parseFloat(formData.amount),
       academicYear: formData.academicYear
     };
@@ -37,7 +34,6 @@ const ClassFeePricing: React.FC = () => {
         setShowForm(false);
         setFormData({
           classId: '',
-          feeCategoryId: '',
           amount: '',
           academicYear: utils.getCurrentAcademicYear()
         });
@@ -57,7 +53,7 @@ const ClassFeePricing: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Class Fee Pricing</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Class Tuition Fee Pricing</h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
@@ -69,7 +65,7 @@ const ClassFeePricing: React.FC = () => {
       {/* Add New Pricing Form */}
       {showForm && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Add New Class Fee Pricing</h2>
+          <h2 className="text-xl font-semibold mb-4">Add New Class Tuition Fee Pricing</h2>
           
           {createError ? (
             <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
@@ -111,33 +107,14 @@ const ClassFeePricing: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fee Category
-              </label>
-              <select
-                value={formData.feeCategoryId}
-                onChange={(e) => setFormData({ ...formData, feeCategoryId: e.target.value })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select Fee Category</option>
-                {feeCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name} ({category.feeType})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Amount (₹)
+                Tuition Fee Amount (₹)
               </label>
               <input
                 type="number"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter amount"
+                placeholder="Enter tuition fee amount"
                 min="0"
                 step="0.01"
                 required
@@ -178,12 +155,12 @@ const ClassFeePricing: React.FC = () => {
       {/* Pricing Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold">Current Fee Pricing</h2>
+          <h2 className="text-xl font-semibold">Current Tuition Fee Pricing</h2>
         </div>
         
         {classFeePricing.length === 0 ? (
           <div className="p-6 text-center text-gray-500">
-            No fee pricing configured yet. Add your first pricing above.
+            No tuition fee pricing configured yet. Add your first pricing above.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -194,7 +171,7 @@ const ClassFeePricing: React.FC = () => {
                     Class
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fee Category
+                    Fee Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
@@ -213,13 +190,10 @@ const ClassFeePricing: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {pricing.class?.name || 'Unknown Class'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {pricing.feeCategory?.name || 'Unknown Category'}
-                      <span className="ml-2 text-xs text-gray-400">
-                        ({pricing.feeCategory?.feeType})
-                      </span>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      Tuition Fee
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                       {utils.formatAmount(pricing.amount)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

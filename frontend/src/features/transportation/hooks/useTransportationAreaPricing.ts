@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { 
   transportationAreaPricingApi, 
-  transportationFeeCategoriesApi,
   transportationAreaPricingUtils 
 } from '../api/transportationAreaPricing';
 import {
@@ -17,7 +16,6 @@ export const QUERY_KEYS = {
   TRANSPORTATION_AREA_PRICING: 'transportationAreaPricing',
   TRANSPORTATION_AREA_PRICING_BY_AREA: 'transportationAreaPricingByArea',
   TRANSPORTATION_AREA_PRICING_STATS: 'transportationAreaPricingStats',
-  TRANSPORTATION_FEE_CATEGORIES: 'transportationFeeCategories',
 } as const;
 
 // Hook for fetching all transportation area pricing
@@ -62,18 +60,6 @@ export const useTransportationAreaPricingStats = (academicYear?: string) => {
   return useQuery(
     [QUERY_KEYS.TRANSPORTATION_AREA_PRICING_STATS, academicYear],
     () => transportationAreaPricingApi.getStats(academicYear),
-    {
-      staleTime: 10 * 60 * 1000, // 10 minutes
-      cacheTime: 30 * 60 * 1000, // 30 minutes
-    }
-  );
-};
-
-// Hook for fetching area-based fee categories
-export const useTransportationFeeCategories = () => {
-  return useQuery(
-    [QUERY_KEYS.TRANSPORTATION_FEE_CATEGORIES],
-    () => transportationFeeCategoriesApi.getAreaBased(),
     {
       staleTime: 10 * 60 * 1000, // 10 minutes
       cacheTime: 30 * 60 * 1000, // 30 minutes
@@ -162,7 +148,7 @@ export const useBulkUpsertTransportationAreaPricing = () => {
         queryClient.invalidateQueries([QUERY_KEYS.TRANSPORTATION_AREA_PRICING_STATS]);
       },
       onError: (error) => {
-        console.error('Error bulk upserting transportation area pricing:', error);
+        console.error('Error bulk upsert transportation area pricing:', error);
       },
     }
   );
@@ -194,7 +180,6 @@ export const useTransportationAreaPricingManager = (filters?: TransportationArea
 
   // Queries
   const transportationAreaPricingQuery = useTransportationAreaPricing(filters);
-  const feeCategoriesQuery = useTransportationFeeCategories();
   const statsQuery = useTransportationAreaPricingStats(filters?.academicYear);
 
   // Mutations
@@ -275,19 +260,16 @@ export const useTransportationAreaPricingManager = (filters?: TransportationArea
     // Data
     transportationAreaPricing: transportationAreaPricingQuery.data?.transportationAreaPricing || [],
     pagination: transportationAreaPricingQuery.data?.pagination,
-    feeCategories: feeCategoriesQuery.data || [],
     stats: statsQuery.data,
 
     // Loading states
-    isLoading: transportationAreaPricingQuery.isLoading || feeCategoriesQuery.isLoading || statsQuery.isLoading,
+    isLoading: transportationAreaPricingQuery.isLoading || statsQuery.isLoading,
     isLoadingPricing: transportationAreaPricingQuery.isLoading,
-    isLoadingCategories: feeCategoriesQuery.isLoading,
     isLoadingStats: statsQuery.isLoading,
 
     // Error states
-    error: transportationAreaPricingQuery.error || feeCategoriesQuery.error || statsQuery.error,
+    error: transportationAreaPricingQuery.error || statsQuery.error,
     pricingError: transportationAreaPricingQuery.error,
-    categoriesError: feeCategoriesQuery.error,
     statsError: statsQuery.error,
 
     // Mutations

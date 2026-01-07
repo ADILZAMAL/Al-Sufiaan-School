@@ -1,12 +1,10 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import School from './School';
 import Class from './Class';
-import FeeCategory from './FeeCategory';
 
 class ClassFeePricing extends Model {
     public id!: number;
     public classId!: number;
-    public feeCategoryId!: number;
     public amount!: number;
     public academicYear!: string;
     public isActive!: boolean;
@@ -16,7 +14,6 @@ class ClassFeePricing extends Model {
 
     // Virtual fields for associations
     public readonly class?: any;
-    public readonly feeCategory?: any;
 }
 
 export const initClassFeePricingModel = (sequelize: Sequelize): void => {
@@ -32,14 +29,6 @@ export const initClassFeePricingModel = (sequelize: Sequelize): void => {
                 allowNull: false,
                 references: {
                     model: Class,
-                    key: 'id'
-                }
-            },
-            feeCategoryId: {
-                type: DataTypes.INTEGER,
-                allowNull: false,
-                references: {
-                    model: FeeCategory,
                     key: 'id'
                 }
             },
@@ -95,10 +84,6 @@ export const initClassFeePricingModel = (sequelize: Sequelize): void => {
                     fields: ['classId']
                 },
                 {
-                    name: 'class_fee_pricing_fee_category_index',
-                    fields: ['feeCategoryId']
-                },
-                {
                     name: 'class_fee_pricing_academic_year_index',
                     fields: ['academicYear']
                 },
@@ -109,7 +94,7 @@ export const initClassFeePricingModel = (sequelize: Sequelize): void => {
                 {
                     name: 'class_fee_pricing_unique_constraint',
                     unique: true,
-                    fields: ['classId', 'feeCategoryId', 'academicYear', 'schoolId']
+                    fields: ['classId', 'academicYear', 'schoolId']
                 }
             ],
         }

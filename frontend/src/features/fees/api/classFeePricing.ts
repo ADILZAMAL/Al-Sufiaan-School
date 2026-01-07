@@ -127,31 +127,7 @@ export const classFeePricingApi = {
   },
 };
 
-// Fee Categories API (reusing existing if available, or creating new)
-export const feeCategoriesApi = {
-  // Get all fee categories
-  getAll: async (filters?: { isActive?: boolean; pricingType?: string }): Promise<any[]> => {
-    const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
-    const queryString = filters ? buildQueryString(filters) : '';
-    const url = queryString ? `${API_BASE_URL}/api/fee-categories?${queryString}` : `${API_BASE_URL}/api/fee-categories`;
-    
-    const response = await fetch(url, {
-      credentials: "include"
-    });
-    const body = await response.json();
-    if (!body.success) {
-      throw new Error(body.error.message);
-    }
-    return body.data;
-  },
-
-  // Get class-based fee categories only
-  getClassBased: async (): Promise<any[]> => {
-    return feeCategoriesApi.getAll({ isActive: true, pricingType: 'Class-based' });
-  },
-};
-
-// Classes API (reusing existing if available, or creating new)
+// Classes API
 export const classesApi = {
   // Get all classes
   getAll: async (): Promise<any[]> => {

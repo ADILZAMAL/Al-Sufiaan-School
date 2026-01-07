@@ -1,16 +1,22 @@
 import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional, Sequelize } from "sequelize";
 import sequelize from "../config/database";
 import StudentMonthlyFee from "./StudentMonthlyFee";
-import FeeCategory from "./FeeCategory";
+
+export enum FeeItemType {
+  TUITION_FEE = 'TUITION_FEE',
+  HOSTEL_FEE = 'HOSTEL_FEE',
+  TRANSPORT_FEE = 'TRANSPORT_FEE',
+  ADMISSION_FEE = 'ADMISSION_FEE'
+}
 
 export interface StudentMonthlyFeeItemCreationAttributes {
-  feeCategoryId: number;
+  feeType: FeeItemType;
   amount: number;
 }
 class StudentMonthlyFeeItem extends Model {
     public id!: number;
     public studentMonthlyFeeId!: number;
-    public feeCategoryId!: number | null;
+    public feeType!: FeeItemType;
     public amount!: number;
 }
 
@@ -32,14 +38,9 @@ export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
           onDelete: "RESTRICT",
           onUpdate: 'CASCADE'
         },
-      feeCategoryId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        references: {
-          model: FeeCategory,
-          key: "id",
-        },
-        onDelete: "SET NULL"
+      feeType: {
+        type: DataTypes.ENUM(...Object.values(FeeItemType)),
+        allowNull: false,
       },
       amount: {
         type: DataTypes.DECIMAL(10, 2),
@@ -55,12 +56,12 @@ export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
       indexes: [
         {
           unique: true,
-          fields: ['studentMonthlyFeeId', 'feeCategoryId'],
+          fields: ['studentMonthlyFeeId', 'feeType'],
           name: 'student_monthly_fee_item_unique',
         },
         {
           fields: ['studentMonthlyFeeId'],
-          name: 'student_monthly_fee_item_fee_category_id_idx',
+          name: 'student_monthly_fee_item_type_idx',
         }
       ]
     })

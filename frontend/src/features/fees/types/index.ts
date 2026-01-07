@@ -26,27 +26,10 @@ export const PRICING_TYPE_COLORS = {
   'Area-based': 'bg-orange-100 text-orange-800'
 } as const;
 
-// Fee Category Types
-export interface FeeCategory {
-  id: number;
-  name: string;
-  pricingType: 'Fixed' | 'Class-based' | 'Area-based';
-  fixedAmount: number;
-  feeType: 'One-time' | 'Annual' | 'Monthly' | 'Quarterly';
-  isRefundable: boolean;
-  isMandatory: boolean;
-  displayOrder: number;
-  isActive: boolean;
-  schoolId: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 // Class Fee Pricing Types
 export interface ClassFeePricing {
   id: number;
   classId: number;
-  feeCategoryId: number;
   amount: number;
   academicYear: string;
   isActive: boolean;
@@ -58,14 +41,6 @@ export interface ClassFeePricing {
   class?: {
     id: number;
     name: string;
-  };
-  feeCategory?: {
-    id: number;
-    name: string;
-    feeType: string;
-    pricingType: string;
-    isMandatory: boolean;
-    displayOrder?: number;
   };
 }
 
@@ -81,7 +56,6 @@ export interface Class {
 // API Request Types
 export interface CreateClassFeePricingRequest {
   classId: number;
-  feeCategoryId: number;
   amount: number;
   academicYear: string;
 }
@@ -139,28 +113,15 @@ export interface CopyPricingResponse {
   message: string;
 }
 
-// Fee Category Form Types
-export interface FeeCategoryFormData {
-  name: string;
-  pricingType: 'Fixed' | 'Class-based' | 'Area-based';
-  fixedAmount: number;
-  feeType: 'One-time' | 'Annual' | 'Monthly' | 'Quarterly';
-  isRefundable: boolean;
-  isMandatory: boolean;
-  displayOrder: number;
-}
-
 // Form Types
 export interface ClassFeePricingFormData {
   classId: string;
-  feeCategoryId: string;
   amount: string;
   academicYear: string;
 }
 
 export interface ClassFeePricingFilters {
   classId?: number;
-  feeCategoryId?: number;
   academicYear?: string;
   isActive?: boolean;
 }
@@ -168,9 +129,7 @@ export interface ClassFeePricingFilters {
 // Table/Display Types
 export interface ClassFeePricingTableRow extends ClassFeePricing {
   className: string;
-  feeCategoryName: string;
   feeType: string;
-  isMandatory: boolean;
 }
 
 export interface ClassFeeSummary {
@@ -204,7 +163,6 @@ export type ClassFeePricingStatus = 'active' | 'inactive' | 'expired';
 
 export interface ClassFeePricingStats {
   totalClasses: number;
-  totalFeeCategories: number;
   totalPricingRecords: number;
   averageFeePerClass: number;
   academicYears: string[];
@@ -231,28 +189,5 @@ export interface ClassFeePricingFiltersProps {
   filters: ClassFeePricingFilters;
   onFiltersChange: (filters: ClassFeePricingFilters) => void;
   classes: Class[];
-  feeCategories: FeeCategory[];
   academicYears: AcademicYear[];
-}
-
-export interface FeeCategoriesResponse {
-  success: boolean;
-  data: FeeCategory[];
-  message: string;
-}
-
-export interface FeeCategoryResponse {
-  success: boolean;
-  data: FeeCategory;
-  message: string;
-}
-
-export interface FeeCategoryFilters {
-  isActive?: boolean;
-  feeType?: 'One-time' | 'Annual' | 'Monthly' | 'Quarterly';
-  pricingType?: 'Fixed' | 'Class-based' | 'Area-based';
-}
-
-export interface ReorderRequest {
-  categoryOrders: { id: number; displayOrder: number }[];
 }

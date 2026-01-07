@@ -201,6 +201,23 @@ export const studentApi = {
     }
 
     return await response.json();
+  },
+
+  // Get student fee timeline
+  getStudentFeeTimeline: async (studentId: number): Promise<{
+    success: boolean;
+    data: Array<{
+      month: number;
+      calendarYear: number;
+      label: string;
+      status: 'not_generated' | 'unpaid' | 'partial' | 'paid';
+      monthlyFeeId?: number;
+      totalPayableAmount?: number;
+      paidAmount?: number;
+      dueAmount?: number;
+    }>;
+  }> => {
+    return await apiRequest(`/students/${studentId}/fees/timeline`);
   }
 };
 
@@ -213,3 +230,4 @@ export const getStudentById = async (id: number): Promise<Student> => {
 export const createStudent = studentApi.createStudent;
 export const updateStudent = studentApi.updateStudent;
 export const deleteStudent = studentApi.deleteStudent;
+export const getStudentFeeTimeline = studentApi.getStudentFeeTimeline;

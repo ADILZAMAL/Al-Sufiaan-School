@@ -2,12 +2,10 @@ import { Request, Response } from "express";
 import { sendError, sendSuccess } from "../utils/response";
 import Student from "../models/Student";
 import StudentMonthlyFee, { StudentMonthlyFeeStatus } from "../models/StudentMonthlyFee";
-import StudentMonthlyFeeItem from "../models/StudentMonthlyFeeItem";
-import FeeCategory from "../models/FeeCategory";
+import StudentMonthlyFeeItem, { FeeItemType, StudentMonthlyFeeItemCreationAttributes } from "../models/StudentMonthlyFeeItem";
 import ClassFeePricing from "../models/ClassFeePricing";
 import TransportationAreaPricing from "../models/TransportationAreaPricing";
 import StudentFeePayment from "../models/StudentFeePayment";
-import {StudentMonthlyFeeItemCreationAttributes} from "../models/StudentMonthlyFeeItem";
 
 const MONTH_NAMES = [
   '', 'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL',
@@ -115,7 +113,7 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
     // 7️⃣ Create StudentMonthlyFeeItems with bulk insert
     const feeItemsToCreate = feeItems.map(item => ({
       studentMonthlyFeeId: monthlyFee.id,
-      feeCategoryId: item.feeCategoryId,
+      feeType: item.feeType,
       amount: item.amount,
     }));
 
@@ -127,7 +125,7 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
         {
           model: StudentMonthlyFeeItem,
           as: 'feeItems',
-          attributes: ['id', 'feeCategoryId', 'amount']
+          attributes: ['id', 'feeType', 'amount']
         },
       ],
     });
@@ -148,64 +146,50 @@ async function calculateFeeItems(
   const feeItems: StudentMonthlyFeeItemCreationAttributes[] = [];
 
   try {
-    // Get Tuition, Hostel, and Transportation fee categories
-    const feeCategories = await FeeCategory.findAll();
-
-    // Create a map for easy lookup
-    const categoryMap = new Map<string, FeeCategory>();
-    feeCategories.forEach(cat => categoryMap.set(cat.name, cat));
-
     // 1. Tuition Fee (always included)
-    const tuitionCategory = categoryMap.get("Tuition Fee");
-    if (tuitionCategory) {
-      const classFeePricing = await ClassFeePricing.findOne({
-        where: { classId },
-      });
+    const classFeePricing = await ClassFeePricing.findOne({
+      where: { classId },
+    });
 
-      if (classFeePricing && classFeePricing.amount) {
-        feeItems.push({
-          feeCategoryId: tuitionCategory.id,
-          amount: parseFloat(classFeePricing.amount.toString())
-        });
-      }
+    if (classFeePricing && classFeePricing.amount) {
+      feeItems.push({
+        feeType: FeeItemType.TUITION_FEE,
+        amount: parseFloat(classFeePricing.amount.toString())
+      });
     }
 
     // 2. Hostel Fee (if hostel is true)
     if (hostel) {
-      const hostelCategory = categoryMap.get("Hostel Fee");
-      if (hostelCategory) {
-          feeItems.push({
-            feeCategoryId: hostelCategory.id,
-            amount: parseFloat(hostelCategory.fixedAmount.toString()),
-          });
-        // }
-      }
+      // TODO: Get hostel fee from configuration or settings
+      // For now, using a default value - you may want to add this to a settings table
+      const hostelFeeAmount = 5000; // Default hostel fee
+      feeItems.push({
+        feeType: FeeItemType.HOSTEL_FEE,
+        amount: hostelFeeAmount,
+      });
     }
 
     // 3. Transportation Fee (if transportationAreaId is provided)
     if (transportationAreaId) {
-      const transportCategory = categoryMap.get("Transport Fee");
-      if (transportCategory) {
-        const transportPricing = await TransportationAreaPricing.findByPk(transportationAreaId);
+      const transportPricing = await TransportationAreaPricing.findByPk(transportationAreaId);
 
-        if (transportPricing && transportPricing.price) {
-          feeItems.push({
-            feeCategoryId: transportCategory.id,
-            amount: parseFloat(transportPricing.price.toString()),
-          });
-        }
+      if (transportPricing && transportPricing.price) {
+        feeItems.push({
+          feeType: FeeItemType.TRANSPORT_FEE,
+          amount: parseFloat(transportPricing.price.toString()),
+        });
       }
     }
 
     // 4. New Admission Fee (if newAdmission is true)
     if (newAdmission) {
-      const admissionCategory = categoryMap.get("Admission Fee");
-      if (admissionCategory) {
-          feeItems.push({
-            feeCategoryId: admissionCategory.id,
-            amount: parseFloat(admissionCategory.fixedAmount.toString()),
-          });
-      }
+      // TODO: Get admission fee from configuration or settings
+      // For now, using a default value - you may want to add this to a settings table
+      const admissionFeeAmount = 2000; // Default admission fee
+      feeItems.push({
+        feeType: FeeItemType.ADMISSION_FEE,
+        amount: admissionFeeAmount,
+      });
     }
 
     return feeItems;
