@@ -88,6 +88,9 @@ export interface Student {
 
   // Virtual field for full name (computed in backend)
   fullName: string; // Available from backend getter
+  
+  // Fee information
+  totalDue?: number; // Total outstanding fee amount
 }
 
 // Create Student Request - matches what backend expects

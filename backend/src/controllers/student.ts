@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { Student } from '../models';
+import { Student, StudentMonthlyFee, StudentFeePayment } from '../models';
 import { sendSuccess, sendError } from '../utils/response';
 import { validationResult } from 'express-validator';
 import { generateAdmissionNumber } from '../utils/studentUtils';
+import { Op } from 'sequelize';
 
 // Get all students
 export const getAllStudents = async (req: Request, res: Response) => {
@@ -20,12 +21,49 @@ export const getAllStudents = async (req: Request, res: Response) => {
         { association: 'school', attributes: ['id', 'name'] },
         { association: 'class', attributes: ['id', 'name'] },
         { association: 'section', attributes: ['id', 'name'] },
-        { association: 'creator', attributes: ['firstName', 'lastName'] } // Including createdBy user details
+        { association: 'creator', attributes: ['firstName', 'lastName'] }
       ],
       order: [['firstName', 'ASC'], ['lastName', 'ASC']]
     });
 
-    return sendSuccess(res, students, 'Students retrieved successfully');
+    // Calculate total due for each student
+    const studentsWithDue = await Promise.all(
+      students.map(async (student: any) => {
+        const studentData = student.toJSON();
+        
+        // Get all monthly fees for this student
+        const monthlyFees = await StudentMonthlyFee.findAll({
+          where: {
+            studentId: student.id,
+            status: {
+              [Op.ne]: 'PAID' // Exclude fully paid fees
+            }
+          },
+          include: [
+            {
+              model: StudentFeePayment,
+              as: 'payments',
+              attributes: ['amountPaid']
+            }
+          ]
+        });
+
+        // Calculate total due
+        let totalDue = 0;
+        for (const fee of monthlyFees) {
+          const totalPayable = Number(fee.totalPayableAmount);
+          const paidAmount = fee.payments?.reduce((sum: number, p: any) => sum + Number(p.amountPaid), 0) || 0;
+          totalDue += Math.max(0, totalPayable - paidAmount);
+        }
+
+        return {
+          ...studentData,
+          totalDue
+        };
+      })
+    );
+
+    return sendSuccess(res, studentsWithDue, 'Students retrieved successfully');
   } catch (error) {
     console.error('Error fetching students:', error);
     return sendError(res, 'Failed to fetch students', 500);

@@ -66,12 +66,15 @@ const StudentList: React.FC<StudentListProps> = ({
                     <span>Contact</span>
                   </div>
                 </th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Total Due
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {students.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-16">
+                  <td colSpan={7} className="px-6 py-16">
                     <div className="flex flex-col items-center justify-center space-y-4">
                       <div className="bg-gray-100 rounded-full p-4">
                         <FiUser className="h-8 w-8 text-gray-400" />
@@ -136,6 +139,25 @@ const StudentList: React.FC<StudentListProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 font-medium">{student.phone}</div>
                       <p className="text-xs text-gray-500 mt-1">Mobile</p>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center justify-end">
+                        {(student.totalDue || 0) > 0 ? (
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+                            student.totalDue! > 1000 
+                              ? 'bg-red-100 text-red-800 border border-red-200' 
+                              : student.totalDue! > 0 
+                              ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                              : 'bg-green-100 text-green-800 border border-green-200'
+                          }`}>
+                            ₹{student.totalDue?.toLocaleString('en-IN') || 0}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 border border-green-200">
+                            ₹0
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
