@@ -1,81 +1,40 @@
-// import { Router } from 'express';
-// import { authenticate } from '../middleware/auth';
-// import { hasPermission } from '../middleware/roleAuth';
-// import {
-//   generateMonthlyFee,
-//   getStudentMonthlyFees,
-//   getMonthlyFeeById,
-//   updateMonthlyFeeStatus,
-//   getSchoolMonthlyFees,
-//   getMonthlyFeeAnalytics,
-//   bulkGenerateMonthlyFees,
-//   deleteMonthlyFee
-// } from '../controllers/monthlyFee';
+import { Router } from 'express';
+import verifyToken from '../middleware/auth';
+import { 
+  generateMonthlyFee,
+  getStudentFeeTimelineController,
+  collectFeePaymentController,
+  getAllIncomingPayments
+} from '../controllers/monthlyFee';
 
-// const router = Router();
+const router = Router();
 
-// // Generate monthly fee for a student
-// router.post(
-//   '/students/:studentId/fees/generate',
-//   authenticate,
-//   hasPermission('fees:create'),
-//   generateMonthlyFee
-// );
+// Generate monthly fee for a student
+router.post(
+  '/students/:studentId/fees/generate',
+  verifyToken,
+  generateMonthlyFee
+);
 
-// // Get monthly fees for a specific student
-// router.get(
-//   '/students/:studentId/fees',
-//   authenticate,
-//   hasPermission('fees:read'),
-//   getStudentMonthlyFees
-// );
+// Get student fee timeline
+router.get(
+  '/students/:studentId/fees/timeline',
+  verifyToken,
+  getStudentFeeTimelineController
+);
 
-// // Get all monthly fees for a school
-// router.get(
-//   '/fees',
-//   authenticate,
-//   hasPermission('fees:read'),
-//   getSchoolMonthlyFees
-// );
+// Collect fee payment for a student
+router.post(
+  '/students/:studentId/fees/:monthlyFeeId/payments',
+  verifyToken,
+  collectFeePaymentController
+);
 
-// // Get monthly fee analytics
-// router.get(
-//   '/fees/analytics',
-//   authenticate,
-//   hasPermission('fees:read'),
-//   getMonthlyFeeAnalytics
-// );
+// Get all incoming payments
+router.get(
+  '/payments',
+  verifyToken,
+  getAllIncomingPayments
+);
 
-// // Get specific monthly fee by ID
-// router.get(
-//   '/fees/:id',
-//   authenticate,
-//   hasPermission('fees:read'),
-//   getMonthlyFeeById
-// );
-
-// // Update monthly fee status
-// router.patch(
-//   '/fees/:id/status',
-//   authenticate,
-//   hasPermission('fees:update'),
-//   updateMonthlyFeeStatus
-// );
-
-// // Bulk generate monthly fees for multiple students
-// router.post(
-//   '/fees/bulk-generate',
-//   authenticate,
-//   hasPermission('fees:create'),
-//   bulkGenerateMonthlyFees
-// );
-
-// // Delete monthly fee (soft delete/status change)
-// router.delete(
-//   '/fees/:id',
-//   authenticate,
-//   hasPermission('fees:delete'),
-//   deleteMonthlyFee
-// );
-
-// export default router;
+export default router;

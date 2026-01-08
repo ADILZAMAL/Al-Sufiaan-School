@@ -95,22 +95,30 @@ const StudentList: React.FC<StudentListProps> = ({
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-8 w-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-medium text-white">{index + 1}</span>
-                        </div>
+                        {student.studentPhoto ? (
+                          <img
+                            src={student.studentPhoto}
+                            alt={getFullName(student)}
+                            className="h-12 w-12 rounded-full object-cover border-2 border-gray-200"
+                          />
+                        ) : (
+                          <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-white">
+                              {student.firstName.charAt(0)}{student.lastName.charAt(0)}
+                            </span>
+                          </div>
+                        )}
                         <div className="ml-3">
                           <p className="text-sm font-medium text-gray-900">{student.admissionNumber}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{getFullName(student)}</p>
-                        <p className="text-xs text-gray-500 flex items-center mt-1">
-                          <FiMail className="h-3 w-3 mr-1" />
-                          {student.email}
-                        </p>
-                      </div>
+                      <p className="text-sm font-medium text-gray-900">{getFullName(student)}</p>
+                      <p className="text-xs text-gray-500 flex items-center mt-1">
+                        <FiMail className="h-3 w-3 mr-1" />
+                        {student.email}
+                      </p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <p className="text-sm text-gray-900 font-medium">{student.fatherName}</p>

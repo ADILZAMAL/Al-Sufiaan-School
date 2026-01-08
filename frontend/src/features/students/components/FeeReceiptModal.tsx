@@ -25,6 +25,7 @@ interface StudentInfo {
   className: string;
   sectionName: string;
   schoolId: number;
+  fatherName?: string;
 }
 
 interface FeeReceiptModalProps {
@@ -491,6 +492,10 @@ const Receipt: React.FC<ReceiptProps> = ({
             </span>
           </div>
           <div>
+            <span className="text-gray-500">Father's Name:</span>
+            <span className="ml-2 font-medium text-gray-900">{student.fatherName || 'N/A'}</span>
+          </div>
+          <div>
             <span className="text-gray-500">Admission No:</span>
             <span className="ml-2 font-medium text-gray-900">{student.admissionNumber}</span>
           </div>
@@ -506,7 +511,7 @@ const Receipt: React.FC<ReceiptProps> = ({
           </div>
           <div className="col-span-2">
             <span className="text-gray-500">Fee Month:</span>
-            <span className="ml-2 font-medium text-gray-900">{month}</span>
+            <span className="ml-2 font-bold text-gray-900">{month}</span>
           </div>
         </div>
       </div>

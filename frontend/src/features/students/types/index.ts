@@ -75,6 +75,11 @@ export interface Student {
   guardianName?: string;
   guardianRelation?: string;
   guardianPhone?: string;
+  fatherAadharNumber?: string;
+  studentPhoto?: string;
+  fatherPhoto?: string;
+  motherPhoto?: string;
+  guardianPhoto?: string;
   createdBy: number; // Required in backend
 
   // Timestamps (matching backend)
@@ -122,6 +127,11 @@ export interface CreateStudentRequest {
   guardianName?: string;
   guardianRelation?: string;
   guardianPhone?: string;
+  fatherAadharNumber?: string;
+  studentPhoto?: string;
+  fatherPhoto?: string;
+  motherPhoto?: string;
+  guardianPhoto?: string;
 }
 
 // Update Student Request - partial of CreateStudentRequest
@@ -134,7 +144,6 @@ export interface UpdateStudentRequest extends Partial<CreateStudentRequest> {
 export interface StudentFormData {
   // Admission Information
   admissionNumber: string;
-  admissionDate: string;
   
   // Personal Information
   firstName: string;
@@ -172,6 +181,11 @@ export interface StudentFormData {
   guardianName: string;
   guardianRelation: string;
   guardianPhone: string;
+  fatherAadharNumber: string;
+  studentPhoto: string;
+  fatherPhoto: string;
+  motherPhoto: string;
+  guardianPhoto: string;
 }
 
 // API Response Types

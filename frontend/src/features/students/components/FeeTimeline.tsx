@@ -45,6 +45,7 @@ interface StudentInfo {
   className: string;
   sectionName: string;
   schoolId: number;
+  fatherName?: string;
 }
 
 interface FeeTimelineProps {
@@ -244,12 +245,26 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
               return (
                 <React.Fragment key={rowKey}>
                   {/* Main Row */}
-                  <tr className="hover:bg-gray-50 transition-colors">
+                  <tr 
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      if (entry.status === 'not_generated') {
+                        openGenerateModal(entry);
+                      } else if (hasPayments) {
+                        toggleRow(rowKey);
+                      } else if (entry.status !== 'paid') {
+                        openCollectModal(entry);
+                      }
+                    }}
+                  >
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center">
                         {hasPayments && (
                           <button
-                            onClick={() => toggleRow(rowKey)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleRow(rowKey);
+                            }}
                             className="mr-2 text-gray-400 hover:text-gray-600 transition-colors"
                           >
                             {isExpanded ? (
@@ -267,7 +282,10 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                       <>
                         <td colSpan={9} className="px-4 py-3 text-center">
                           <button
-                            onClick={() => openGenerateModal(entry)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openGenerateModal(entry);
+                            }}
                             className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                           >
                             <FiPlus className="mr-1 h-4 w-4" />
@@ -334,7 +352,10 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                         <td className="px-4 py-3 text-center whitespace-nowrap">
                           {entry.status !== 'paid' && (
                             <button
-                              onClick={() => openCollectModal(entry)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openCollectModal(entry);
+                              }}
                               className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
                               title="Collect Payment"
                             >

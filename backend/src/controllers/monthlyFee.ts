@@ -7,6 +7,8 @@ import ClassFeePricing from "../models/ClassFeePricing";
 import TransportationAreaPricing from "../models/TransportationAreaPricing";
 import StudentFeePayment from "../models/StudentFeePayment";
 import User from "../models/User";
+import Class from "../models/Class";
+import { Op } from "sequelize";
 
 const MONTH_NAMES = [
   '', 'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL',
@@ -588,5 +590,113 @@ export async function collectFeePaymentController(req: Request, res: Response) {
   } catch (error) {
     console.error('Error collecting fee payment:', error);
     return sendError(res, 'Failed to collect payment', 500);
+  }
+}
+
+// Controller to get all incoming payments
+export async function getAllIncomingPayments(req: Request, res: Response) {
+  try {
+    const { 
+      page = '1', 
+      limit = '10', 
+      fromDate, 
+      toDate, 
+      paymentMode 
+    } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Build where clause for filters
+    const whereClause: any = {};
+
+    if (fromDate || toDate) {
+      whereClause.paymentDate = {};
+      if (fromDate) {
+        whereClause.paymentDate[Op.gte] = new Date(fromDate as string);
+      }
+      if (toDate) {
+        whereClause.paymentDate[Op.lte] = new Date(toDate as string);
+      }
+    }
+
+    if (paymentMode && paymentMode !== 'all') {
+      whereClause.paymentMode = paymentMode;
+    }
+
+    // Fetch payments with associations
+    const { count, rows: payments } = await StudentFeePayment.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: Student,
+          as: 'student',
+          attributes: ['id', 'firstName', 'lastName', 'admissionNumber'],
+        },
+        {
+          model: StudentMonthlyFee,
+          as: 'studentMonthlyFee',
+          attributes: ['month', 'calendarYear'],
+        },
+        {
+          model: User,
+          as: 'receiver',
+          attributes: ['id', 'firstName', 'lastName'],
+        },
+      ],
+      order: [['paymentDate', 'DESC'], ['createdAt', 'DESC']],
+      limit: limitNum,
+      offset,
+    });
+
+    // Fetch class information for each student
+    const paymentData = await Promise.all(
+      payments.map(async (payment: any) => {
+        const student = await Student.findByPk(payment.studentId, {
+          include: [
+            {
+              model: Class,
+              as: 'class',
+              attributes: ['id', 'name'],
+            },
+          ],
+        });
+
+        return {
+          id: payment.id,
+          studentId: payment.studentId,
+          studentName: `${payment.student.firstName} ${payment.student.lastName}`,
+          admissionNumber: payment.student.admissionNumber,
+          className: (student as any)?.class?.name || 'N/A',
+          classId: (student as any)?.class?.id,
+          month: payment.studentMonthlyFee?.month,
+          year: payment.studentMonthlyFee?.calendarYear,
+          amountPaid: Number(payment.amountPaid),
+          paymentDate: payment.paymentDate,
+          paymentMode: payment.paymentMode,
+          referenceNumber: payment.referenceNumber,
+          receivedBy: payment.receiver 
+            ? `${payment.receiver.firstName} ${payment.receiver.lastName}` 
+            : 'Unknown',
+          receiverId: payment.receivedBy,
+          remarks: payment.remarks,
+          createdAt: payment.createdAt,
+        };
+      })
+    );
+
+    return sendSuccess(res, {
+      payments: paymentData,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(count / limitNum),
+        totalItems: count,
+        itemsPerPage: limitNum,
+      },
+    }, 'Incoming payments fetched successfully');
+  } catch (error) {
+    console.error('Error fetching incoming payments:', error);
+    return sendError(res, 'Failed to fetch incoming payments', 500);
   }
 }

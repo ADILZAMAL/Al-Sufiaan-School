@@ -23,3 +23,11 @@ export const uploadPhoto = multer({
 
 // Middleware to handle single photo upload
 export const uploadSinglePhoto = uploadPhoto.single('photo');
+
+// Middleware to handle multiple photo uploads (max 4 photos)
+export const uploadMultipleStudentPhotos = uploadPhoto.fields([
+    { name: 'studentPhoto', maxCount: 1 },
+    { name: 'fatherPhoto', maxCount: 1 },
+    { name: 'motherPhoto', maxCount: 1 },
+    { name: 'guardianPhoto', maxCount: 1 }
+]);

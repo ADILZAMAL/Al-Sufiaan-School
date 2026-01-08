@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Upload, XCircle } from 'lucide-react';
 import { studentApi } from '../api';
 import { useAppContext } from '../../../providers/AppContext'; 
 import { CreateStudentRequest, Gender, Religion, BloodGroup } from '../types';
+
+interface PhotoFile {
+  file: File;
+  preview: string;
+}
 
 interface Props {
   isOpen: boolean;
@@ -39,6 +44,7 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     fatherName: '',
     fatherOccupation: '',
     fatherPhone: '',
+    fatherAadharNumber: '',
     motherName: '',
     motherOccupation: '',
     motherPhone: '',
@@ -46,7 +52,19 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     guardianRelation: '',
     guardianPhone: ''
   });
+  const [photoFiles, setPhotoFiles] = useState<{
+    studentPhoto: PhotoFile | null;
+    fatherPhoto: PhotoFile | null;
+    motherPhoto: PhotoFile | null;
+    guardianPhoto: PhotoFile | null;
+  }>({
+    studentPhoto: null,
+    fatherPhoto: null,
+    motherPhoto: null,
+    guardianPhoto: null
+  });
   const [loading, setLoading] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [sections, setSections] = useState<Array<{ id: number; name: string }>>([]);
 
@@ -89,6 +107,88 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
+  };
+
+  const handlePhotoChange = (photoType: keyof typeof photoFiles, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      showToast({ message: 'Only JPEG, PNG, and WebP images are allowed', type: "ERROR" });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast({ message: 'Image size must be less than 5MB', type: "ERROR" });
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoFiles(prev => ({
+        ...prev,
+        [photoType]: {
+          file: file,
+          preview: reader.result as string
+        }
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = (photoType: keyof typeof photoFiles) => {
+    setPhotoFiles(prev => ({
+      ...prev,
+      [photoType]: null
+    }));
+  };
+
+  const uploadPhotosToServer = async (): Promise<{ [key: string]: string }> => {
+    const formDataToSend = new FormData();
+    
+    if (photoFiles.studentPhoto) {
+      formDataToSend.append('studentPhoto', photoFiles.studentPhoto.file);
+    }
+    if (photoFiles.fatherPhoto) {
+      formDataToSend.append('fatherPhoto', photoFiles.fatherPhoto.file);
+    }
+    if (photoFiles.motherPhoto) {
+      formDataToSend.append('motherPhoto', photoFiles.motherPhoto.file);
+    }
+    if (photoFiles.guardianPhoto) {
+      formDataToSend.append('guardianPhoto', photoFiles.guardianPhoto.file);
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/photos/upload-student-photos`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          body: formDataToSend
+        }
+      );
+
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        const photoUrls: { [key: string]: string } = {};
+        if (data.data.studentPhoto?.url) photoUrls.studentPhoto = data.data.studentPhoto.url;
+        if (data.data.fatherPhoto?.url) photoUrls.fatherPhoto = data.data.fatherPhoto.url;
+        if (data.data.motherPhoto?.url) photoUrls.motherPhoto = data.data.motherPhoto.url;
+        if (data.data.guardianPhoto?.url) photoUrls.guardianPhoto = data.data.guardianPhoto.url;
+        return photoUrls;
+      } else {
+        throw new Error(data.message || 'Failed to upload photos');
+      }
+    } catch (error) {
+      console.error('Error uploading photos:', error);
+      throw error;
+    }
   };
 
   const validateForm = () => {
@@ -136,7 +236,24 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     if (!validateForm()) return;
 
     setLoading(true);
+    setUploadingPhotos(true);
+
     try {
+      // Upload photos first if any are selected
+      let photoUrls: { [key: string]: string } = {};
+      const hasPhotos = Object.values(photoFiles).some(photo => photo !== null);
+      
+      if (hasPhotos) {
+        try {
+          photoUrls = await uploadPhotosToServer();
+        } catch (error) {
+          showToast({ message: 'Failed to upload photos. Please try again.', type: "ERROR" });
+          setLoading(false);
+          setUploadingPhotos(false);
+          return;
+        }
+      }
+
       // Transform form data to match backend CreateStudentRequest
       const submitData: CreateStudentRequest = {
         admissionDate: formData.admissionDate,
@@ -159,12 +276,18 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
         fatherName: formData.fatherName,
         fatherPhone: formData.fatherPhone || undefined,
         fatherOccupation: formData.fatherOccupation || undefined,
+        fatherAadharNumber: formData.fatherAadharNumber || undefined,
         motherName: formData.motherName,
         motherPhone: formData.motherPhone || undefined,
         motherOccupation: formData.motherOccupation || undefined,
         guardianName: formData.guardianName || undefined,
         guardianRelation: formData.guardianRelation || undefined,
         guardianPhone: formData.guardianPhone || undefined,
+        // Add photo URLs if uploaded
+        studentPhoto: photoUrls.studentPhoto || undefined,
+        fatherPhoto: photoUrls.fatherPhoto || undefined,
+        motherPhoto: photoUrls.motherPhoto || undefined,
+        guardianPhoto: photoUrls.guardianPhoto || undefined,
       };
 
       const result = await studentApi.createStudent(submitData);
@@ -181,6 +304,7 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
       showToast({ message: 'Failed to add student', type: "ERROR" });
     } finally {
       setLoading(false);
+      setUploadingPhotos(false);
     }
   };
 
@@ -206,12 +330,19 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
       fatherName: '',
       fatherOccupation: '',
       fatherPhone: '',
+      fatherAadharNumber: '',
       motherName: '',
       motherOccupation: '',
       motherPhone: '',
       guardianName: '',
       guardianRelation: '',
       guardianPhone: ''
+    });
+    setPhotoFiles({
+      studentPhoto: null,
+      fatherPhoto: null,
+      motherPhoto: null,
+      guardianPhoto: null
     });
     setSections([]);
     onClose();
@@ -547,6 +678,57 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Aadhar Number (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    name="fatherAadharNumber"
+                    value={formData.fatherAadharNumber}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    maxLength={12}
+                    pattern="[0-9]{12}"
+                    placeholder="12-digit Aadhar number"
+                  />
+                </div>
+              </div>
+              
+              {/* Father Photo Upload */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Father Photo (Optional)
+                </label>
+                <div className="flex items-center gap-4">
+                  {photoFiles.fatherPhoto ? (
+                    <div className="relative">
+                      <img
+                        src={photoFiles.fatherPhoto.preview}
+                        alt="Father preview"
+                        className="w-24 h-24 object-cover rounded-lg border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto('fatherPhoto')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                      <Upload className="w-6 h-6 text-gray-400" />
+                      <span className="text-xs text-gray-500 mt-1">Upload</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={(e) => handlePhotoChange('fatherPhoto', e)}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -593,6 +775,42 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                   />
                 </div>
               </div>
+              
+              {/* Mother Photo Upload */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mother Photo (Optional)
+                </label>
+                <div className="flex items-center gap-4">
+                  {photoFiles.motherPhoto ? (
+                    <div className="relative">
+                      <img
+                        src={photoFiles.motherPhoto.preview}
+                        alt="Mother preview"
+                        className="w-24 h-24 object-cover rounded-lg border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto('motherPhoto')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                      <Upload className="w-6 h-6 text-gray-400" />
+                      <span className="text-xs text-gray-500 mt-1">Upload</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={(e) => handlePhotoChange('motherPhoto', e)}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Guardian Information */}
@@ -637,6 +855,84 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                     pattern="[6-9][0-9]{9}"
                   />
                 </div>
+              </div>
+              
+              {/* Guardian Photo Upload */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Guardian Photo (Optional)
+                </label>
+                <div className="flex items-center gap-4">
+                  {photoFiles.guardianPhoto ? (
+                    <div className="relative">
+                      <img
+                        src={photoFiles.guardianPhoto.preview}
+                        alt="Guardian preview"
+                        className="w-24 h-24 object-cover rounded-lg border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto('guardianPhoto')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                      <Upload className="w-6 h-6 text-gray-400" />
+                      <span className="text-xs text-gray-500 mt-1">Upload</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={(e) => handlePhotoChange('guardianPhoto', e)}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Photo Upload Section */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Student Photo (Optional)</h3>
+            <div className="flex items-center gap-4">
+              {photoFiles.studentPhoto ? (
+                <div className="relative">
+                  <img
+                    src={photoFiles.studentPhoto.preview}
+                    alt="Student preview"
+                    className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePhoto('studentPhoto')}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                  <Upload className="w-8 h-8 text-gray-400" />
+                  <span className="text-sm text-gray-500 mt-2">Upload Photo</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={(e) => handlePhotoChange('studentPhoto', e)}
+                    className="hidden"
+                  />
+                </label>
+              )}
+              <div className="text-sm text-gray-600">
+                <p className="font-medium">Photo Requirements:</p>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>JPEG, PNG, or WebP format</li>
+                  <li>Maximum file size: 5MB</li>
+                  <li>Recommended: Passport size photo</li>
+                </ul>
               </div>
             </div>
           </div>

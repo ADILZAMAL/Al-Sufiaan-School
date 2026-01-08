@@ -74,6 +74,12 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				label: 'Transportation Pricing',
 				path: 'fee/transportation-pricing',
 				icon: <HiOutlineTruck />
+			},
+			{
+				key: 'incoming-payments',
+				label: 'Incoming Payments',
+				path: 'fee/incoming-payments',
+				icon: <HiOutlineCurrencyDollar />
 			}
 		]
 	},

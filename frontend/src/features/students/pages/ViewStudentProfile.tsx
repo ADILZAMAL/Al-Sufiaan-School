@@ -107,9 +107,17 @@ const ViewStudentProfile: React.FC = () => {
         {/* Student Profile Card */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg">
           <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
-              {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
-            </div>
+            {student.studentPhoto ? (
+              <img
+                src={student.studentPhoto}
+                alt={`${student.firstName} ${student.lastName}`}
+                className="w-32 h-32 rounded-full object-cover shadow-lg border-4 border-white"
+              />
+            ) : (
+              <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-lg">
+                {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
+              </div>
+            )}
             <div className="text-center sm:text-left flex-1">
               <h3 className="text-3xl font-bold text-gray-900 capitalize mb-2">
                 {student.firstName} {student.lastName}
@@ -197,6 +205,7 @@ const ViewStudentProfile: React.FC = () => {
                 className: student.class.name,
                 sectionName: student.section.name,
                 schoolId: student.schoolId,
+                fatherName: student.fatherName,
               }}
               school={school}
             />
@@ -235,48 +244,93 @@ const ViewStudentProfile: React.FC = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="text-sm font-semibold text-blue-800 mb-2">Father</h4>
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-medium text-blue-600">Name</label>
-                    <p className="text-sm text-gray-900 font-medium">{student.fatherName || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-blue-600">Occupation</label>
-                    <div className="flex items-center">
-                      <FiBriefcase className="h-3 w-3 text-blue-400 mr-1" />
-                      <p className="text-sm text-gray-900">{student.fatherOccupation || 'N/A'}</p>
+                <div className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-3">Father</h4>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-xs font-medium text-blue-600">Name</label>
+                        <p className="text-sm text-gray-900 font-medium">{student.fatherName || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-blue-600">Occupation</label>
+                        <div className="flex items-center">
+                          <FiBriefcase className="h-3 w-3 text-blue-400 mr-1" />
+                          <p className="text-sm text-gray-900">{student.fatherOccupation || 'N/A'}</p>
+                        </div>
+                      </div>
+                      {student.fatherAadharNumber && (
+                        <div>
+                          <label className="block text-xs font-medium text-blue-600">Aadhar Number</label>
+                          <p className="text-sm text-gray-900">{student.fatherAadharNumber}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
+                  {student.fatherPhoto && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={student.fatherPhoto}
+                        alt="Father"
+                        className="w-40 h-40 rounded-lg object-cover border-2 border-white shadow"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="bg-pink-50 p-4 rounded-lg">
-                <h4 className="text-sm font-semibold text-pink-800 mb-2">Mother</h4>
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-medium text-pink-600">Name</label>
-                    <p className="text-sm text-gray-900 font-medium">{student.motherName || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-pink-600">Occupation</label>
-                    <div className="flex items-center">
-                      <FiBriefcase className="h-3 w-3 text-pink-400 mr-1" />
-                      <p className="text-sm text-gray-900">{student.motherOccupation || 'N/A'}</p>
+                <div className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-pink-800 mb-3">Mother</h4>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-xs font-medium text-pink-600">Name</label>
+                        <p className="text-sm text-gray-900 font-medium">{student.motherName || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-pink-600">Occupation</label>
+                        <div className="flex items-center">
+                          <FiBriefcase className="h-3 w-3 text-pink-400 mr-1" />
+                          <p className="text-sm text-gray-900">{student.motherOccupation || 'N/A'}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                  {student.motherPhoto && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={student.motherPhoto}
+                        alt="Mother"
+                        className="w-40 h-40 rounded-lg object-cover border-2 border-white shadow"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="text-sm font-semibold text-green-800 mb-2">Guardian</h4>
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-medium text-green-600">Name</label>
-                    <p className="text-sm text-gray-900 font-medium">{student.guardianName || 'N/A'}</p>
+                <div className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-green-800 mb-3">Guardian</h4>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-xs font-medium text-green-600">Name</label>
+                        <p className="text-sm text-gray-900 font-medium">{student.guardianName || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-green-600">Relation</label>
+                        <p className="text-sm text-gray-900">{student.guardianRelation || 'N/A'}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-green-600">Relation</label>
-                    <p className="text-sm text-gray-900">{student.guardianRelation || 'N/A'}</p>
-                  </div>
+                  {student.guardianPhoto && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={student.guardianPhoto}
+                        alt="Guardian"
+                        className="w-40 h-40 rounded-lg object-cover border-2 border-white shadow"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

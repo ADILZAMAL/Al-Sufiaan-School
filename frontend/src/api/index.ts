@@ -194,3 +194,57 @@ export const fetchExpenseCategoryById = async (id: number): Promise<ExpenseCateg
     }
     return body.data;
 }
+
+// Incoming Payments API functions
+export type IncomingPaymentType = {
+    id: number;
+    studentId: number;
+    studentName: string;
+    admissionNumber: string;
+    className: string;
+    classId: number;
+    month: number;
+    year: number;
+    amountPaid: number;
+    paymentDate: string;
+    paymentMode: string;
+    referenceNumber: string | null;
+    receivedBy: string;
+    receiverId: number | null;
+    remarks: string | null;
+    createdAt: string;
+}
+
+export type IncomingPaymentsResponseType = {
+    payments: IncomingPaymentType[];
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        totalItems: number;
+        itemsPerPage: number;
+    };
+}
+
+export const fetchIncomingPayments = async (
+    page?: number,
+    limit?: number,
+    fromDate?: Date,
+    toDate?: Date,
+    paymentMode?: string
+): Promise<IncomingPaymentsResponseType> => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (limit) params.append('limit', limit.toString());
+    if (fromDate) params.append('fromDate', fromDate.toISOString().split('T')[0]);
+    if (toDate) params.append('toDate', toDate.toISOString().split('T')[0]);
+    if (paymentMode && paymentMode !== 'all') params.append('paymentMode', paymentMode);
+
+    const response = await fetch(`${API_BASE_URL}/api/fees/payments?${params.toString()}`, {
+        credentials: "include"
+    });
+    const body = await response.json();
+    if (!body.success) {
+        throw new Error(body.message || 'Failed to fetch incoming payments');
+    }
+    return body.data;
+}

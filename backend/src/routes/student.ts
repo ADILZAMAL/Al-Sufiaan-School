@@ -179,6 +179,32 @@ const createStudentValidation = [
     .matches(/^(\+91)?[6-9]\d{9}$/)
     .withMessage('Guardian phone must be a valid Indian mobile number'),
   
+  body('fatherAadharNumber')
+    .optional()
+    .matches(/^[0-9]{12}$/)
+    .withMessage('Father Aadhaar number must be exactly 12 digits'),
+  
+  // Photo URLs (optional)
+  body('studentPhoto')
+    .optional()
+    .isURL()
+    .withMessage('Student photo must be a valid URL'),
+  
+  body('fatherPhoto')
+    .optional()
+    .isURL()
+    .withMessage('Father photo must be a valid URL'),
+  
+  body('motherPhoto')
+    .optional()
+    .isURL()
+    .withMessage('Mother photo must be a valid URL'),
+  
+  body('guardianPhoto')
+    .optional()
+    .isURL()
+    .withMessage('Guardian photo must be a valid URL'),
+  
   // Custom validation: At least one parent or guardian phone should be provided
   body().custom((value, { req }) => {
     const { fatherPhone, motherPhone, guardianPhone } = req.body;

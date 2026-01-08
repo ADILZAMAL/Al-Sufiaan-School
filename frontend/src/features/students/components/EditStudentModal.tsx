@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Upload, XCircle } from 'lucide-react';
 import { studentApi } from '../api';
 import { useAppContext } from '../../../providers/AppContext'; 
 import { Student, UpdateStudentRequest, Gender, Religion, BloodGroup, StudentFormData } from '../types';
+
+interface PhotoFile {
+  file: File;
+  preview: string;
+}
 
 interface Props {
   student: Student;
@@ -26,9 +31,9 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
     email: '',
     phone: '',
     dateOfBirth: '',
-    gender: '',
-    bloodGroup: '',
-    religion: '',
+    gender: '' as any,
+    bloodGroup: '' as any,
+    religion: '' as any,
     aadhaarNumber: '',
     classId: null,
     sectionId: null,
@@ -40,15 +45,38 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
     fatherName: '',
     fatherOccupation: '',
     fatherPhone: '',
+    fatherAadharNumber: '',
     motherName: '',
     motherOccupation: '',
     motherPhone: '',
     guardianName: '',
     guardianRelation: '',
-    guardianPhone: ''
+    guardianPhone: '',
+    studentPhoto: '',
+    fatherPhoto: '',
+    motherPhoto: '',
+    guardianPhoto: ''
   });
   const [loading, setLoading] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [classes, setClasses] = useState<ClassData[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<{
+    studentPhoto: PhotoFile | null;
+    fatherPhoto: PhotoFile | null;
+    motherPhoto: PhotoFile | null;
+    guardianPhoto: PhotoFile | null;
+  }>({
+    studentPhoto: null,
+    fatherPhoto: null,
+    motherPhoto: null,
+    guardianPhoto: null
+  });
+  const [existingPhotos, setExistingPhotos] = useState<{
+    studentPhoto?: string;
+    fatherPhoto?: string;
+    motherPhoto?: string;
+    guardianPhoto?: string;
+  }>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -75,12 +103,31 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         fatherName: student.fatherName,
         fatherOccupation: student.fatherOccupation || '',
         fatherPhone: student.fatherPhone || '',
+        fatherAadharNumber: student.fatherAadharNumber || '',
         motherName: student.motherName,
         motherOccupation: student.motherOccupation || '',
         motherPhone: student.motherPhone || '',
         guardianName: student.guardianName || '',
         guardianRelation: student.guardianRelation || '',
-        guardianPhone: student.guardianPhone || ''
+        guardianPhone: student.guardianPhone || '',
+        studentPhoto: student.studentPhoto || '',
+        fatherPhoto: student.fatherPhoto || '',
+        motherPhoto: student.motherPhoto || '',
+        guardianPhoto: student.guardianPhoto || ''
+      });
+      // Store existing photos
+      setExistingPhotos({
+        studentPhoto: student.studentPhoto || '',
+        fatherPhoto: student.fatherPhoto || '',
+        motherPhoto: student.motherPhoto || '',
+        guardianPhoto: student.guardianPhoto || ''
+      });
+      // Reset new photo files
+      setPhotoFiles({
+        studentPhoto: null,
+        fatherPhoto: null,
+        motherPhoto: null,
+        guardianPhoto: null
       });
     }
   }, [isOpen, student]);
@@ -106,6 +153,95 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
                type === 'number' ? parseFloat(value) || 0 : value
     }));
+  };
+
+  const handlePhotoChange = (photoType: keyof typeof photoFiles, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      showToast({ message: 'Only JPEG, PNG, and WebP images are allowed', type: "ERROR" });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast({ message: 'Image size must be less than 5MB', type: "ERROR" });
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoFiles(prev => ({
+        ...prev,
+        [photoType]: {
+          file: file,
+          preview: reader.result as string
+        }
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = (photoType: keyof typeof photoFiles) => {
+    setPhotoFiles(prev => ({
+      ...prev,
+      [photoType]: null
+    }));
+  };
+
+  const handleRemoveExistingPhoto = (photoType: keyof typeof existingPhotos) => {
+    setExistingPhotos(prev => ({
+      ...prev,
+      [photoType]: ''
+    }));
+  };
+
+  const uploadPhotosToServer = async (): Promise<{ [key: string]: string }> => {
+    const formDataToSend = new FormData();
+    
+    if (photoFiles.studentPhoto) {
+      formDataToSend.append('studentPhoto', photoFiles.studentPhoto.file);
+    }
+    if (photoFiles.fatherPhoto) {
+      formDataToSend.append('fatherPhoto', photoFiles.fatherPhoto.file);
+    }
+    if (photoFiles.motherPhoto) {
+      formDataToSend.append('motherPhoto', photoFiles.motherPhoto.file);
+    }
+    if (photoFiles.guardianPhoto) {
+      formDataToSend.append('guardianPhoto', photoFiles.guardianPhoto.file);
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/photos/upload-student-photos`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          body: formDataToSend
+        }
+      );
+
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        const photoUrls: { [key: string]: string } = {};
+        if (data.data.studentPhoto?.url) photoUrls.studentPhoto = data.data.studentPhoto.url;
+        if (data.data.fatherPhoto?.url) photoUrls.fatherPhoto = data.data.fatherPhoto.url;
+        if (data.data.motherPhoto?.url) photoUrls.motherPhoto = data.data.motherPhoto.url;
+        if (data.data.guardianPhoto?.url) photoUrls.guardianPhoto = data.data.guardianPhoto.url;
+        return photoUrls;
+      } else {
+        throw new Error(data.message || 'Failed to upload photos');
+      }
+    } catch (error) {
+      console.error('Error uploading photos:', error);
+      throw error;
+    }
   };
 
   const validateForm = () => {
@@ -147,7 +283,32 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
     if (!validateForm()) return;
 
     setLoading(true);
+    setUploadingPhotos(true);
+
     try {
+      // Upload new photos if any are selected
+      let photoUrls: { [key: string]: string } = {};
+      const hasNewPhotos = Object.values(photoFiles).some(photo => photo !== null);
+      
+      if (hasNewPhotos) {
+        try {
+          photoUrls = await uploadPhotosToServer();
+        } catch (error) {
+          showToast({ message: 'Failed to upload photos. Please try again.', type: "ERROR" });
+          setLoading(false);
+          setUploadingPhotos(false);
+          return;
+        }
+      }
+
+      // Combine existing and new photo URLs
+      const finalPhotos = {
+        studentPhoto: photoUrls.studentPhoto || existingPhotos.studentPhoto || undefined,
+        fatherPhoto: photoUrls.fatherPhoto || existingPhotos.fatherPhoto || undefined,
+        motherPhoto: photoUrls.motherPhoto || existingPhotos.motherPhoto || undefined,
+        guardianPhoto: photoUrls.guardianPhoto || existingPhotos.guardianPhoto || undefined,
+      };
+
       // Transform form data to match backend UpdateStudentRequest
       const submitData: UpdateStudentRequest = {
         firstName: formData.firstName,
@@ -166,12 +327,18 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         fatherName: formData.fatherName,
         fatherPhone: formData.fatherPhone || undefined,
         fatherOccupation: formData.fatherOccupation || undefined,
+        fatherAadharNumber: formData.fatherAadharNumber || undefined,
         motherName: formData.motherName,
         motherPhone: formData.motherPhone || undefined,
         motherOccupation: formData.motherOccupation || undefined,
         guardianName: formData.guardianName || undefined,
         guardianRelation: formData.guardianRelation || undefined,
         guardianPhone: formData.guardianPhone || undefined,
+        // Add photo URLs
+        studentPhoto: finalPhotos.studentPhoto,
+        fatherPhoto: finalPhotos.fatherPhoto,
+        motherPhoto: finalPhotos.motherPhoto,
+        guardianPhoto: finalPhotos.guardianPhoto,
       };
 
       const result = await studentApi.updateStudent(student.id, submitData);
@@ -188,6 +355,7 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
       showToast({ message: 'Failed to update student', type: "ERROR" });
     } finally {
       setLoading(false);
+      setUploadingPhotos(false);
     }
   };
 
@@ -199,7 +367,7 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">Edit Student</h2>
           <button
@@ -465,6 +633,212 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
             </div>
           </div>
 
+          {/* Photo Upload Section */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Photos</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Student Photo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Student Photo</label>
+                <div className="flex flex-col items-center gap-2">
+                  {photoFiles.studentPhoto ? (
+                    <div className="relative">
+                      <img
+                        src={photoFiles.studentPhoto.preview}
+                        alt="Student preview"
+                        className="w-24 h-24 rounded-lg object-cover border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto('studentPhoto')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : existingPhotos.studentPhoto ? (
+                    <div className="relative">
+                      <img
+                        src={existingPhotos.studentPhoto}
+                        alt="Current student photo"
+                        className="w-24 h-24 rounded-lg object-cover border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExistingPhoto('studentPhoto')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        title="Remove photo"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                      <Upload className="w-6 h-6 text-gray-400" />
+                      <span className="text-xs text-gray-500 mt-1">Upload</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={(e) => handlePhotoChange('studentPhoto', e)}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Father Photo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Father Photo</label>
+                <div className="flex flex-col items-center gap-2">
+                  {photoFiles.fatherPhoto ? (
+                    <div className="relative">
+                      <img
+                        src={photoFiles.fatherPhoto.preview}
+                        alt="Father preview"
+                        className="w-24 h-24 rounded-lg object-cover border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto('fatherPhoto')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : existingPhotos.fatherPhoto ? (
+                    <div className="relative">
+                      <img
+                        src={existingPhotos.fatherPhoto}
+                        alt="Current father photo"
+                        className="w-24 h-24 rounded-lg object-cover border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExistingPhoto('fatherPhoto')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        title="Remove photo"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                      <Upload className="w-6 h-6 text-gray-400" />
+                      <span className="text-xs text-gray-500 mt-1">Upload</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={(e) => handlePhotoChange('fatherPhoto', e)}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Mother Photo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mother Photo</label>
+                <div className="flex flex-col items-center gap-2">
+                  {photoFiles.motherPhoto ? (
+                    <div className="relative">
+                      <img
+                        src={photoFiles.motherPhoto.preview}
+                        alt="Mother preview"
+                        className="w-24 h-24 rounded-lg object-cover border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto('motherPhoto')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : existingPhotos.motherPhoto ? (
+                    <div className="relative">
+                      <img
+                        src={existingPhotos.motherPhoto}
+                        alt="Current mother photo"
+                        className="w-24 h-24 rounded-lg object-cover border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExistingPhoto('motherPhoto')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        title="Remove photo"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                      <Upload className="w-6 h-6 text-gray-400" />
+                      <span className="text-xs text-gray-500 mt-1">Upload</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={(e) => handlePhotoChange('motherPhoto', e)}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Guardian Photo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Guardian Photo</label>
+                <div className="flex flex-col items-center gap-2">
+                  {photoFiles.guardianPhoto ? (
+                    <div className="relative">
+                      <img
+                        src={photoFiles.guardianPhoto.preview}
+                        alt="Guardian preview"
+                        className="w-24 h-24 rounded-lg object-cover border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto('guardianPhoto')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : existingPhotos.guardianPhoto ? (
+                    <div className="relative">
+                      <img
+                        src={existingPhotos.guardianPhoto}
+                        alt="Current guardian photo"
+                        className="w-24 h-24 rounded-lg object-cover border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExistingPhoto('guardianPhoto')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        title="Remove photo"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                      <Upload className="w-6 h-6 text-gray-400" />
+                      <span className="text-xs text-gray-500 mt-1">Upload</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={(e) => handlePhotoChange('guardianPhoto', e)}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Parent/Guardian Information */}
           <div className="border border-gray-200 rounded-lg p-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Parent/Guardian Information</h3>
@@ -509,6 +883,21 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
                     value={formData.fatherOccupation}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Aadhar Number (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    name="fatherAadharNumber"
+                    value={formData.fatherAadharNumber}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    maxLength={12}
+                    pattern="[0-9]{12}"
+                    placeholder="12-digit Aadhar number"
                   />
                 </div>
               </div>
@@ -598,7 +987,7 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
                     value={formData.guardianPhone}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    pattern="[6-9][0-9]{9}"
+                    pattern="[6-9][0-9]{9]"
                   />
                 </div>
               </div>

@@ -20,6 +20,7 @@ import vendorPaymentRouter from './routes/vendorPayment'
 import classFeePricingRouter from './routes/classFeePricing'
 import transportationAreaPricingRouter from './routes/transportationAreaPricing'
 import studentRouter from './routes/student'
+import monthlyFeeRouter from './routes/monthlyFee'
 import sequelize from './config/database';
 import './models'; // Import for associations
 import cookieParser from "cookie-parser";
@@ -112,6 +113,7 @@ app.use('/api/vendor-payments', vendorPaymentRouter)
 app.use('/api/class-fee-pricing', classFeePricingRouter)
 app.use('/api/transportation-area-pricing', transportationAreaPricingRouter)
 app.use('/api/students', studentRouter)
+app.use('/api/fees', monthlyFeeRouter)
 
 app.listen(7000, async () => {
     console.log("Server is running on port 7000")

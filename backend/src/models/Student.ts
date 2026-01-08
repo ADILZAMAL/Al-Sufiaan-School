@@ -69,6 +69,11 @@ class Student extends Model {
   public guardianName?: string;
   public guardianRelation?: string;
   public guardianPhone?: string;
+  public fatherAadharNumber?: string;
+  public studentPhoto?: string;
+  public fatherPhoto?: string;
+  public motherPhoto?: string;
+  public guardianPhoto?: string;
   public createdBy!: number; //Foreign Key
 
   public readonly createdAt!: Date;
@@ -313,6 +318,32 @@ Student.init(
           msg: 'Guardian phone must be a valid Indian mobile number',
         }
       },
+    },
+    fatherAadharNumber: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        is: {
+          args: [/^[0-9]{12}$/],
+          msg: 'Father Aadhaar number must be 12 digits',
+        },
+      },
+    },
+    studentPhoto: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    fatherPhoto: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    motherPhoto: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    guardianPhoto: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
     },
     createdBy: {
       type: DataTypes.INTEGER,
