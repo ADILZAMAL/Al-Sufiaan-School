@@ -49,6 +49,7 @@ export interface Student {
   id: number;
   schoolId: number;
   admissionNumber: string;
+  admissionDate: string;
   lastName: string; // Swapped order to match backend
   firstName: string; // Swapped order to match backend
   email?: string;
@@ -95,6 +96,7 @@ export interface Student {
 
 // Create Student Request - matches what backend expects
 export interface CreateStudentRequest {
+  admissionDate: string;
   firstName: string;
   lastName: string;
   email?: string;
@@ -130,8 +132,11 @@ export interface UpdateStudentRequest extends Partial<CreateStudentRequest> {
 
 // Enhanced Student Form Data with better type safety
 export interface StudentFormData {
-  // Personal Information
+  // Admission Information
   admissionNumber: string;
+  admissionDate: string;
+  
+  // Personal Information
   firstName: string;
   lastName: string;
   dateOfBirth: string;

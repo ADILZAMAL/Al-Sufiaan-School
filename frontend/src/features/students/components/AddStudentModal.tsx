@@ -19,6 +19,7 @@ interface ClassData {
 const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   const { showToast } = useAppContext();
   const [formData, setFormData] = useState({
+    admissionDate: new Date().toISOString().split('T')[0], // Default to today
     firstName: '',
     lastName: '',
     dateOfBirth: '',
@@ -138,6 +139,7 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     try {
       // Transform form data to match backend CreateStudentRequest
       const submitData: CreateStudentRequest = {
+        admissionDate: formData.admissionDate,
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email || undefined,
@@ -184,6 +186,7 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
 
   const handleClose = () => {
     setFormData({
+      admissionDate: new Date().toISOString().split('T')[0], // Reset to today
       firstName: '',
       lastName: '',
       dateOfBirth: '',
@@ -196,7 +199,7 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
       address: '',
       city: '',
       state: '',
-      pincode: '',
+      pincode:'',
       classId: null as number | null,
       sectionId: null as number | null,
       rollNumber: '',
@@ -278,6 +281,18 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                   type="text"
                   name="rollNumber"
                   value={formData.rollNumber}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Admission Date
+                </label>
+                <input
+                  type="date"
+                  name="admissionDate"
+                  value={formData.admissionDate}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />

@@ -43,6 +43,7 @@ class Student extends Model {
   public id!: number;
   public schoolId!: number; //Foreign Key
   public admissionNumber!: string;
+  public admissionDate!: Date;
   public lastName!: string;
   public firstName!: string;
   public email?: string;
@@ -106,6 +107,11 @@ Student.init(
           msg: 'Admission number is required',
         },
       },
+    },
+    admissionDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
     },
     firstName: {
       type: DataTypes.STRING,

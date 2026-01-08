@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus, FiChevronDown, FiChevronRight } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus, FiChevronDown, FiChevronRight, FiFileText } from 'react-icons/fi';
 import { generateMonthlyFee, collectFeePayment } from '../api';
 import GenerateFeeModal from './GenerateFeeModal';
 import CollectFeeModal from './CollectFeeModal';
+import FeeReceiptModal from './FeeReceiptModal';
+import { School } from '../../../api/school';
 
 interface FeeItem {
   feeType: string;
@@ -35,22 +37,38 @@ interface FeeTimelineEntry {
   payments?: PaymentDetail[];
 }
 
+interface StudentInfo {
+  firstName: string;
+  lastName: string;
+  admissionNumber: string;
+  rollNumber?: string | null;
+  className: string;
+  sectionName: string;
+  schoolId: number;
+}
+
 interface FeeTimelineProps {
   timeline: FeeTimelineEntry[];
   loading?: boolean;
   studentId: number;
   onRefresh: () => void;
+  student?: StudentInfo;
+  school?: School;
 }
 
 const FeeTimeline: React.FC<FeeTimelineProps> = ({ 
   timeline, 
   loading, 
   studentId,
-  onRefresh 
+  onRefresh,
+  student,
+  school
 }) => {
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<FeeTimelineEntry | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentDetail | null>(null);
   const [generatingFee, setGeneratingFee] = useState(false);
   const [collectingPayment, setCollectingPayment] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -147,6 +165,12 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
   const openCollectModal = (entry: FeeTimelineEntry) => {
     setSelectedEntry(entry);
     setIsCollectModalOpen(true);
+  };
+
+  const openReceiptModal = (payment: PaymentDetail, entry: FeeTimelineEntry) => {
+    setSelectedPayment(payment);
+    setSelectedEntry(entry);
+    setIsReceiptModalOpen(true);
   };
 
   if (loading) {
@@ -337,7 +361,8 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                                   <th className="pb-2 pr-4">Mode</th>
                                   <th className="pb-2 pr-4">Reference</th>
                                   <th className="pb-2 pr-4">Received By</th>
-                                  <th className="pb-2">Remarks</th>
+                                  <th className="pb-2 pr-4">Remarks</th>
+                                  <th className="pb-2">Action</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-200">
@@ -358,8 +383,18 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                                     <td className="py-2 pr-4 text-gray-900">
                                       {payment.receivedBy || '-'}
                                     </td>
-                                    <td className="py-2 text-gray-600">
+                                    <td className="py-2 pr-4 text-gray-600">
                                       {payment.remarks || '-'}
+                                    </td>
+                                    <td className="py-2">
+                                      <button
+                                        onClick={() => openReceiptModal(payment, entry)}
+                                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+                                        title="View Receipt"
+                                      >
+                                        <FiFileText className="mr-1 h-3 w-3" />
+                                        Receipt
+                                      </button>
                                     </td>
                                   </tr>
                                 ))}
@@ -407,6 +442,29 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
           paidAmount={selectedEntry.paidAmount || 0}
           dueAmount={selectedEntry.dueAmount || 0}
           loading={collectingPayment}
+        />
+      )}
+
+      {/* Fee Receipt Modal */}
+      {selectedPayment && selectedEntry && student && school && (
+        <FeeReceiptModal
+          isOpen={isReceiptModalOpen}
+          onClose={() => {
+            setIsReceiptModalOpen(false);
+            setSelectedPayment(null);
+            setSelectedEntry(null);
+          }}
+          payment={selectedPayment}
+          month={selectedEntry.label}
+          feeItems={selectedEntry.feeItems || null}
+          totalConfiguredAmount={selectedEntry.totalConfiguredAmount}
+          totalAdjustment={selectedEntry.totalAdjustment}
+          totalPayableAmount={selectedEntry.totalPayableAmount || 0}
+          paidAmount={selectedPayment.amountPaid}
+          discountReason={selectedEntry.discountReason}
+          student={student}
+          school={school}
+          allPayments={(selectedEntry.payments || []).filter(p => p.id <= selectedPayment.id)}
         />
       )}
     </div>

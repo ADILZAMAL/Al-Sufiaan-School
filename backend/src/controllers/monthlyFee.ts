@@ -352,7 +352,7 @@ export async function getStudentFeeTimeline(studentId: number) {
     throw new Error('Student not found');
   }
 
-  const admissionDate = new Date(student.createdAt);
+  const admissionDate = new Date(student.admissionDate);
   const admissionMonth = admissionDate.getMonth() + 1;
   const admissionYear = admissionDate.getFullYear();
 

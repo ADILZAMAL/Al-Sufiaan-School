@@ -4,6 +4,7 @@ import { FiArrowLeft, FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail,
 // import { useQuery } from '@tanstack/react-query';
 import { useQuery } from "react-query";
 import { getStudentById, getStudentFeeTimeline } from '../api';
+import { getSchoolById } from '../../../api/school';
 import { Student } from '../types';
 import EditStudentModal from '../components/EditStudentModal';
 import FeeTimeline from '../components/FeeTimeline';
@@ -37,6 +38,12 @@ const ViewStudentProfile: React.FC = () => {
     queryKey: ['studentFeeTimeline', id],
     queryFn: () => getStudentFeeTimeline(Number(id)),
     enabled: !!id,
+  });
+
+  const { data: school } = useQuery({
+    queryKey: ['school', student?.schoolId],
+    queryFn: () => getSchoolById(student!.schoolId),
+    enabled: !!student?.schoolId,
   });
 
   const feeTimeline = feeTimelineData?.data || [];
@@ -182,6 +189,16 @@ const ViewStudentProfile: React.FC = () => {
               loading={timelineLoading} 
               studentId={Number(id)}
               onRefresh={handleFeeTimelineRefresh}
+              student={{
+                firstName: student.firstName,
+                lastName: student.lastName,
+                admissionNumber: student.admissionNumber,
+                rollNumber: student.rollNumber,
+                className: student.class.name,
+                sectionName: student.section.name,
+                schoolId: student.schoolId,
+              }}
+              school={school}
             />
           </div>
 
