@@ -135,7 +135,7 @@ export const initTeachingStaffModel = (sequelize: Sequelize) => {
         },
         dateOfJoiningService: {
             type: DataTypes.DATEONLY,
-            allowNull: true,
+            allowNull: false,
         },
         dateOfJoiningPresentSchool: {
             type: DataTypes.DATEONLY,

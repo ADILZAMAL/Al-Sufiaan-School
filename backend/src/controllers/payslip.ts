@@ -60,18 +60,19 @@ const calculateNextAvailableMonth = async (staffId: number, staffType: 'teaching
     let lastGeneratedMonth: string | null = null;
 
     if (!latestPayslip) {
-        // No previous payslips - use previous month from current date
-        let previousMonth = currentDate.getMonth(); // 0-11 (getMonth() returns 0-based)
-        let previousYear = currentDate.getFullYear();
+        // No previous payslips - use staff's joining date as the starting point
+        const staff = await getStaffDetails(staffId, staffType);
         
-        // Handle January case (previous month would be December of previous year)
-        if (previousMonth === 0) {
-            previousMonth = 12;
-            previousYear = previousYear - 1;
+        if (!staff) {
+            throw new Error('Staff member not found');
         }
+
+        // Use dateOfJoiningService as reference date
+        const joiningDate = new Date(staff.dateOfJoiningService);
         
-        nextMonth = previousMonth;
-        nextYear = previousYear;
+        // First available month is the month of joining
+        nextMonth = joiningDate.getMonth() + 1; // Convert 0-based to 1-based
+        nextYear = joiningDate.getFullYear();
     } else {
         // Calculate next month based on latest payslip
         lastGeneratedMonth = `${getMonthName(latestPayslip.month)} ${latestPayslip.year}`;
@@ -199,6 +200,21 @@ export const generatePayslip = async (req: Request, res: Response) => {
 
         if (!staff.salaryPerMonth) {
             return sendError(res, 'Staff member does not have salary information', 400);
+        }
+
+        // Validate that the payslip month is not before the joining date
+        const joiningDate = new Date(staff.dateOfJoiningService);
+        const joiningYear = joiningDate.getFullYear();
+        const joiningMonth = joiningDate.getMonth() + 1; // Convert 0-based to 1-based
+
+        if (year < joiningYear || (year === joiningYear && month < joiningMonth)) {
+            const joiningMonthName = getMonthName(joiningMonth);
+            return sendError(res, 
+                `Cannot generate payslip for ${getMonthName(month)} ${year}. ` +
+                `Staff joined in ${joiningMonthName} ${joiningYear}. ` +
+                `Payslips can only be generated from the joining month onwards.`,
+                400
+            );
         }
 
         // Get school details
