@@ -547,6 +547,7 @@ export async function collectFeePaymentController(req: Request, res: Response) {
 
     // Create payment record
     const payment = await StudentFeePayment.create({
+      schoolId: monthlyFee.schoolId,
       studentId: parseInt(studentId),
       studentMonthlyFeeId: parseInt(monthlyFeeId),
       amountPaid,
@@ -644,6 +645,12 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
           as: 'receiver',
           attributes: ['id', 'firstName', 'lastName'],
         },
+        {
+          model: User,
+          as: 'verifier',
+          attributes: ['id', 'firstName', 'lastName'],
+          required: false,
+        },
       ],
       order: [['paymentDate', 'DESC'], ['createdAt', 'DESC']],
       limit: limitNum,
@@ -681,7 +688,13 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
             : 'Unknown',
           receiverId: payment.receivedBy,
           remarks: payment.remarks,
+          verified: payment.verified,
+          verifiedBy: payment.verifier 
+            ? `${payment.verifier.firstName} ${payment.verifier.lastName}` 
+            : null,
+          verifiedByUserId: payment.verifiedBy,
           createdAt: payment.createdAt,
+          updatedAt: payment.updatedAt,
         };
       })
     );
@@ -698,5 +711,44 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
   } catch (error) {
     console.error('Error fetching incoming payments:', error);
     return sendError(res, 'Failed to fetch incoming payments', 500);
+  }
+}
+
+// Controller to verify a payment
+export async function verifyPaymentController(req: Request, res: Response) {
+  const { paymentId } = req.params;
+  const userId = parseInt(req.userId);
+
+  if (!paymentId) {
+    return sendError(res, 'Payment ID is required', 400);
+  }
+
+  try {
+    // Find the payment
+    const payment = await StudentFeePayment.findByPk(paymentId);
+
+    if (!payment) {
+      return sendError(res, 'Payment not found', 404);
+    }
+
+    // Check if already verified
+    if (payment.verified) {
+      return sendError(res, 'Payment is already verified', 400);
+    }
+
+    // Update payment as verified
+    await payment.update({
+      verified: true,
+      verifiedBy: userId,
+    });
+
+    return sendSuccess(res, {
+      id: payment.id,
+      verified: true,
+      verifiedBy: userId,
+    }, 'Payment verified successfully');
+  } catch (error) {
+    console.error('Error verifying payment:', error);
+    return sendError(res, 'Failed to verify payment', 500);
   }
 }

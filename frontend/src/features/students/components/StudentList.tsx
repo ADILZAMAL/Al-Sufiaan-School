@@ -12,7 +12,7 @@ const StudentList: React.FC<StudentListProps> = ({
   students, 
   loading = false
 }) => {
-  const navigate = useNavigate();
+  const navigate =  useNavigate();
 
   const handleView = (student: Student) => {
     navigate(`/dashboard/students/${student.id}`);

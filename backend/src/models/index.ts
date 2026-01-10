@@ -154,6 +154,7 @@ Student.hasMany(StudentMonthlyFee, { foreignKey: 'studentId', as: 'monthlyFees' 
 StudentFeePayment.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
 StudentFeePayment.belongsTo(StudentMonthlyFee, { foreignKey: 'studentMonthlyFeeId', as: 'studentMonthlyFee' });
 StudentFeePayment.belongsTo(User, { foreignKey: 'receivedBy', as: 'receiver' });
+StudentFeePayment.belongsTo(User, { foreignKey: 'verifiedBy', as: 'verifier' });
 StudentFeePayment.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 
 // Additional associations for StudentFeePayment

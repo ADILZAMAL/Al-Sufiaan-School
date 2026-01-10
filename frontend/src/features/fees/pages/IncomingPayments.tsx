@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { fetchIncomingPayments, IncomingPaymentType } from '../../../api';
+import { fetchIncomingPayments, verifyPayment, IncomingPaymentType } from '../../../api';
+import { useAppContext } from '../../../providers/AppContext';
+import { FaCheckCircle, FaClock, FaShieldAlt, FaSpinner } from 'react-icons/fa';
 
 const MONTH_NAMES = [
   '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -16,9 +18,11 @@ const PAYMENT_MODES = [
 ];
 
 export default function IncomingPayments() {
+  const { showToast, userRole } = useAppContext();
   const [payments, setPayments] = useState<IncomingPaymentType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [verifyingPayment, setVerifyingPayment] = useState<number | null>(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -86,6 +90,24 @@ export default function IncomingPayments() {
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  const handleVerifyPayment = async (paymentId: number) => {
+    try {
+      setVerifyingPayment(paymentId);
+      await verifyPayment(paymentId);
+      showToast({ message: 'Payment verified successfully!', type: 'SUCCESS' });
+      loadPayments(); // Refresh the list
+    } catch (err) {
+      showToast({ 
+        message: err instanceof Error ? err.message : 'Failed to verify payment', 
+        type: 'ERROR' 
+      });
+    } finally {
+      setVerifyingPayment(null);
+    }
+  };
+
+  const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
 
   return (
     <div className="p-6">
@@ -187,25 +209,33 @@ export default function IncomingPayments() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Remarks
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Verification
+                </th>
+                {isAdmin && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
+                  <td colSpan={isAdmin ? 9 : 8} className="px-6 py-12 text-center">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     <p className="mt-2 text-gray-500">Loading payments...</p>
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
+                  <td colSpan={isAdmin ? 9 : 8} className="px-6 py-12 text-center">
                     <p className="text-red-600">{error}</p>
                   </td>
                 </tr>
               ) : payments.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
+                  <td colSpan={isAdmin ? 9 : 8} className="px-6 py-12 text-center">
                     <p className="text-gray-500">No payments found</p>
                   </td>
                 </tr>
@@ -255,6 +285,47 @@ export default function IncomingPayments() {
                         {payment.remarks || '-'}
                       </div>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {payment.verified ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <FaCheckCircle className="mr-1" />
+                          Verified
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                          <FaClock className="mr-1" />
+                          Pending
+                        </span>
+                      )}
+                      {payment.verifiedBy && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          by {payment.verifiedBy}
+                        </div>
+                      )}
+                    </td>
+                    {isAdmin && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {!payment.verified && (
+                          <button
+                            onClick={() => handleVerifyPayment(payment.id)}
+                            disabled={verifyingPayment === payment.id}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {verifyingPayment === payment.id ? (
+                              <>
+                                <FaSpinner className="animate-spin mr-1" />
+                                Verifying...
+                              </>
+                            ) : (
+                              <>
+                                <FaShieldAlt className="mr-1" />
+                                Verify
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

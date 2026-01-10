@@ -212,7 +212,11 @@ export type IncomingPaymentType = {
     receivedBy: string;
     receiverId: number | null;
     remarks: string | null;
+    verified: boolean;
+    verifiedBy: string | null;
+    verifiedByUserId: number | null;
     createdAt: string;
+    updatedAt: string;
 }
 
 export type IncomingPaymentsResponseType = {
@@ -247,4 +251,16 @@ export const fetchIncomingPayments = async (
         throw new Error(body.message || 'Failed to fetch incoming payments');
     }
     return body.data;
+}
+
+export const verifyPayment = async (paymentId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/fees/payments/${paymentId}/verify`, {
+        method: 'POST',
+        credentials: 'include',
+    });
+    const body = await response.json();
+    if (!body.success) {
+        throw new Error(body.message || 'Failed to verify payment');
+    }
+    return body;
 }

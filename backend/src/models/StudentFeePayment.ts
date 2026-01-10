@@ -3,9 +3,11 @@ import sequelize from '../config/database';
 import Student from './Student';
 import StudentMonthlyFee from './StudentMonthlyFee';
 import User from './User';
+import School from './School';
 
 class StudentFeePayment extends Model {
   public id!: number;
+  public schoolId!: number;
   public studentId!: number;
   public studentMonthlyFeeId!: number;
   public amountPaid!: number;
@@ -14,6 +16,8 @@ class StudentFeePayment extends Model {
   public referenceNumber?: string;
   public receivedBy!: number;
   public remarks?: string | null;
+  public verified!: boolean;
+  public verifiedBy?: number | null;
 }
 
 export const initStudentFeePaymentModel = (sequelize: Sequelize) => {
@@ -23,6 +27,16 @@ export const initStudentFeePaymentModel = (sequelize: Sequelize) => {
         type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true,
+      },
+      schoolId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: School,
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'RESTRICT',
       },
       studentId: {
         type: DataTypes.INTEGER,
@@ -72,6 +86,21 @@ export const initStudentFeePaymentModel = (sequelize: Sequelize) => {
       remarks: {
         type: DataTypes.TEXT,
         allowNull: true,
+      },
+      verified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      verifiedBy: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: User,
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
       }
     },
     {
@@ -84,10 +113,18 @@ export const initStudentFeePaymentModel = (sequelize: Sequelize) => {
         {
           fields: ['studentMonthlyFeeId'],
           name: 'student_monthly_fee_payment_student_monthly_fee_id_idx',
+        },
+        {
+          fields: ['schoolId'],
+          name: 'student_fee_payment_school_id_idx',
+        },
+        {
+          fields: ['verifiedBy'],
+          name: 'student_fee_payment_verified_by_idx',
         }
       ]
     }
-)
+  )
 };
 
 export default StudentFeePayment;

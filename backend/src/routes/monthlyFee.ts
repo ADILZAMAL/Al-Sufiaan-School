@@ -1,10 +1,11 @@
 import { Router } from 'express';
-import verifyToken from '../middleware/auth';
+import verifyToken, { requireRole } from '../middleware/auth';
 import { 
   generateMonthlyFee,
   getStudentFeeTimelineController,
   collectFeePaymentController,
-  getAllIncomingPayments
+  getAllIncomingPayments,
+  verifyPaymentController
 } from '../controllers/monthlyFee';
 
 const router = Router();
@@ -35,6 +36,14 @@ router.get(
   '/payments',
   verifyToken,
   getAllIncomingPayments
+);
+
+// Verify a payment (Admin only)
+router.post(
+  '/payments/:paymentId/verify',
+  verifyToken,
+  requireRole(['SUPER_ADMIN', 'ADMIN']),
+  verifyPaymentController
 );
 
 export default router;
