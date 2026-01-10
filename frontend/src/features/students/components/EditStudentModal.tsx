@@ -519,6 +519,20 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
                 />
               </div>
             </div>
+
+            {/* Student Photo */}
+            <div className="mt-6">
+              <PhotoUpload
+                file={photoFiles.studentPhoto?.file || null}
+                preview={photoFiles.studentPhoto?.preview || existingPhotos.studentPhoto || null}
+                onChange={(file, preview) => handlePhotoChange('studentPhoto', file, preview)}
+                onRemove={() => {
+                  setPhotoFiles(prev => ({ ...prev, studentPhoto: null }));
+                  setExistingPhotos(prev => ({ ...prev, studentPhoto: '' }));
+                }}
+                label="Student Photo"
+              />
+            </div>
           </div>
 
           {/* Contact Information */}
@@ -610,23 +624,67 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
             </div>
           </div>
 
-          {/* Photo Upload Section */}
+          {/* Father Information */}
           <div className="border border-gray-200 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Photos</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Student Photo */}
-              <PhotoUpload
-                file={photoFiles.studentPhoto?.file || null}
-                preview={photoFiles.studentPhoto?.preview || existingPhotos.studentPhoto || null}
-                onChange={(file, preview) => handlePhotoChange('studentPhoto', file, preview)}
-                onRemove={() => {
-                  setPhotoFiles(prev => ({ ...prev, studentPhoto: null }));
-                  setExistingPhotos(prev => ({ ...prev, studentPhoto: '' }));
-                }}
-                label="Student Photo"
-              />
-
-              {/* Father Photo */}
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Father Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="fatherName"
+                  value={formData.fatherName}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  name="fatherPhone"
+                  value={formData.fatherPhone}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  pattern="[6-9][0-9]{9}"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Occupation
+                </label>
+                <input
+                  type="text"
+                  name="fatherOccupation"
+                  value={formData.fatherOccupation}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Aadhar Number (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="fatherAadharNumber"
+                  value={formData.fatherAadharNumber}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  maxLength={12}
+                  pattern="[0-9]{12}"
+                  placeholder="12-digit Aadhar number"
+                />
+              </div>
+            </div>
+            
+            {/* Father Photo */}
+            <div className="mt-6">
               <PhotoUpload
                 file={photoFiles.fatherPhoto?.file || null}
                 preview={photoFiles.fatherPhoto?.preview || existingPhotos.fatherPhoto || null}
@@ -637,8 +695,55 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
                 }}
                 label="Father Photo"
               />
+            </div>
+          </div>
 
-              {/* Mother Photo */}
+          {/* Mother Information */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Mother Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="motherName"
+                  value={formData.motherName}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  name="motherPhone"
+                  value={formData.motherPhone}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  pattern="[6-9][0-9]{9}"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Occupation
+                </label>
+                <input
+                  type="text"
+                  name="motherOccupation"
+                  value={formData.motherOccupation}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            {/* Mother Photo */}
+            <div className="mt-6">
               <PhotoUpload
                 file={photoFiles.motherPhoto?.file || null}
                 preview={photoFiles.motherPhoto?.preview || existingPhotos.motherPhoto || null}
@@ -649,8 +754,55 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
                 }}
                 label="Mother Photo"
               />
+            </div>
+          </div>
 
-              {/* Guardian Photo */}
+          {/* Guardian Information */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Guardian Information (if applicable)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  name="guardianName"
+                  value={formData.guardianName}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Relationship
+                </label>
+                <input
+                  type="text"
+                  name="guardianRelation"
+                  value={formData.guardianRelation}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Uncle, Aunt, Grandparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  name="guardianPhone"
+                  value={formData.guardianPhone}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  pattern="[6-9][0-9]{9]"
+                />
+              </div>
+            </div>
+            
+            {/* Guardian Photo */}
+            <div className="mt-6">
               <PhotoUpload
                 file={photoFiles.guardianPhoto?.file || null}
                 preview={photoFiles.guardianPhoto?.preview || existingPhotos.guardianPhoto || null}
@@ -661,161 +813,6 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
                 }}
                 label="Guardian Photo"
               />
-            </div>
-          </div>
-
-          {/* Parent/Guardian Information */}
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Parent/Guardian Information</h3>
-            
-            {/* Father Information */}
-            <div className="mb-6">
-              <h4 className="font-medium text-gray-900 mb-3">Father Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="fatherName"
-                    value={formData.fatherName}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    name="fatherPhone"
-                    value={formData.fatherPhone}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    pattern="[6-9][0-9]{9}"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Occupation
-                  </label>
-                  <input
-                    type="text"
-                    name="fatherOccupation"
-                    value={formData.fatherOccupation}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Aadhar Number (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    name="fatherAadharNumber"
-                    value={formData.fatherAadharNumber}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    maxLength={12}
-                    pattern="[0-9]{12}"
-                    placeholder="12-digit Aadhar number"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Mother Information */}
-            <div className="mb-6">
-              <h4 className="font-medium text-gray-900 mb-3">Mother Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="motherName"
-                    value={formData.motherName}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    name="motherPhone"
-                    value={formData.motherPhone}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    pattern="[6-9][0-9]{9}"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Occupation
-                  </label>
-                  <input
-                    type="text"
-                    name="motherOccupation"
-                    value={formData.motherOccupation}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Guardian Information */}
-            <div>
-              <h4 className="font-medium text-gray-900 mb-3">Guardian Information (if applicable)</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    name="guardianName"
-                    value={formData.guardianName}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Relationship
-                  </label>
-                  <input
-                    type="text"
-                    name="guardianRelation"
-                    value={formData.guardianRelation}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., Uncle, Aunt, Grandparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    name="guardianPhone"
-                    value={formData.guardianPhone}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    pattern="[6-9][0-9]{9]"
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
