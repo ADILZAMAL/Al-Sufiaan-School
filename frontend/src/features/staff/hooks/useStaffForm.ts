@@ -49,7 +49,7 @@ export const useStaffForm = () => {
   const [errors, setErrors] = useState<StaffFormErrors>({});
   const [currentStep, setCurrentStep] = useState(1);
 
-  const handleChange = useCallback((field: keyof StaffFormData, value: string) => {
+  const handleChange = useCallback((field: keyof StaffFormData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

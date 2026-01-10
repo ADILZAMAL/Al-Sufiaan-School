@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, XCircle } from 'lucide-react';
+import { X } from 'lucide-react';
 import { studentApi } from '../api';
 import { useAppContext } from '../../../providers/AppContext'; 
 import { CreateStudentRequest, Gender, Religion, BloodGroup } from '../types';
+import PhotoUpload from '../../../components/common/PhotoUpload';
 
 interface PhotoFile {
   file: File;
@@ -53,10 +54,10 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     guardianPhone: ''
   });
   const [photoFiles, setPhotoFiles] = useState<{
-    studentPhoto: PhotoFile | null;
-    fatherPhoto: PhotoFile | null;
-    motherPhoto: PhotoFile | null;
-    guardianPhoto: PhotoFile | null;
+    studentPhoto: { file: File; preview: string } | null;
+    fatherPhoto: { file: File; preview: string } | null;
+    motherPhoto: { file: File; preview: string } | null;
+    guardianPhoto: { file: File; preview: string } | null;
   }>({
     studentPhoto: null,
     fatherPhoto: null,
@@ -109,35 +110,11 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     }));
   };
 
-  const handlePhotoChange = (photoType: keyof typeof photoFiles, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      showToast({ message: 'Only JPEG, PNG, and WebP images are allowed', type: "ERROR" });
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      showToast({ message: 'Image size must be less than 5MB', type: "ERROR" });
-      return;
-    }
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoFiles(prev => ({
-        ...prev,
-        [photoType]: {
-          file: file,
-          preview: reader.result as string
-        }
-      }));
-    };
-    reader.readAsDataURL(file);
+  const handlePhotoChange = (photoType: keyof typeof photoFiles, file: File, preview: string) => {
+    setPhotoFiles(prev => ({
+      ...prev,
+      [photoType]: { file, preview }
+    }));
   };
 
   const handleRemovePhoto = (photoType: keyof typeof photoFiles) => {
@@ -239,20 +216,20 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     setUploadingPhotos(true);
 
     try {
-      // Upload photos first if any are selected
-      let photoUrls: { [key: string]: string } = {};
-      const hasPhotos = Object.values(photoFiles).some(photo => photo !== null);
-      
-      if (hasPhotos) {
-        try {
-          photoUrls = await uploadPhotosToServer();
-        } catch (error) {
-          showToast({ message: 'Failed to upload photos. Please try again.', type: "ERROR" });
-          setLoading(false);
-          setUploadingPhotos(false);
-          return;
-        }
+    // Upload photos first if any are selected
+    let photoUrls: { [key: string]: string } = {};
+    const hasPhotos = Object.values(photoFiles).some(photo => photo !== null);
+    
+    if (hasPhotos) {
+      try {
+        photoUrls = await uploadPhotosToServer();
+      } catch (error) {
+        showToast({ message: 'Failed to upload photos. Please try again.', type: "ERROR" });
+        setLoading(false);
+        setUploadingPhotos(false);
+        return;
       }
+    }
 
       // Transform form data to match backend CreateStudentRequest
       const submitData: CreateStudentRequest = {
@@ -695,40 +672,14 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                 </div>
               </div>
               
-              {/* Father Photo Upload */}
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Father Photo (Optional)
-                </label>
-                <div className="flex items-center gap-4">
-                  {photoFiles.fatherPhoto ? (
-                    <div className="relative">
-                      <img
-                        src={photoFiles.fatherPhoto.preview}
-                        alt="Father preview"
-                        className="w-24 h-24 object-cover rounded-lg border border-gray-300"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePhoto('fatherPhoto')}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                      <Upload className="w-6 h-6 text-gray-400" />
-                      <span className="text-xs text-gray-500 mt-1">Upload</span>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp"
-                        onChange={(e) => handlePhotoChange('fatherPhoto', e)}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
+                <PhotoUpload
+                  file={photoFiles.fatherPhoto?.file || null}
+                  preview={photoFiles.fatherPhoto?.preview || null}
+                  onChange={(file, preview) => handlePhotoChange('fatherPhoto', file, preview)}
+                  onRemove={() => handleRemovePhoto('fatherPhoto')}
+                  label="Father Photo (Optional)"
+                />
               </div>
             </div>
 
@@ -776,40 +727,14 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                 </div>
               </div>
               
-              {/* Mother Photo Upload */}
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mother Photo (Optional)
-                </label>
-                <div className="flex items-center gap-4">
-                  {photoFiles.motherPhoto ? (
-                    <div className="relative">
-                      <img
-                        src={photoFiles.motherPhoto.preview}
-                        alt="Mother preview"
-                        className="w-24 h-24 object-cover rounded-lg border border-gray-300"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePhoto('motherPhoto')}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                      <Upload className="w-6 h-6 text-gray-400" />
-                      <span className="text-xs text-gray-500 mt-1">Upload</span>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp"
-                        onChange={(e) => handlePhotoChange('motherPhoto', e)}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
+                <PhotoUpload
+                  file={photoFiles.motherPhoto?.file || null}
+                  preview={photoFiles.motherPhoto?.preview || null}
+                  onChange={(file, preview) => handlePhotoChange('motherPhoto', file, preview)}
+                  onRemove={() => handleRemovePhoto('motherPhoto')}
+                  label="Mother Photo (Optional)"
+                />
               </div>
             </div>
 
@@ -857,40 +782,14 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                 </div>
               </div>
               
-              {/* Guardian Photo Upload */}
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Guardian Photo (Optional)
-                </label>
-                <div className="flex items-center gap-4">
-                  {photoFiles.guardianPhoto ? (
-                    <div className="relative">
-                      <img
-                        src={photoFiles.guardianPhoto.preview}
-                        alt="Guardian preview"
-                        className="w-24 h-24 object-cover rounded-lg border border-gray-300"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePhoto('guardianPhoto')}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                      <Upload className="w-6 h-6 text-gray-400" />
-                      <span className="text-xs text-gray-500 mt-1">Upload</span>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp"
-                        onChange={(e) => handlePhotoChange('guardianPhoto', e)}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
+                <PhotoUpload
+                  file={photoFiles.guardianPhoto?.file || null}
+                  preview={photoFiles.guardianPhoto?.preview || null}
+                  onChange={(file, preview) => handlePhotoChange('guardianPhoto', file, preview)}
+                  onRemove={() => handleRemovePhoto('guardianPhoto')}
+                  label="Guardian Photo (Optional)"
+                />
               </div>
             </div>
           </div>
@@ -898,43 +797,13 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
           {/* Photo Upload Section */}
           <div className="border border-gray-200 rounded-lg p-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Student Photo (Optional)</h3>
-            <div className="flex items-center gap-4">
-              {photoFiles.studentPhoto ? (
-                <div className="relative">
-                  <img
-                    src={photoFiles.studentPhoto.preview}
-                    alt="Student preview"
-                    className="w-32 h-32 object-cover rounded-lg border border-gray-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePhoto('studentPhoto')}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                  <Upload className="w-8 h-8 text-gray-400" />
-                  <span className="text-sm text-gray-500 mt-2">Upload Photo</span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                    onChange={(e) => handlePhotoChange('studentPhoto', e)}
-                    className="hidden"
-                  />
-                </label>
-              )}
-              <div className="text-sm text-gray-600">
-                <p className="font-medium">Photo Requirements:</p>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  <li>JPEG, PNG, or WebP format</li>
-                  <li>Maximum file size: 5MB</li>
-                  <li>Recommended: Passport size photo</li>
-                </ul>
-              </div>
-            </div>
+            <PhotoUpload
+              file={photoFiles.studentPhoto?.file || null}
+              preview={photoFiles.studentPhoto?.preview || null}
+              onChange={(file, preview) => handlePhotoChange('studentPhoto', file, preview)}
+              onRemove={() => handleRemovePhoto('studentPhoto')}
+              label="Student Photo"
+            />
           </div>
 
           {/* Form Actions */}

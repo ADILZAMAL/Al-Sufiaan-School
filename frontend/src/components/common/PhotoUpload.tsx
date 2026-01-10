@@ -1,22 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { HiCamera, HiX, HiVideoCamera, HiRefresh, HiCheck, HiSwitchHorizontal, HiUpload } from 'react-icons/hi';
+import { HiCamera, HiX, HiVideoCamera, HiRefresh, HiCheck, HiUpload } from 'react-icons/hi';
 
 interface PhotoUploadProps {
-  photoUrl: string;
-  onChange: (photoUrl: string) => void;
+  file: File | null;
+  preview: string | null;
+  onChange: (file: File, preview: string) => void;
+  onRemove: () => void;
+  label?: string;
   error?: string;
 }
 
 type WebcamState = 'idle' | 'initializing' | 'ready' | 'captured' | 'error';
 
-const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) => {
-  const [isUploading, setIsUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string>(photoUrl);
+const PhotoUpload: React.FC<PhotoUploadProps> = ({ file, preview, onChange, onRemove, label = 'Photo', error }) => {
   const [webcamState, setWebcamState] = useState<WebcamState>('idle');
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string>('');
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -46,7 +46,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
         video: {
           width: { ideal: 640 },
           height: { ideal: 480 },
-          facingMode: facingMode
+          facingMode: 'environment'  // Always back camera
         },
         audio: false
       };
@@ -125,82 +125,44 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
   };
 
   // Use captured photo
-  const useCapturedPhoto = async () => {
+  const useCapturedPhoto = () => {
     if (!capturedPhoto || !canvasRef.current) return;
 
-    setIsUploading(true);
-    try {
-      // Convert canvas to blob
-      canvasRef.current.toBlob(async (blob) => {
-        if (!blob) {
-          throw new Error('Failed to process captured photo');
-        }
+    canvasRef.current.toBlob(async (blob) => {
+      if (!blob) {
+        throw new Error('Failed to process captured photo');
+      }
 
-        // Create file from blob
-        const file = new File([blob], 'webcam-photo.jpg', { type: 'image/jpeg' });
+      // Create file from blob
+      const file = new File([blob], 'webcam-photo.jpg', { type: 'image/jpeg' });
+      
+      // Generate preview URL from file
+      const previewUrl = URL.createObjectURL(file);
 
-        // Upload using existing upload logic
-        const formData = new FormData();
-        formData.append('photo', file);
+      // Pass file and preview to parent
+      onChange(file, previewUrl);
 
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/photos/upload-staff-photo`, {
-          method: 'POST',
-          body: formData,
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          throw new Error('Upload failed');
-        }
-
-        const result = await response.json();
-        if (result.success) {
-          // Update parent component and local preview
-          onChange(result.data.photoUrl);
-          setPreviewUrl(result.data.photoUrl);
-          
-          // Cleanup
-          URL.revokeObjectURL(capturedPhoto);
-          setCapturedPhoto(null);
-          stopWebcam();
-        } else {
-          throw new Error(result.error?.message || 'Upload failed');
-        }
-      }, 'image/jpeg', 0.8);
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Failed to upload photo. Please try again.');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Switch camera (front/back)
-  const switchCamera = () => {
-    const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
-    setFacingMode(newFacingMode);
-    
-    // Restart webcam with new facing mode
-    stopWebcam();
-    setTimeout(() => {
-      initializeWebcam();
-    }, 100);
+      // Cleanup
+      URL.revokeObjectURL(capturedPhoto);
+      setCapturedPhoto(null);
+      stopWebcam();
+    }, 'image/jpeg', 0.8);
   };
 
   // Handle file selection
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile) return;
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
+    if (!allowedTypes.includes(selectedFile.type)) {
       alert('Please select a valid image file (JPEG, PNG, or WebP)');
       return;
     }
 
     // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    if (selectedFile.size > 5 * 1024 * 1024) {
       alert('File size must be less than 5MB');
       return;
     }
@@ -208,68 +170,30 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
     // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
-      setPreviewUrl(e.target?.result as string);
+      const previewUrl = e.target?.result as string;
+      onChange(selectedFile, previewUrl);
     };
-    reader.readAsDataURL(file);
-
-    // Upload file
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('photo', file);
-
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/photos/upload-staff-photo`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        onChange(result.data.photoUrl);
-        setPreviewUrl(result.data.photoUrl);
-      } else {
-        throw new Error(result.error?.message || 'Upload failed');
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Failed to upload photo. Please try again.');
-      setPreviewUrl(photoUrl);
-    } finally {
-      setIsUploading(false);
-    }
+    reader.readAsDataURL(selectedFile);
   };
 
   const handleFileClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleRemovePhoto = () => {
-    setPreviewUrl('');
-    onChange('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
   return (
     <div className="space-y-4">
       <label className="block text-sm font-medium text-gray-700">
-        Staff Photo
+        {label}
       </label>
 
       {/* Photo Preview */}
       <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4">
         <div className="relative mx-auto sm:mx-0">
           <div className="w-32 h-32 sm:w-32 sm:h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
-            {previewUrl ? (
+            {preview ? (
               <img
-                src={previewUrl.startsWith('http') ? previewUrl : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/${previewUrl}`}
-                alt="Staff photo preview"
+                src={preview}
+                alt={`${label} preview`}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -280,10 +204,10 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
             )}
           </div>
           
-          {previewUrl && (
+          {preview && (
             <button
               type="button"
-              onClick={handleRemovePhoto}
+              onClick={onRemove}
               className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
             >
               <HiX className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -297,20 +221,10 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
             <button
               type="button"
               onClick={handleFileClick}
-              disabled={isUploading}
-              className="w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
-              {isUploading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <HiUpload className="h-4 w-4 mr-2" />
-                  Select Photo
-                </>
-              )}
+              <HiUpload className="h-4 w-4 mr-2" />
+              Select Photo
             </button>
             
             <button
@@ -384,16 +298,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
                 />
                 
                 {/* Camera Controls Overlay */}
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-4">
-                  <button
-                    type="button"
-                    onClick={switchCamera}
-                    className="bg-white bg-opacity-20 backdrop-blur-sm text-white p-2 rounded-full hover:bg-opacity-30 transition-all"
-                    title="Switch Camera"
-                  >
-                    <HiSwitchHorizontal className="h-5 w-5" />
-                  </button>
-                  
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center">
                   <button
                     type="button"
                     onClick={capturePhoto}
@@ -431,20 +336,10 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ photoUrl, onChange, error }) 
                 <button
                   type="button"
                   onClick={useCapturedPhoto}
-                  disabled={isUploading}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center px-4 py-2 border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                 >
-                  {isUploading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <HiCheck className="h-4 w-4 mr-2" />
-                      Use Photo
-                    </>
-                  )}
+                  <HiCheck className="h-4 w-4 mr-2" />
+                  Use Photo
                 </button>
               </div>
             </div>

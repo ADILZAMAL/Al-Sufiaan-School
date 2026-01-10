@@ -1,11 +1,11 @@
 import React from 'react';
 import { StaffFormData, StaffFormErrors, GENDER_OPTIONS, SOCIAL_CATEGORY_OPTIONS, ACADEMIC_QUALIFICATION_OPTIONS, TRADE_DEGREE_OPTIONS, TEACHING_STAFF_ROLES, NON_TEACHING_STAFF_ROLES } from '../types';
-import PhotoUpload from './PhotoUpload';
+import PhotoUpload from '../../../components/common/PhotoUpload';
 
 interface PersonalDetailsFormProps {
   formData: StaffFormData;
   errors: StaffFormErrors;
-  onChange: (field: keyof StaffFormData, value: string) => void;
+  onChange: (field: keyof StaffFormData, value: any) => void;
   staffType?: 'teaching' | 'non-teaching';
 }
 
@@ -161,9 +161,17 @@ const PersonalDetailsForm: React.FC<PersonalDetailsFormProps> = ({
       {/* Photo Upload */}
       <div className="mt-6">
         <PhotoUpload
-          photoUrl={formData.photoUrl}
-          onChange={(photoUrl) => onChange('photoUrl', photoUrl)}
-          error={errors.photoUrl}
+          file={formData.photoFile || null}
+          preview={formData.photoPreview || formData.photoUrl || null}
+          onChange={(file, preview) => {
+            onChange('photoFile', file);
+            onChange('photoPreview', preview);
+          }}
+          onRemove={() => {
+            onChange('photoFile', null);
+            onChange('photoPreview', '');
+          }}
+          label="Staff Photo"
         />
       </div>
 

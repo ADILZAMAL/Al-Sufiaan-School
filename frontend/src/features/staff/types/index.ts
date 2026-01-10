@@ -83,7 +83,9 @@ export interface StaffFormData {
   role: string;
   
   // Photo
-  photoUrl: string;
+  photoUrl: string;  // Existing photo URL (for edit mode)
+  photoFile?: File;  // New photo file (for upload)
+  photoPreview?: string;  // Preview of new photo
   
   // Subject Competencies (Teaching Staff Only)
   mathematicsLevel?: string;
