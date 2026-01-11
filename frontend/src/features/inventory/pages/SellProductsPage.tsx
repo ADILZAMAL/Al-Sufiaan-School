@@ -5,6 +5,7 @@ import * as apiClient from "../api";
 import { MdOutlineDelete } from "react-icons/md";
 import { useAppContext } from "../../../providers/AppContext";
 import { useNavigate } from "react-router-dom";
+import { getCurrentSchool } from "../../../api/school";
 
 interface Order {
     studentsName: string;
@@ -22,6 +23,10 @@ const SellProductsPage: React.FC = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const [selectedClassId, setSelectedClassId] = useState<number | undefined>(undefined);
+    
+    // Fetch school data for payment modes
+    const { data: school } = useQuery('currentSchool', getCurrentSchool);
+    const paymentModes = school?.paymentModes || ['Cash'];
     
     const {
         control,
@@ -161,11 +166,11 @@ const SellProductsPage: React.FC = () => {
                             <option value="" disabled selected hidden>
                                 Select Payment Mode
                             </option>
-                            <option value="Cash">Cash</option>
-                            <option value="Account - Sabinur">Account - Sabinur</option>
-                            <option value="Account - Adil">Account - Adil</option>
-                            <option value="Account - Sohail">Account - Sohail</option>
-                            <option value="Account - Abdul Hannan">Account - Abdul Hannan</option>
+                            {paymentModes.map((mode) => (
+                                <option key={mode} value={mode}>
+                                    {mode}
+                                </option>
+                            ))}
                         </select>
                         {errors.modeOfPayment && (
                             <span className="text-red-500 text-xs">{errors.modeOfPayment.message}</span>

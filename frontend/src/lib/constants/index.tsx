@@ -1,4 +1,4 @@
-import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCog, HiOutlineCurrencyDollar, HiOutlineTruck, HiOutlineUserCircle, HiOutlineAcademicCap } from 'react-icons/hi'
+import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCog, HiOutlineCurrencyDollar, HiOutlineTruck, HiOutlineUserCircle, HiOutlineAcademicCap, HiOutlineLibrary } from 'react-icons/hi'
 
 export const DASHBOARD_SIDEBAR_LINKS = [
 	{
@@ -88,5 +88,11 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 		label: 'User Management',
 		path: 'users',
 		icon: <HiOutlineUserCircle />
+	},
+	{
+		key: 'school',
+		label: 'School',
+		path: 'school-settings',
+		icon: <HiOutlineLibrary />
 	},
 ]

@@ -28,6 +28,7 @@ import IncomingPayments from "./features/fees/pages/IncomingPayments"
 import UserManagement from "./features/users/pages/UserManagement"
 import StudentPage from "./features/students/pages/StudentPage"
 import ViewStudentProfile from "./features/students/pages/ViewStudentProfile"
+import SchoolSettings from "./features/general/pages/SchoolSettings"
 
 
 const router = createBrowserRouter([
@@ -163,6 +164,10 @@ const router = createBrowserRouter([
             element: <ViewStudentProfile />
           }
         ]
+      },
+      {
+        path: "school-settings",
+        element: <SchoolSettings />
       }
     ]
   }

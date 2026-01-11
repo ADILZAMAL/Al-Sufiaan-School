@@ -50,3 +50,48 @@ export const getSchoolById = async (req: Request, res: Response) => {
     sendError(res, 'An error occurred while fetching the school');
   }
 };
+
+export const updateSchool = async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return sendError(res, 'Validation failed', 400, errors.array());
+  }
+
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    return sendError(res, 'Invalid Id', 400);
+  }
+
+  try {
+    const school = await School.findByPk(id);
+    if (!school) {
+      return sendError(res, 'School not found', 404);
+    }
+
+    // Update the school with provided data
+    await school.update(req.body);
+    
+    sendSuccess(res, school, 'School updated successfully');
+  } catch (error) {
+    console.log('Error updating school', error);
+    sendError(res, 'An error occurred while updating the school');
+  }
+};
+
+export const getCurrentSchool = async (req: Request, res: Response) => {
+  try {
+    // Get the first active school as the current school
+    const school = await School.findOne({
+      where: { active: true }
+    });
+    
+    if (!school) {
+      return sendError(res, 'No active school found', 404);
+    }
+    
+    sendSuccess(res, school, 'Current school fetched successfully');
+  } catch (error) {
+    console.log('Error fetching current school', error);
+    sendError(res, 'An error occurred while fetching the current school');
+  }
+};

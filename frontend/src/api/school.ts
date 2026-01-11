@@ -13,6 +13,7 @@ export interface School {
   active: boolean;
   email: string;
   sid: string;
+  paymentModes: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -38,6 +39,24 @@ export const getCurrentSchool = async (): Promise<School> => {
   const body = await response.json();
   if (!body.success) {
     throw new Error(body.message || 'Failed to fetch current school');
+  }
+
+  return body.data as School;
+};
+
+export const updateSchool = async (id: number, schoolData: Partial<Omit<School, 'id' | 'createdAt' | 'updatedAt'>>): Promise<School> => {
+  const response = await fetch(`${API_BASE_URL}/api/schools/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(schoolData),
+  });
+
+  const body = await response.json();
+  if (!body.success) {
+    throw new Error(body.message || 'Failed to update school');
   }
 
   return body.data as School;

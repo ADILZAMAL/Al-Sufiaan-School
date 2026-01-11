@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useQuery } from 'react-query';
 import { fetchIncomingPayments, verifyPayment, IncomingPaymentType } from '../../../api';
 import { useAppContext } from '../../../providers/AppContext';
+import { getCurrentSchool } from '../../../api/school';
 import { FaCheckCircle, FaClock, FaShieldAlt, FaSpinner } from 'react-icons/fa';
 
 const MONTH_NAMES = [
@@ -8,17 +10,14 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const PAYMENT_MODES = [
-  { value: 'all', label: 'All Modes' },
-  { value: 'Cash', label: 'Cash' },
-  { value: 'UPI', label: 'UPI' },
-  { value: 'Bank Transfer', label: 'Bank Transfer' },
-  { value: 'Cheque', label: 'Cheque' },
-  { value: 'Card', label: 'Card' },
-];
-
 export default function IncomingPayments() {
   const { showToast, userRole } = useAppContext();
+  const { data: school } = useQuery('currentSchool', getCurrentSchool);
+  
+  // Generate payment modes options dynamically from school data
+  const paymentModesOptions = school?.paymentModes
+    ? [{ value: 'all', label: 'All Modes' }, ...school.paymentModes.map(mode => ({ value: mode, label: mode }))]
+    : [{ value: 'all', label: 'All Modes' }];
   const [payments, setPayments] = useState<IncomingPaymentType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -152,7 +151,7 @@ export default function IncomingPayments() {
               onChange={(e) => setPaymentMode(e.target.value)}
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[150px]"
             >
-              {PAYMENT_MODES.map((mode) => (
+              {paymentModesOptions.map((mode) => (
                 <option key={mode.value} value={mode.value}>
                   {mode.label}
                 </option>

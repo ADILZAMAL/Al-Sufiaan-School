@@ -16,6 +16,7 @@ class School extends Model {
   public active!: boolean;
   public email!: string;
   public sid!: string;
+  public paymentModes!: string[];
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -72,6 +73,18 @@ export const initSchoolModel = (sequelize: Sequelize): void => {
       sid: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      paymentModes: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        defaultValue: JSON.stringify(['Cash']),
+        get() {
+          const value = this.getDataValue('paymentModes');
+          return typeof value === 'string' ? JSON.parse(value) : value;
+        },
+        set(value: string[]) {
+          this.setDataValue('paymentModes', JSON.stringify(value));
+        }
       },
       createdAt: {
         type: DataTypes.DATE,

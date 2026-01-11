@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useQuery } from 'react-query';
 import { FiX, FiCreditCard, FiFileText } from 'react-icons/fi';
+import { getCurrentSchool } from '../../../api/school';
 
 interface CollectFeeModalProps {
   isOpen: boolean;
@@ -17,15 +19,6 @@ interface CollectFeeModalProps {
   loading?: boolean;
 }
 
-const PAYMENT_MODES = [
-  'Cash',
-  'UPI',
-  'Card',
-  'Bank Transfer',
-  'Cheque',
-  'Demand Draft',
-];
-
 const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
   isOpen,
   onClose,
@@ -36,8 +29,11 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
   dueAmount,
   loading = false,
 }) => {
+  const { data: school } = useQuery('currentSchool', getCurrentSchool);
+  const paymentModes = school?.paymentModes || ['Cash'];
+  
   const [amountPaid, setAmountPaid] = useState(0);
-  const [paymentMode, setPaymentMode] = useState('Cash');
+  const [paymentMode, setPaymentMode] = useState(paymentModes[0] || 'Cash');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [remarks, setRemarks] = useState('');
   const [error, setError] = useState('');
@@ -47,7 +43,7 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
     if (isOpen) {
       // Reset form
       setAmountPaid(0);
-      setPaymentMode('Cash');
+      setPaymentMode(paymentModes[0] || 'Cash');
       setReferenceNumber('');
       setRemarks('');
       setError('');
@@ -185,7 +181,7 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
                   className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   disabled={loading}
                 >
-                  {PAYMENT_MODES.map((mode) => (
+                  {paymentModes.map((mode) => (
                     <option key={mode} value={mode}>
                       {mode}
                     </option>
