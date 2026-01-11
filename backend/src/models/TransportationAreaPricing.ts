@@ -5,7 +5,6 @@ class TransportationAreaPricing extends Model {
     public id!: number;
     public areaName!: string;
     public price!: number;
-    public academicYear!: string;
     public isActive!: boolean;
     public schoolId!: number;
     public description?: string;
@@ -38,14 +37,6 @@ export const initTransportationAreaPricingModel = (sequelize: Sequelize): void =
                 allowNull: false,
                 validate: {
                     min: 0
-                }
-            },
-            academicYear: {
-                type: DataTypes.STRING(10),
-                allowNull: false,
-                validate: {
-                    is: /^\d{4}-\d{2}$/,
-                    notEmpty: true
                 }
             },
             isActive: {
@@ -91,10 +82,6 @@ export const initTransportationAreaPricingModel = (sequelize: Sequelize): void =
                     fields: ['schoolId']
                 },
                 {
-                    name: 'transportation_area_pricing_academic_year_index',
-                    fields: ['academicYear']
-                },
-                {
                     name: 'transportation_area_pricing_active_index',
                     fields: ['isActive']
                 },
@@ -104,8 +91,8 @@ export const initTransportationAreaPricingModel = (sequelize: Sequelize): void =
                 },
                 {
                     unique: true,
-                    fields: ['areaName', 'academicYear', 'schoolId'],
-                    name: 'unique_area_year_school'
+                    fields: ['areaName', 'schoolId'],
+                    name: 'unique_area_school'
                 }
             ]
         }

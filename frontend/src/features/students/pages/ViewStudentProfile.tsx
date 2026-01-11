@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBriefcase, FiUserCheck, FiClock, FiEdit, FiDollarSign } from 'react-icons/fi';
+import { FiArrowLeft, FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBriefcase, FiUserCheck, FiClock, FiEdit, FiDollarSign, FiPrinter } from 'react-icons/fi';
 // import { useQuery } from '@tanstack/react-query';
 import { useQuery } from "react-query";
 import { getStudentById, getStudentFeeTimeline } from '../api';
 import { getSchoolById } from '../../../api/school';
 import { Student } from '../types';
 import EditStudentModal from '../components/EditStudentModal';
+import AdmissionFormModal from '../components/AdmissionFormModal';
 import FeeTimeline from '../components/FeeTimeline';
 
 const formatDateOnly = (iso: string) =>
@@ -27,6 +28,7 @@ const ViewStudentProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAdmissionFormOpen, setIsAdmissionFormOpen] = useState(false);
 
   const { data: student, isLoading, error, refetch } = useQuery({
     queryKey: ['student', id],
@@ -91,13 +93,22 @@ const ViewStudentProfile: React.FC = () => {
               <h1 className="text-3xl font-bold text-gray-900">Student Profile</h1>
               <p className="mt-1 text-sm text-gray-500">View and manage student information</p>
             </div>
-            <button
-              onClick={() => setIsEditModalOpen(true)}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-            >
-              <FiEdit className="h-4 w-4" />
-              <span>Edit Profile</span>
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setIsAdmissionFormOpen(true)}
+                className="flex items-center space-x-2 px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+              >
+                <FiPrinter className="h-4 w-4" />
+                <span>Print Admission Form</span>
+              </button>
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                <FiEdit className="h-4 w-4" />
+                <span>Edit Profile</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -400,6 +411,16 @@ const ViewStudentProfile: React.FC = () => {
             refetch();
             setIsEditModalOpen(false);
           }}
+        />
+      )}
+
+      {/* Admission Form Modal */}
+      {student && school && (
+        <AdmissionFormModal
+          isOpen={isAdmissionFormOpen}
+          onClose={() => setIsAdmissionFormOpen(false)}
+          student={student}
+          school={school}
         />
       )}
     </div>

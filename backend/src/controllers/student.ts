@@ -79,7 +79,8 @@ export const getStudentById = async (req: Request, res: Response) => {
       include: [
         { association: 'school', attributes: ['id', 'name'] },
         { association: 'class', attributes: ['id', 'name'] },
-        { association: 'section', attributes: ['id', 'name'] }
+        { association: 'section', attributes: ['id', 'name'] },
+        { association: 'creator', attributes: ['firstName', 'lastName'] }
       ]
     });
 
@@ -123,7 +124,8 @@ export const createStudent = async (req: Request, res: Response) => {
       include: [
         { association: 'school', attributes: ['id', 'name'] },
         { association: 'class', attributes: ['id', 'name'] },
-        { association: 'section', attributes: ['id', 'name'] }
+        { association: 'section', attributes: ['id', 'name'] },
+        { association: 'creator', attributes: ['firstName', 'lastName'] }
       ]
     });
 
@@ -151,7 +153,8 @@ export const updateStudent = async (req: Request, res: Response) => {
       include: [
         { association: 'school', attributes: ['id', 'name'] },
         { association: 'class', attributes: ['id', 'name'] },
-        { association: 'section', attributes: ['id', 'name'] }
+        { association: 'section', attributes: ['id', 'name'] },
+        { association: 'creator', attributes: ['firstName', 'lastName'] }
       ]
     });
 
@@ -197,7 +200,8 @@ export const getStudentsByClass = async (req: Request, res: Response) => {
       include: [
         { association: 'school', attributes: ['id', 'name'] },
         { association: 'class', attributes: ['id', 'name'] },
-        { association: 'section', attributes: ['id', 'name'] }
+        { association: 'section', attributes: ['id', 'name'] },
+        { association: 'creator', attributes: ['firstName', 'lastName'] }
       ],
       order: [['rollNumber', 'ASC']]
     });

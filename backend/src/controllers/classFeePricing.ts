@@ -14,8 +14,7 @@ export const createClassFeePricing = async (req: Request, res: Response) => {
 
         const {
             classId,
-            amount,
-            academicYear
+            amount
         } = req.body;
 
         // Check if class exists
@@ -30,24 +29,22 @@ export const createClassFeePricing = async (req: Request, res: Response) => {
             return sendError(res, 'Class not found', 404);
         }
 
-        // Check if pricing already exists for this combination
+        // Check if pricing already exists for this class
         const existingPricing = await ClassFeePricing.findOne({
             where: {
                 classId,
-                academicYear,
                 schoolId: req.schoolId,
                 isActive: true
             }
         });
 
         if (existingPricing) {
-            return sendError(res, 'Tuition fee pricing already exists for this class in the academic year', 409);
+            return sendError(res, 'Tuition fee pricing already exists for this class', 409);
         }
 
         const classFeePricing = await ClassFeePricing.create({
             classId,
             amount,
-            academicYear,
             isActive: true,
             schoolId: req.schoolId
         });
@@ -73,7 +70,7 @@ export const createClassFeePricing = async (req: Request, res: Response) => {
 // Get all class fee pricing
 export const getAllClassFeePricing = async (req: Request, res: Response) => {
     try {
-        const { classId, academicYear, isActive } = req.query;
+        const { classId, isActive } = req.query;
         
         const whereClause: any = {
             schoolId: req.schoolId
@@ -81,10 +78,6 @@ export const getAllClassFeePricing = async (req: Request, res: Response) => {
 
         if (classId) {
             whereClause.classId = classId;
-        }
-
-        if (academicYear) {
-            whereClause.academicYear = academicYear;
         }
 
         if (isActive !== undefined) {
@@ -100,7 +93,7 @@ export const getAllClassFeePricing = async (req: Request, res: Response) => {
                     attributes: ['id', 'name']
                 }
             ],
-            order: [['academicYear', 'DESC'], ['classId', 'ASC']]
+            order: [['classId', 'ASC']]
         });
 
         sendSuccess(res, classFeePricing, 'Class fee pricing retrieved successfully');
@@ -144,17 +137,12 @@ export const getClassFeePricing = async (req: Request, res: Response) => {
 export const getClassFeePricingByClass = async (req: Request, res: Response) => {
     try {
         const { classId } = req.params;
-        const { academicYear } = req.query;
 
         const whereClause: any = {
             classId,
             schoolId: req.schoolId,
             isActive: true
         };
-
-        if (academicYear) {
-            whereClause.academicYear = academicYear;
-        }
 
         const classFeePricing = await ClassFeePricing.findAll({
             where: whereClause,
@@ -164,8 +152,7 @@ export const getClassFeePricingByClass = async (req: Request, res: Response) => 
                     as: 'class',
                     attributes: ['id', 'name']
                 }
-            ],
-            order: [['academicYear', 'DESC']]
+            ]
         });
 
         // Calculate total amount (tuition fee)
@@ -174,8 +161,7 @@ export const getClassFeePricingByClass = async (req: Request, res: Response) => 
         sendSuccess(res, {
             classFeePricing,
             totalAmount,
-            classId,
-            academicYear: academicYear || 'All'
+            classId
         }, 'Class fee pricing retrieved successfully');
     } catch (error: any) {
         console.error('Error fetching class fee pricing by class:', error);
@@ -194,7 +180,6 @@ export const updateClassFeePricing = async (req: Request, res: Response) => {
         const { id } = req.params;
         const {
             amount,
-            academicYear,
             isActive
         } = req.body;
 
@@ -211,7 +196,6 @@ export const updateClassFeePricing = async (req: Request, res: Response) => {
 
         await classFeePricing.update({
             amount: amount !== undefined ? amount : classFeePricing.amount,
-            academicYear: academicYear || classFeePricing.academicYear,
             isActive: isActive !== undefined ? isActive : classFeePricing.isActive
         });
 
@@ -278,15 +262,13 @@ export const bulkUpsertClassFeePricing = async (req: Request, res: Response) => 
         for (const pricing of pricingData) {
             const {
                 classId,
-                amount,
-                academicYear
+                amount
             } = pricing;
 
             // Check if pricing already exists
             const existingPricing = await ClassFeePricing.findOne({
                 where: {
                     classId,
-                    academicYear,
                     schoolId: req.schoolId
                 }
             });
@@ -303,7 +285,6 @@ export const bulkUpsertClassFeePricing = async (req: Request, res: Response) => 
                 const newPricing = await ClassFeePricing.create({
                     classId,
                     amount,
-                    academicYear,
                     isActive: true,
                     schoolId: req.schoolId
                 });
@@ -315,56 +296,5 @@ export const bulkUpsertClassFeePricing = async (req: Request, res: Response) => 
     } catch (error: any) {
         console.error('Error in bulk class fee pricing operation:', error);
         sendError(res, 'Failed to perform bulk class fee pricing operation', 500, error.message);
-    }
-};
-
-// Copy pricing from one academic year to another
-export const copyPricingToNewYear = async (req: Request, res: Response) => {
-    try {
-        const { fromYear, toYear, classIds } = req.body;
-
-        if (!fromYear || !toYear) {
-            return sendError(res, 'Both fromYear and toYear are required', 400);
-        }
-
-        const whereClause: any = {
-            academicYear: fromYear,
-            schoolId: req.schoolId,
-            isActive: true
-        };
-
-        if (classIds && Array.isArray(classIds) && classIds.length > 0) {
-            whereClause.classId = classIds;
-        }
-
-        const existingPricing = await ClassFeePricing.findAll({
-            where: whereClause
-        });
-
-        if (existingPricing.length === 0) {
-            return sendError(res, 'No pricing data found for the specified year', 404);
-        }
-
-        const newPricingData = existingPricing.map(pricing => ({
-            classId: pricing.classId,
-            amount: pricing.amount,
-            academicYear: toYear,
-            isActive: true,
-            schoolId: req.schoolId
-        }));
-
-        // Use bulkCreate with ignoreDuplicates to avoid conflicts
-        const createdPricing = await ClassFeePricing.bulkCreate(newPricingData, {
-            ignoreDuplicates: true
-        });
-
-        sendSuccess(res, {
-            copiedCount: createdPricing.length,
-            fromYear,
-            toYear
-        }, 'Pricing copied to new academic year successfully');
-    } catch (error: any) {
-        console.error('Error copying pricing to new year:', error);
-        sendError(res, 'Failed to copy pricing to new year', 500, error.message);
     }
 };

@@ -15,7 +15,6 @@ export const getAllTransportationAreaPricing = async (req: AuthenticatedRequest,
     try {
         const schoolId = req.schoolId;
         const { 
-            academicYear, 
             areaName, 
             isActive,
             page = 1, 
@@ -26,7 +25,6 @@ export const getAllTransportationAreaPricing = async (req: AuthenticatedRequest,
         
         const whereClause: any = { schoolId };
         
-        if (academicYear) whereClause.academicYear = academicYear;
         if (areaName) whereClause.areaName = { [require('sequelize').Op.iLike]: `%${areaName}%` };
         if (isActive !== undefined) whereClause.isActive = isActive === 'true';
 
@@ -77,7 +75,6 @@ export const getTransportationAreaPricingById = async (req: AuthenticatedRequest
 export const getTransportationAreaPricingByArea = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { areaName } = req.params;
-        const { academicYear } = req.query;
         const schoolId = req.schoolId;
 
         const whereClause: any = { 
@@ -85,10 +82,6 @@ export const getTransportationAreaPricingByArea = async (req: AuthenticatedReque
             schoolId,
             isActive: true
         };
-        
-        if (academicYear) {
-            whereClause.academicYear = academicYear;
-        }
 
         const transportationAreaPricing = await TransportationAreaPricing.findAll({
             where: whereClause,
@@ -100,8 +93,7 @@ export const getTransportationAreaPricingByArea = async (req: AuthenticatedReque
         return sendSuccess(res, {
             transportationAreaPricing,
             totalAmount,
-            areaName,
-            academicYear: academicYear || 'All'
+            areaName
         }, 'Transportation area pricing retrieved successfully');
     } catch (error) {
         console.error('Error fetching transportation area pricing by area:', error);
@@ -121,28 +113,25 @@ export const createTransportationAreaPricing = async (req: AuthenticatedRequest,
         const {
             areaName,
             price,
-            academicYear,
             description,
             displayOrder
         } = req.body;
 
-        // Check for existing pricing with same area and academic year
+        // Check for existing pricing with same area
         const existingPricing = await TransportationAreaPricing.findOne({
             where: {
                 areaName,
-                academicYear,
                 schoolId
             }
         });
 
         if (existingPricing) {
-            return sendError(res, 'Transportation area pricing already exists for this area and academic year', 409);
+            return sendError(res, 'Transportation area pricing already exists for this area', 409);
         }
 
         const transportationAreaPricing = await TransportationAreaPricing.create({
             areaName,
             price,
-            academicYear,
             description,
             displayOrder: displayOrder || 0,
             schoolId
@@ -177,19 +166,18 @@ export const updateTransportationAreaPricing = async (req: AuthenticatedRequest,
             return sendError(res, 'Transportation area pricing not found', 404);
         }
 
-        // Check for conflicts if updating key fields
-        if (updateData.areaName || updateData.academicYear) {
+        // Check for conflicts if updating area name
+        if (updateData.areaName) {
             const conflictCheck = await TransportationAreaPricing.findOne({
                 where: {
-                    areaName: updateData.areaName || transportationAreaPricing.areaName,
-                    academicYear: updateData.academicYear || transportationAreaPricing.academicYear,
+                    areaName: updateData.areaName,
                     schoolId,
                     id: { [require('sequelize').Op.ne]: id }
                 }
             });
 
             if (conflictCheck) {
-                return sendError(res, 'Transportation area pricing already exists for this area and academic year', 409);
+                return sendError(res, 'Transportation area pricing already exists for this area', 409);
             }
         }
 
@@ -249,7 +237,6 @@ export const bulkUpsertTransportationAreaPricing = async (req: AuthenticatedRequ
                 const existingPricing = await TransportationAreaPricing.findOne({
                     where: {
                         areaName: data.areaName,
-                        academicYear: data.academicYear,
                         schoolId
                     }
                 });
@@ -283,122 +270,37 @@ export const bulkUpsertTransportationAreaPricing = async (req: AuthenticatedRequ
     }
 };
 
-// Copy pricing from one academic year to another
-export const copyPricingToNewYear = async (req: AuthenticatedRequest, res: Response) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return sendError(res, 'Validation failed', 400, errors.array());
-        }
-
-        const schoolId = req.schoolId;
-        const { fromYear, toYear, areaNames } = req.body;
-
-        if (fromYear === toYear) {
-            return sendError(res, 'Source and destination academic years cannot be the same', 400);
-        }
-
-        const whereClause: any = {
-            academicYear: fromYear,
-            schoolId,
-            isActive: true
-        };
-
-        if (areaNames && areaNames.length > 0) {
-            whereClause.areaName = { [require('sequelize').Op.in]: areaNames };
-        }
-
-        const existingPricing = await TransportationAreaPricing.findAll({
-            where: whereClause
-        });
-
-        if (existingPricing.length === 0) {
-            return sendError(res, 'No pricing records found for the specified criteria', 404);
-        }
-
-        let copiedCount = 0;
-
-        for (const pricing of existingPricing) {
-            try {
-                const existingInNewYear = await TransportationAreaPricing.findOne({
-                    where: {
-                        areaName: pricing.areaName,
-                        academicYear: toYear,
-                        schoolId
-                    }
-                });
-
-                if (!existingInNewYear) {
-                    await TransportationAreaPricing.create({
-                        areaName: pricing.areaName,
-                        price: pricing.price,
-                        academicYear: toYear,
-                        description: pricing.description,
-                        displayOrder: pricing.displayOrder,
-                        schoolId
-                    });
-                    copiedCount++;
-                }
-            } catch (error) {
-                console.error('Error copying pricing:', error);
-                // Continue with other records
-            }
-        }
-
-        return sendSuccess(res, {
-            copiedCount,
-            fromYear,
-            toYear
-        }, `Successfully copied ${copiedCount} pricing records`);
-    } catch (error) {
-        console.error('Error copying pricing:', error);
-        return sendError(res, 'Failed to copy pricing', 500);
-    }
-};
-
 // Get transportation area pricing statistics
 export const getTransportationAreaPricingStats = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const schoolId = req.schoolId;
-        const { academicYear } = req.query;
-
-        const whereClause: any = { schoolId };
-        if (academicYear) whereClause.academicYear = academicYear;
 
         const totalRecords = await TransportationAreaPricing.count({
-            where: whereClause
+            where: { schoolId }
         });
 
         const activeRecords = await TransportationAreaPricing.count({
-            where: { ...whereClause, isActive: true }
+            where: { schoolId, isActive: true }
         });
 
         const uniqueAreas = await TransportationAreaPricing.count({
-            where: whereClause,
+            where: { schoolId },
             distinct: true,
             col: 'areaName'
         });
 
         const averagePrice = await TransportationAreaPricing.findOne({
-            where: whereClause,
+            where: { schoolId },
             attributes: [
                 [require('sequelize').fn('AVG', require('sequelize').col('price')), 'avgPrice']
             ]
-        });
-
-        const academicYears = await TransportationAreaPricing.findAll({
-            where: { schoolId },
-            attributes: ['academicYear'],
-            group: ['academicYear'],
-            order: [['academicYear', 'DESC']]
         });
 
         return sendSuccess(res, {
             totalRecords,
             activeRecords,
             uniqueAreas,
-            averagePrice: Number(averagePrice?.get('avgPrice') || 0),
-            academicYears: academicYears.map(item => item.academicYear)
+            averagePrice: Number(averagePrice?.get('avgPrice') || 0)
         }, 'Transportation area pricing statistics retrieved successfully');
     } catch (error) {
         console.error('Error fetching transportation area pricing statistics:', error);

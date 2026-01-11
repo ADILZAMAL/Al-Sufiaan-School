@@ -8,7 +8,6 @@ import {
     updateTransportationAreaPricing,
     deleteTransportationAreaPricing,
     bulkUpsertTransportationAreaPricing,
-    copyPricingToNewYear,
     getTransportationAreaPricingStats
 } from '../controllers/transportationAreaPricing';
 import verifyToken from '../middleware/auth';
@@ -30,12 +29,6 @@ const createValidation = [
         .withMessage('Price must be a number')
         .isFloat({ min: 0 })
         .withMessage('Price must be greater than or equal to 0'),
-    body('feeCategoryId')
-        .isInt({ min: 1 })
-        .withMessage('Fee category ID must be a positive integer'),
-    body('academicYear')
-        .matches(/^\d{4}-\d{2}$/)
-        .withMessage('Academic year must be in format YYYY-YY (e.g., 2024-25)'),
     body('description')
         .optional()
         .isLength({ max: 500 })
@@ -57,14 +50,6 @@ const updateValidation = [
         .withMessage('Price must be a number')
         .isFloat({ min: 0 })
         .withMessage('Price must be greater than or equal to 0'),
-    body('feeCategoryId')
-        .optional()
-        .isInt({ min: 1 })
-        .withMessage('Fee category ID must be a positive integer'),
-    body('academicYear')
-        .optional()
-        .matches(/^\d{4}-\d{2}$/)
-        .withMessage('Academic year must be in format YYYY-YY (e.g., 2024-25)'),
     body('description')
         .optional()
         .isLength({ max: 500 })
@@ -92,26 +77,7 @@ const bulkUpsertValidation = [
         .isNumeric()
         .withMessage('Price must be a number for each item')
         .isFloat({ min: 0 })
-        .withMessage('Price must be greater than or equal to 0'),
-    body('pricingData.*.feeCategoryId')
-        .isInt({ min: 1 })
-        .withMessage('Fee category ID must be a positive integer for each item'),
-    body('pricingData.*.academicYear')
-        .matches(/^\d{4}-\d{2}$/)
-        .withMessage('Academic year must be in format YYYY-YY for each item')
-];
-
-const copyPricingValidation = [
-    body('fromYear')
-        .matches(/^\d{4}-\d{2}$/)
-        .withMessage('From year must be in format YYYY-YY (e.g., 2024-25)'),
-    body('toYear')
-        .matches(/^\d{4}-\d{2}$/)
-        .withMessage('To year must be in format YYYY-YY (e.g., 2024-25)'),
-    body('areaNames')
-        .optional()
-        .isArray()
-        .withMessage('Area names must be an array')
+        .withMessage('Price must be greater than or equal to 0')
 ];
 
 const idValidation = [
@@ -137,14 +103,6 @@ const queryValidation = [
         .optional()
         .isInt({ min: 1, max: 100 })
         .withMessage('Limit must be between 1 and 100'),
-    query('academicYear')
-        .optional()
-        .matches(/^\d{4}-\d{2}$/)
-        .withMessage('Academic year must be in format YYYY-YY'),
-    query('feeCategoryId')
-        .optional()
-        .isInt({ min: 1 })
-        .withMessage('Fee category ID must be a positive integer'),
     query('isActive')
         .optional()
         .isBoolean()
@@ -170,9 +128,6 @@ router.post('/', createValidation, createTransportationAreaPricing);
 
 // POST /api/transportation-area-pricing/bulk-upsert - Bulk upsert transportation area pricing
 router.post('/bulk-upsert', bulkUpsertValidation, bulkUpsertTransportationAreaPricing);
-
-// POST /api/transportation-area-pricing/copy-pricing - Copy pricing from one academic year to another
-router.post('/copy-pricing', copyPricingValidation, copyPricingToNewYear);
 
 // PUT /api/transportation-area-pricing/:id - Update transportation area pricing
 router.put('/:id', [...idValidation, ...updateValidation], updateTransportationAreaPricing);

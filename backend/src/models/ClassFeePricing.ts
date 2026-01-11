@@ -6,7 +6,6 @@ class ClassFeePricing extends Model {
     public id!: number;
     public classId!: number;
     public amount!: number;
-    public academicYear!: string;
     public isActive!: boolean;
     public schoolId!: number;
     public readonly createdAt!: Date;
@@ -37,13 +36,6 @@ export const initClassFeePricingModel = (sequelize: Sequelize): void => {
                 allowNull: false,
                 validate: {
                     min: 0
-                }
-            },
-            academicYear: {
-                type: DataTypes.STRING(10),
-                allowNull: false,
-                validate: {
-                    is: /^\d{4}-\d{2}$/ // Format: 2024-25
                 }
             },
             isActive: {
@@ -84,17 +76,13 @@ export const initClassFeePricingModel = (sequelize: Sequelize): void => {
                     fields: ['classId']
                 },
                 {
-                    name: 'class_fee_pricing_academic_year_index',
-                    fields: ['academicYear']
-                },
-                {
                     name: 'class_fee_pricing_active_index',
                     fields: ['isActive']
                 },
                 {
                     name: 'class_fee_pricing_unique_constraint',
                     unique: true,
-                    fields: ['classId', 'academicYear', 'schoolId']
+                    fields: ['classId', 'schoolId']
                 }
             ],
         }
