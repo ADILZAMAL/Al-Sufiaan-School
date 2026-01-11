@@ -14,6 +14,8 @@ export interface School {
   email: string;
   sid: string;
   paymentModes: string[];
+  hostelFee?: number | null;
+  admissionFee?: number | null;
   createdAt: string;
   updatedAt: string;
 }

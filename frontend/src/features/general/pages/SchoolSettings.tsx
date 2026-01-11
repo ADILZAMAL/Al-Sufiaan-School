@@ -263,7 +263,7 @@ const SchoolSettings: React.FC = () => {
                     onChange={handleChange}
                     disabled={!isEditing}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  />
+                />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -283,7 +283,7 @@ const SchoolSettings: React.FC = () => {
           </div>
 
           {/* Payment Modes */}
-          <div>
+          <div className="border-b pb-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Payment Modes</h3>
             <div className="space-y-4">
               <div>
@@ -343,6 +343,59 @@ const SchoolSettings: React.FC = () => {
                     Warning: At least one payment mode should be configured
                   </p>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Fee Structure */}
+          <div className="border-b pb-6">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">Fee Structure</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Hostel Fee (₹)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="hostelFee"
+                    value={formData.hostelFee || ''}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    step="0.01"
+                    placeholder="Leave empty if no hostel facility"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-400">₹</span>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Configure if your school offers hostel facilities
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Admission Fee (₹)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="admissionFee"
+                    value={formData.admissionFee || ''}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    step="0.01"
+                    placeholder="Leave empty if not applicable"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-400">₹</span>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Configure one-time admission fee for new students
+                </p>
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { sendError, sendSuccess } from "../utils/response";
 import Student from "../models/Student";
+import School from "../models/School";
 import StudentMonthlyFee, { StudentMonthlyFeeStatus } from "../models/StudentMonthlyFee";
 import StudentMonthlyFeeItem, { FeeItemType, StudentMonthlyFeeItemCreationAttributes } from "../models/StudentMonthlyFeeItem";
 import ClassFeePricing from "../models/ClassFeePricing";
@@ -76,12 +77,20 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
       return sendError(res, "Student is not assigned to any class", 400);
     }
 
+    // Fetch school data for hostel and admission fees
+    const school = await School.findByPk(student.schoolId);
+    
+    if (!school) {
+      return sendError(res, "School not found", 404);
+    }
+
     // 3️⃣ Calculate fee items based on student's preferences
     const feeItems: StudentMonthlyFeeItemCreationAttributes[] = await calculateFeeItems(
       student.classId,
       hostel,
       transportationAreaId,
-      newAdmission
+      newAdmission,
+      school
     );
 
     if (feeItems.length === 0) {
@@ -144,7 +153,8 @@ async function calculateFeeItems(
   classId: number,
   hostel: boolean,
   transportationAreaId?: number,
-  newAdmission?: boolean
+  newAdmission?: boolean,
+  school?: School
 ): Promise<StudentMonthlyFeeItemCreationAttributes[]> {
   const feeItems: StudentMonthlyFeeItemCreationAttributes[] = [];
 
@@ -163,12 +173,12 @@ async function calculateFeeItems(
 
     // 2. Hostel Fee (if hostel is true)
     if (hostel) {
-      // TODO: Get hostel fee from configuration or settings
-      // For now, using a default value - you may want to add this to a settings table
-      const hostelFeeAmount = 3000; // Default hostel fee
+      if (!school || !school.hostelFee || school.hostelFee <= 0) {
+        throw new Error('Please configure hostel fee in School Settings first');
+      }
       feeItems.push({
         feeType: FeeItemType.HOSTEL_FEE,
-        amount: hostelFeeAmount,
+        amount: parseFloat(school.hostelFee.toString()),
       });
     }
 
@@ -186,12 +196,12 @@ async function calculateFeeItems(
 
     // 4. New Admission Fee (if newAdmission is true)
     if (newAdmission) {
-      // TODO: Get admission fee from configuration or settings
-      // For now, using a default value - you may want to add this to a settings table
-      const admissionFeeAmount = 2000; // Default admission fee
+      if (!school || !school.admissionFee || school.admissionFee <= 0) {
+        throw new Error('Please configure admission fee in School Settings first');
+      }
       feeItems.push({
         feeType: FeeItemType.ADMISSION_FEE,
-        amount: admissionFeeAmount,
+        amount: parseFloat(school.admissionFee.toString()),
       });
     }
 

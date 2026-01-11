@@ -17,6 +17,8 @@ class School extends Model {
   public email!: string;
   public sid!: string;
   public paymentModes!: string[];
+  public hostelFee?: number;
+  public admissionFee?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -83,8 +85,18 @@ export const initSchoolModel = (sequelize: Sequelize): void => {
           return typeof value === 'string' ? JSON.parse(value) : value;
         },
         set(value: string[]) {
-          this.setDataValue('paymentModes', JSON.stringify(value));
+          this.setDataValue('paymentModes', JSON.stringify(value || ['Cash']));
         }
+      },
+      hostelFee: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        defaultValue: null,
+      },
+      admissionFee: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        defaultValue: null,
       },
       createdAt: {
         type: DataTypes.DATE,

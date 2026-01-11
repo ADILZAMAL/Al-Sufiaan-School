@@ -21,7 +21,9 @@ router.put("/:id", [
     check("active", "Active status is required").optional().isBoolean(),
     body('paymentModes').optional().isArray().withMessage('Payment modes must be an array'),
     body('paymentModes').optional().notEmpty().withMessage('Payment modes cannot be empty'),
-    body('paymentModes.*').optional().isString().withMessage('Each payment mode must be a string')
+    body('paymentModes.*').optional().isString().withMessage('Each payment mode must be a string'),
+    body('hostelFee').optional().isFloat({ gt: 0 }).withMessage('Hostel fee must be a positive number'),
+    body('admissionFee').optional().isFloat({ gt: 0 }).withMessage('Admission fee must be a positive number')
 ], updateSchool);
 
 router.post("/onboard", [
