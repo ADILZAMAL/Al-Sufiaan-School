@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { studentApi } from '../api';
 import { useAppContext } from '../../../providers/AppContext'; 
-import { CreateStudentRequest, Gender, Religion, BloodGroup } from '../types';
+import { CreateStudentRequest, Gender, Religion, BloodGroup, Student } from '../types';
 import PhotoUpload from '../../../components/common/PhotoUpload';
+import AdmissionFormModal from './AdmissionFormModal';
+import { School } from '../../../api/school';
+import { getSchoolById } from '../../../api/school';
 
 interface PhotoFile {
   file: File;
@@ -13,7 +16,7 @@ interface PhotoFile {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (newStudent?: Student) => void;
 }
 
 interface ClassData {
@@ -24,6 +27,10 @@ interface ClassData {
 
 const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   const { showToast } = useAppContext();
+  const [showAdmissionForm, setShowAdmissionForm] = useState(false);
+  const [newlyCreatedStudent, setNewlyCreatedStudent] = useState<Student | null>(null);
+  const [school, setSchool] = useState<School | null>(null);
+
   const [formData, setFormData] = useState({
     admissionDate: new Date().toISOString().split('T')[0], // Default to today
     firstName: '',
@@ -269,10 +276,29 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
 
       const result = await studentApi.createStudent(submitData);
       
-      if (result.success) {
+      if (result.success && result.data) {
         showToast({ message: 'Student added successfully', type: "SUCCESS" });
-        onSuccess();
+        
+        // Set the newly created student for admission form
+        setNewlyCreatedStudent(result.data);
+        
+        // Fetch school information for the admission form
+        if (result.data.schoolId) {
+          try {
+            const schoolData = await getSchoolById(result.data.schoolId);
+            setSchool(schoolData);
+          } catch (error) {
+            console.error('Error fetching school data:', error);
+          }
+        }
+        
+        onSuccess(result.data);
         handleClose();
+        
+        // Show admission form after successful creation
+        setTimeout(() => {
+          setShowAdmissionForm(true);
+        }, 500);
       } else {
         showToast({ message: result.message || 'Failed to add student', type: "ERROR" });
       }
@@ -322,10 +348,28 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
       guardianPhoto: null
     });
     setSections([]);
+    setNewlyCreatedStudent(null);
+    setSchool(null);
     onClose();
   };
 
   if (!isOpen) return null;
+
+  // Show admission form after successful student creation
+  if (showAdmissionForm && newlyCreatedStudent && school) {
+    return (
+      <AdmissionFormModal
+        isOpen={showAdmissionForm}
+        onClose={() => {
+          setShowAdmissionForm(false);
+          setNewlyCreatedStudent(null);
+          setSchool(null);
+        }}
+        student={newlyCreatedStudent}
+        school={school}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
