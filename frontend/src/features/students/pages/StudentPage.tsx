@@ -39,15 +39,15 @@ const StudentPage: React.FC = () => {
     setShowAddModal(true);
   };
 
-  const handleEditStudent = (student: Student) => {
-    setSelectedStudent(student);
-    setShowEditModal(true);
-  };
+  // const handleEditStudent = (student: Student) => {
+  //   setSelectedStudent(student);
+  //   setShowEditModal(true);
+  // };
 
-  const handleDeleteStudent = (student: Student) => {
-    setSelectedStudent(student);
-    setShowDeleteModal(true);
-  };
+  // const handleDeleteStudent = (student: Student) => {
+  //   setSelectedStudent(student);
+  //   setShowDeleteModal(true);
+  // };
 
   const handleModalClose = () => {
     setShowAddModal(false);

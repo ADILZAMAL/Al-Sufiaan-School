@@ -8,11 +8,6 @@ import AdmissionFormModal from './AdmissionFormModal';
 import { School } from '../../../api/school';
 import { getSchoolById } from '../../../api/school';
 
-interface PhotoFile {
-  file: File;
-  preview: string;
-}
-
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -75,7 +70,7 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     guardianPhoto: null
   });
   const [loading, setLoading] = useState(false);
-  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [, setUploadingPhotos] = useState(false);
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [sections, setSections] = useState<Array<{ id: number; name: string }>>([]);
   const [transportationAreas, setTransportationAreas] = useState<Array<{ id: number; areaName: string; price: number }>>([]);

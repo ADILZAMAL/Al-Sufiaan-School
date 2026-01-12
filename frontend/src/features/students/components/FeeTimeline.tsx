@@ -491,7 +491,6 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
           totalConfiguredAmount={selectedEntry.totalConfiguredAmount}
           totalAdjustment={selectedEntry.totalAdjustment}
           totalPayableAmount={selectedEntry.totalPayableAmount || 0}
-          paidAmount={selectedPayment.amountPaid}
           discountReason={selectedEntry.discountReason}
           student={student}
           school={school}

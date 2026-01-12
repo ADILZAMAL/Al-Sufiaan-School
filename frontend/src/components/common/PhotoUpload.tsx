@@ -12,7 +12,7 @@ interface PhotoUploadProps {
 
 type WebcamState = 'idle' | 'initializing' | 'ready' | 'captured' | 'error';
 
-const PhotoUpload: React.FC<PhotoUploadProps> = ({ file, preview, onChange, onRemove, label = 'Photo', error }) => {
+const PhotoUpload: React.FC<PhotoUploadProps> = ({ preview, onChange, onRemove, label = 'Photo', error }) => {
   const [webcamState, setWebcamState] = useState<WebcamState>('idle');
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);

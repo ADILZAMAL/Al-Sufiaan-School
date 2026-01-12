@@ -37,7 +37,6 @@ interface FeeReceiptModalProps {
   totalConfiguredAmount?: number;
   totalAdjustment?: number;
   totalPayableAmount: number;
-  paidAmount: number;
   discountReason?: string | null;
   student: StudentInfo;
   school: School;
@@ -53,7 +52,6 @@ const FeeReceiptModal: React.FC<FeeReceiptModalProps> = ({
   totalConfiguredAmount,
   totalAdjustment,
   totalPayableAmount,
-  paidAmount,
   discountReason,
   student,
   school,
@@ -279,7 +277,6 @@ const FeeReceiptModal: React.FC<FeeReceiptModalProps> = ({
                 totalConfiguredAmount={totalConfiguredAmount}
                 totalAdjustment={totalAdjustment}
                 totalPayableAmount={totalPayableAmount}
-                paidAmount={paidAmount}
                 discountReason={discountReason}
                 student={student}
                 school={school}
@@ -301,7 +298,6 @@ const FeeReceiptModal: React.FC<FeeReceiptModalProps> = ({
                 totalConfiguredAmount={totalConfiguredAmount}
                 totalAdjustment={totalAdjustment}
                 totalPayableAmount={totalPayableAmount}
-                paidAmount={paidAmount}
                 discountReason={discountReason}
                 student={student}
                 school={school}
@@ -404,7 +400,6 @@ interface ReceiptProps {
   totalConfiguredAmount?: number;
   totalAdjustment?: number;
   totalPayableAmount: number;
-  paidAmount: number;
   discountReason?: string | null;
   student: StudentInfo;
   school: School;
@@ -422,7 +417,6 @@ const Receipt: React.FC<ReceiptProps> = ({
   totalConfiguredAmount,
   totalAdjustment,
   totalPayableAmount,
-  paidAmount,
   discountReason,
   student,
   school,

@@ -87,7 +87,7 @@ const StudentList: React.FC<StudentListProps> = ({
                   </td>
                 </tr>
               ) : (
-                students.map((student, index) => (
+                students.map((student, ) => (
                   <tr 
                     key={student.id} 
                     onClick={() => handleView(student)}

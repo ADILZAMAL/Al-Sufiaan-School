@@ -62,7 +62,7 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
     areaTransportationId: null
   });
   const [loading, setLoading] = useState(false);
-  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [, setUploadingPhotos] = useState(false);
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [transportationAreas, setTransportationAreas] = useState<Array<{ id: number; areaName: string; price: number }>>([]);
   const [photoFiles, setPhotoFiles] = useState<{
@@ -204,20 +204,6 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
     setPhotoFiles(prev => ({
       ...prev,
       [photoType]: { file, preview }
-    }));
-  };
-
-  const handleRemovePhoto = (photoType: keyof typeof photoFiles) => {
-    setPhotoFiles(prev => ({
-      ...prev,
-      [photoType]: null
-    }));
-  };
-
-  const handleRemoveExistingPhoto = (photoType: keyof typeof existingPhotos) => {
-    setExistingPhotos(prev => ({
-      ...prev,
-      [photoType]: ''
     }));
   };
 
