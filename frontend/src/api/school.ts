@@ -16,6 +16,7 @@ export interface School {
   paymentModes: string[];
   hostelFee?: number | null;
   admissionFee?: number | null;
+  dayboardingFee?: number | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -6,7 +6,8 @@ export enum FeeItemType {
   TUITION_FEE = 'TUITION_FEE',
   HOSTEL_FEE = 'HOSTEL_FEE',
   TRANSPORT_FEE = 'TRANSPORT_FEE',
-  ADMISSION_FEE = 'ADMISSION_FEE'
+  ADMISSION_FEE = 'ADMISSION_FEE',
+  DAYBOARDING_FEE = 'DAYBOARDING_FEE'
 }
 
 export interface StudentMonthlyFeeItemCreationAttributes {

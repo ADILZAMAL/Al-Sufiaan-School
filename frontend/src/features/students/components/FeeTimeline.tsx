@@ -46,6 +46,7 @@ interface StudentInfo {
   sectionName: string;
   schoolId: number;
   fatherName?: string;
+  dayboarding?: boolean;
 }
 
 interface FeeTimelineProps {
@@ -214,6 +215,9 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                 Admn
               </th>
               <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Dayboard
+              </th>
+              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Total
               </th>
               <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
@@ -280,7 +284,7 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                     
                     {entry.status === 'not_generated' ? (
                       <>
-                        <td colSpan={9} className="px-4 py-3 text-center">
+                        <td colSpan={10} className="px-4 py-3 text-center">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -319,6 +323,11 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           <span className="text-sm text-gray-900">
                             {formatCurrency(getFeeItemAmount(entry.feeItems, 'ADMISSION_FEE'))}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <span className="text-sm text-gray-900">
+                            {formatCurrency(getFeeItemAmount(entry.feeItems, 'DAYBOARDING_FEE'))}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -446,6 +455,7 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
           calendarYear={selectedEntry.calendarYear}
           label={selectedEntry.label}
           loading={generatingFee}
+          studentDayboarding={student?.dayboarding}
         />
       )}
 

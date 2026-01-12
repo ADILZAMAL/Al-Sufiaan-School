@@ -43,10 +43,28 @@ const SchoolSettings: React.FC = () => {
     const checkboxTarget = e.target as HTMLInputElement;
     const checked = checkboxTarget.checked;
     
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value,
-    });
+    // Handle different input types
+    if (type === 'checkbox') {
+      setFormData({
+        ...formData,
+        [name]: checked,
+      });
+    } else if (type === 'number' && value !== '') {
+      // Handle numeric fields to avoid floating point issues
+      const numValue = parseFloat(value);
+      // Round to 2 decimal places for monetary values
+      const roundedValue = Math.round(numValue * 100) / 100;
+      setFormData({
+        ...formData,
+        [name]: roundedValue,
+      });
+    } else {
+      // Handle string/text fields
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -362,7 +380,7 @@ const SchoolSettings: React.FC = () => {
                     value={formData.hostelFee || ''}
                     onChange={handleChange}
                     disabled={!isEditing}
-                    step="0.01"
+
                     placeholder="Leave empty if no hostel facility"
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
@@ -385,7 +403,6 @@ const SchoolSettings: React.FC = () => {
                     value={formData.admissionFee || ''}
                     onChange={handleChange}
                     disabled={!isEditing}
-                    step="0.01"
                     placeholder="Leave empty if not applicable"
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
@@ -395,6 +412,28 @@ const SchoolSettings: React.FC = () => {
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
                   Configure one-time admission fee for new students
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Dayboarding Fee (₹)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="dayboardingFee"
+                    value={formData.dayboardingFee || ''}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    placeholder="Leave empty if not applicable"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-400">₹</span>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Configure fixed dayboarding fee for students opting in
                 </p>
               </div>
             </div>

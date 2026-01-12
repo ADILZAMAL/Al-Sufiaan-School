@@ -111,6 +111,13 @@ export const createStudent = async (req: Request, res: Response) => {
       return sendError(res, 'User ID not found in request')
     }
 
+    // Validate mutual exclusion: hostel and transportation cannot coexist
+    const { hostel, areaTransportationId, dayboarding } = req.body;
+    
+    if (hostel === true && areaTransportationId != null) {
+      return sendError(res, 'Student cannot have both hostel and transportation services', 400);
+    }
+
     const studentData = {
       ...req.body,
       schoolId: schoolId,
@@ -140,11 +147,22 @@ export const createStudent = async (req: Request, res: Response) => {
 export const updateStudent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    let updateData = req.body;
 
+    // Get existing student to check current values
     const student = await Student.findByPk(id);
     if (!student) {
       return sendError(res, 'Student not found', 404);
+    }
+
+    // Enforce mutual exclusion: if hostel is being set to true, clear transportation
+    if (updateData.hostel === true) {
+      updateData.areaTransportationId = null;
+    }
+    
+    // Also enforce: if transportation is being set, clear hostel
+    if (updateData.areaTransportationId) {
+      updateData.hostel = false;
     }
 
     await student.update(updateData);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiHome, FiTruck, FiUserPlus } from 'react-icons/fi';
+import { FiX, FiHome, FiTruck, FiUserPlus, FiSun } from 'react-icons/fi';
 import { transportationAreaPricingApi } from '../../transportation/api/transportationAreaPricing';
 
 interface TransportationArea {
@@ -17,6 +17,7 @@ interface GenerateFeeModalProps {
     hostel: boolean;
     newAdmission: boolean;
     transportationAreaId?: number;
+    dayboarding: boolean;
     discount: number;
     discountReason?: string;
   }) => Promise<void>;
@@ -24,6 +25,7 @@ interface GenerateFeeModalProps {
   calendarYear: number;
   label: string;
   loading?: boolean;
+  studentDayboarding?: boolean; // For auto-selecting dayboarding
 }
 
 const GenerateFeeModal: React.FC<GenerateFeeModalProps> = ({
@@ -34,8 +36,10 @@ const GenerateFeeModal: React.FC<GenerateFeeModalProps> = ({
   calendarYear,
   label,
   loading = false,
+  studentDayboarding = false,
 }) => {
   const [hostel, setHostel] = useState(false);
+  const [dayboarding, setDayboarding] = useState(false);
   const [newAdmission, setNewAdmission] = useState(false);
   const [transportationAreaId, setTransportationAreaId] = useState<number | undefined>(undefined);
   const [discount, setDiscount] = useState(0);
@@ -48,6 +52,7 @@ const GenerateFeeModal: React.FC<GenerateFeeModalProps> = ({
     if (isOpen) {
       // Reset form
       setHostel(false);
+      setDayboarding(studentDayboarding); // Auto-select if student has dayboarding
       setNewAdmission(false);
       setTransportationAreaId(undefined);
       setDiscount(0);
@@ -88,6 +93,7 @@ const GenerateFeeModal: React.FC<GenerateFeeModalProps> = ({
         hostel,
         newAdmission,
         transportationAreaId,
+        dayboarding,
         discount,
         discountReason: discountReason || undefined,
       });
@@ -167,6 +173,22 @@ const GenerateFeeModal: React.FC<GenerateFeeModalProps> = ({
               <label htmlFor="newAdmission" className="ml-3 flex items-center cursor-pointer">
                 <FiUserPlus className="h-5 w-5 text-green-600 mr-2" />
                 <span className="text-sm font-medium text-gray-700">New Admission Fee Applicable</span>
+              </label>
+            </div>
+
+            {/* Dayboarding Fee */}
+            <div className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                id="dayboarding"
+                checked={dayboarding}
+                onChange={(e) => setDayboarding(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                disabled={loading}
+              />
+              <label htmlFor="dayboarding" className="ml-3 flex items-center cursor-pointer">
+                <FiSun className="h-5 w-5 text-amber-500 mr-2" />
+                <span className="text-sm font-medium text-gray-700">Dayboarding Fee Applicable</span>
               </label>
             </div>
 

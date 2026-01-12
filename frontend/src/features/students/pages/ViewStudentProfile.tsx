@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBriefcase, FiUserCheck, FiClock, FiEdit, FiDollarSign, FiPrinter } from 'react-icons/fi';
+import { FiArrowLeft, FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBriefcase, FiUserCheck, FiClock, FiEdit, FiDollarSign, FiPrinter, FiCheckCircle } from 'react-icons/fi';
 // import { useQuery } from '@tanstack/react-query';
 import { useQuery } from "react-query";
 import { getStudentById, getStudentFeeTimeline } from '../api';
@@ -9,6 +9,12 @@ import { Student } from '../types';
 import EditStudentModal from '../components/EditStudentModal';
 import AdmissionFormModal from '../components/AdmissionFormModal';
 import FeeTimeline from '../components/FeeTimeline';
+
+interface TransportationArea {
+  id: number;
+  areaName: string;
+  price: number;
+}
 
 const formatDateOnly = (iso: string) =>
   new Date(iso).toLocaleDateString('en-CA', {
@@ -49,6 +55,20 @@ const ViewStudentProfile: React.FC = () => {
   });
 
   const feeTimeline = feeTimelineData?.data || [];
+
+  // Fetch transportation area if student has one
+  const { data: transportationArea } = useQuery({
+    queryKey: ['transportationArea', student?.areaTransportationId],
+    queryFn: async () => {
+      if (!student?.areaTransportationId) return null;
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/transportation-area-pricing/${student.areaTransportationId}`, {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      return data.success ? data.data : null;
+    },
+    enabled: !!student?.areaTransportationId
+  });
 
   const handleFeeTimelineRefresh = () => {
     refetchTimeline();
@@ -156,6 +176,58 @@ const ViewStudentProfile: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Services Section */}
+        {(student.hostel || student.dayboarding || student.areaTransportationId) && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+              <FiBriefcase className="h-5 w-5 mr-2 text-indigo-600" />
+              Active Services
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              {/* Hostel Badge */}
+              {student.hostel && (
+                <div className="inline-flex items-center px-4 py-2 bg-green-100 border border-green-300 rounded-full text-sm font-medium text-green-800">
+                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h2a1 1 0 001-1v-6.586a1 1 0 00-.293-.707l-1-1z" />
+                  </svg>
+                  Hostel Service
+                  <FiCheckCircle className="w-3 h-3 ml-2" />
+                </div>
+              )}
+              
+              {/* Dayboarding Badge */}
+              {student.dayboarding && (
+                <div className="inline-flex items-center px-4 py-2 bg-blue-100 border border-blue-300 rounded-full text-sm font-medium text-blue-800">
+                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                  </svg>
+                  Dayboarding Service
+                  <FiCheckCircle className="w-3 h-3 ml-2" />
+                </div>
+              )}
+              
+              {/* Transportation Badge */}
+              {student.areaTransportationId && (
+                <div className="inline-flex items-center px-4 py-2 bg-purple-100 border border-purple-300 rounded-full text-sm font-medium text-purple-800">
+                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M8 16.5a1.5 1.5 1 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM8 9a4 4 0 118 0 4 4 0 01-8 0zm-5 1a.5.5 0 01.5-.5 3.5 3.5 0 000-7H.5a.5.5 0 010 1h3.5a4.5 4.5 0 000 9h.5a.5.5 0 010-1h-.5a3.5 3.5 0 000-7z" />
+                  </svg>
+                  Transportation: <span className="font-semibold">{transportationArea?.areaName || 'Loading...'}</span> 
+                  {transportationArea?.price && (
+                    <span className="ml-1">(<span className="font-bold">₹{transportationArea.price}</span>/month)</span>
+                  )}
+                  <FiCheckCircle className="w-3 h-3 ml-2" />
+                </div>
+              )}
+              
+              {/* No Services Message */}
+              {!student.hostel && !student.dayboarding && !student.areaTransportationId && (
+                <span className="text-sm text-gray-500 italic">No additional services</span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="space-y-8">

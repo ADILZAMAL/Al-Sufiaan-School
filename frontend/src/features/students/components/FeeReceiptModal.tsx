@@ -230,6 +230,7 @@ const FeeReceiptModal: React.FC<FeeReceiptModalProps> = ({
       'HOSTEL_FEE': 'Hostel Fee',
       'TRANSPORT_FEE': 'Transport Fee',
       'ADMISSION_FEE': 'Admission Fee',
+      'DAYBOARDING_FEE': 'Dayboarding Fee',
     };
     return labels[feeType] || feeType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };

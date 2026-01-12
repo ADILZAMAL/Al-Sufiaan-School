@@ -80,6 +80,9 @@ export interface Student {
   fatherPhoto?: string;
   motherPhoto?: string;
   guardianPhoto?: string;
+  dayboarding: boolean;
+  hostel: boolean;
+  areaTransportationId?: number;
   createdBy: number; // Required in backend
 
   // Timestamps (matching backend)
@@ -132,6 +135,9 @@ export interface CreateStudentRequest {
   fatherPhoto?: string;
   motherPhoto?: string;
   guardianPhoto?: string;
+  dayboarding: boolean;
+  hostel: boolean;
+  areaTransportationId?: number;
 }
 
 // Update Student Request - partial of CreateStudentRequest
@@ -186,6 +192,9 @@ export interface StudentFormData {
   fatherPhoto: string;
   motherPhoto: string;
   guardianPhoto: string;
+  dayboarding: boolean;
+  hostel: boolean;
+  areaTransportationId: number | null;
 }
 
 // API Response Types

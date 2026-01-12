@@ -19,6 +19,7 @@ class School extends Model {
   public paymentModes!: string[];
   public hostelFee?: number;
   public admissionFee?: number;
+  public dayboardingFee?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -94,6 +95,11 @@ export const initSchoolModel = (sequelize: Sequelize): void => {
         defaultValue: null,
       },
       admissionFee: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        defaultValue: null,
+      },
+      dayboardingFee: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
         defaultValue: null,

@@ -74,6 +74,9 @@ class Student extends Model {
   public fatherPhoto?: string;
   public motherPhoto?: string;
   public guardianPhoto?: string;
+  public dayboarding!: boolean;
+  public hostel!: boolean;
+  public areaTransportationId?: number; // Foreign Key to TransportationAreaPricing
   public createdBy!: number; //Foreign Key
 
   public readonly createdAt!: Date;
@@ -106,7 +109,6 @@ Student.init(
     admissionNumber: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
       validate: {
         notEmpty: {
           msg: 'Admission number is required',
@@ -344,6 +346,26 @@ Student.init(
     guardianPhoto: {
       type: DataTypes.STRING(500),
       allowNull: true,
+    },
+    dayboarding: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    hostel: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    areaTransportationId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'transportation_area_pricing',
+        key: 'id',
+      },
+      onUpdate: 'SET NULL',
+      onDelete: 'SET NULL',
     },
     createdBy: {
       type: DataTypes.INTEGER,

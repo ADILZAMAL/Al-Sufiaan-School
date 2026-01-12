@@ -23,6 +23,7 @@ interface GenerateFeeRequest {
   hostel?: boolean;
   newAdmission?: boolean;
   transportationAreaId?: number;
+  dayboarding?: boolean;
   discount?: number;
   discountReason?: string;
 }
@@ -30,7 +31,7 @@ interface GenerateFeeRequest {
 export const generateMonthlyFee = async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
-    const { month, calendarYear, hostel = false, transportationAreaId, discount = 0, discountReason, newAdmission = false }: GenerateFeeRequest = req.body;
+    const { month, calendarYear, hostel = false, transportationAreaId, discount = 0, discountReason, newAdmission = false, dayboarding = false }: GenerateFeeRequest = req.body;
     const userId = parseInt(req.userId);
 
     // Validate inputs
@@ -90,6 +91,7 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
       hostel,
       transportationAreaId,
       newAdmission,
+      dayboarding,
       school
     );
 
@@ -154,6 +156,7 @@ async function calculateFeeItems(
   hostel: boolean,
   transportationAreaId?: number,
   newAdmission?: boolean,
+  dayboarding?: boolean,
   school?: School
 ): Promise<StudentMonthlyFeeItemCreationAttributes[]> {
   const feeItems: StudentMonthlyFeeItemCreationAttributes[] = [];
@@ -202,6 +205,17 @@ async function calculateFeeItems(
       feeItems.push({
         feeType: FeeItemType.ADMISSION_FEE,
         amount: parseFloat(school.admissionFee.toString()),
+      });
+    }
+
+    // 5. Dayboarding Fee (if dayboarding is true)
+    if (dayboarding) {
+      if (!school || !school.dayboardingFee || school.dayboardingFee <= 0) {
+        throw new Error('Please configure dayboarding fee in School Settings first');
+      }
+      feeItems.push({
+        feeType: FeeItemType.DAYBOARDING_FEE,
+        amount: parseFloat(school.dayboardingFee.toString()),
       });
     }
 

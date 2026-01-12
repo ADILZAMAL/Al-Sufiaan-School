@@ -56,11 +56,15 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
     studentPhoto: '',
     fatherPhoto: '',
     motherPhoto: '',
-    guardianPhoto: ''
+    guardianPhoto: '',
+    dayboarding: false,
+    hostel: false,
+    areaTransportationId: null
   });
   const [loading, setLoading] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [classes, setClasses] = useState<ClassData[]>([]);
+  const [transportationAreas, setTransportationAreas] = useState<Array<{ id: number; areaName: string; price: number }>>([]);
   const [photoFiles, setPhotoFiles] = useState<{
     studentPhoto: PhotoFile | null;
     fatherPhoto: PhotoFile | null;
@@ -82,6 +86,7 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
   useEffect(() => {
     if (isOpen) {
       fetchClasses();
+      fetchTransportationAreas();
       // Populate form with student data
       setFormData({
         admissionNumber: student.admissionNumber,
@@ -114,7 +119,10 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         studentPhoto: student.studentPhoto || '',
         fatherPhoto: student.fatherPhoto || '',
         motherPhoto: student.motherPhoto || '',
-        guardianPhoto: student.guardianPhoto || ''
+        guardianPhoto: student.guardianPhoto || '',
+        dayboarding: student.dayboarding || false,
+        hostel: student.hostel || false,
+        areaTransportationId: student.areaTransportationId || null
       });
       // Store existing photos
       setExistingPhotos({
@@ -133,6 +141,20 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
     }
   }, [isOpen, student]);
 
+  const fetchTransportationAreas = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/transportation-area-pricing`, {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (data.success) {
+        setTransportationAreas(data.data.transportationAreaPricing.filter((area: any) => area.isActive));
+      }
+    } catch (error) {
+      console.error('Failed to fetch transportation areas:', error);
+    }
+  };
+
   const fetchClasses = async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/classes`, {
@@ -149,11 +171,33 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
-               type === 'number' ? parseFloat(value) || 0 : value
-    }));
+    const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+
+    setFormData(prev => {
+      const newData = { 
+        ...prev,
+        [name]: type === 'checkbox' ? checked : 
+                 type === 'number' ? parseFloat(value) || 0 : value 
+      };
+
+      // Mutual exclusion: dayboarding and hostel cannot be selected together
+      if (name === 'dayboarding' && checked === true) {
+        newData.hostel = false;
+        newData.areaTransportationId = null;
+      }
+
+      if (name === 'hostel' && checked === true) {
+        newData.dayboarding = false;
+        newData.areaTransportationId = null;
+      }
+
+      // Mutual exclusion: if transportation area is selected, clear hostel
+      if (name === 'areaTransportationId' && value !== '') {
+        newData.hostel = false;
+      }
+
+      return newData;
+    });
   };
 
   const handlePhotoChange = (photoType: keyof typeof photoFiles, file: File, preview: string) => {
@@ -311,6 +355,9 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         guardianName: formData.guardianName || undefined,
         guardianRelation: formData.guardianRelation || undefined,
         guardianPhone: formData.guardianPhone || undefined,
+        dayboarding: formData.dayboarding,
+        hostel: formData.hostel,
+        areaTransportationId: formData.areaTransportationId || undefined,
         // Add photo URLs
         studentPhoto: finalPhotos.studentPhoto,
         fatherPhoto: finalPhotos.fatherPhoto,
@@ -406,6 +453,87 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
                   disabled
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Services Section */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Services</h3>
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="dayboarding"
+                  checked={formData.dayboarding}
+                  onChange={handleInputChange}
+                  disabled={formData.hostel}
+                  className={`w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 ${
+                    formData.hostel ? 'cursor-not-allowed' : ''
+                  }`}
+                />
+                <span className="ml-3 text-sm font-medium text-gray-700">
+                  Dayboarding Service
+                </span>
+              </label>
+              <p className="mt-1 text-xs text-gray-500 ml-8">
+                Students opting for dayboarding service will be charged a fixed dayboarding fee in addition to tuition fee
+              </p>
+              {formData.hostel && (
+                <p className="mt-1 text-xs text-orange-500 ml-8">
+                  Not available with hostel service
+                </p>
+              )}
+            </div>
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="hostel"
+                  checked={formData.hostel}
+                  onChange={handleInputChange}
+                  disabled={formData.dayboarding}
+                  className={`w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500 ${
+                    formData.dayboarding ? 'cursor-not-allowed' : ''
+                  }`}
+                />
+                <span className="ml-3 text-sm font-medium text-gray-700">
+                  Hostel Service
+                </span>
+              </label>
+              <p className="mt-1 text-xs text-gray-500 ml-8">
+                Students opting for hostel service will be charged a fixed hostel fee in addition to tuition fee
+              </p>
+              {formData.dayboarding && (
+                <p className="mt-1 text-xs text-orange-500 ml-8">
+                  Not available with dayboarding service
+                </p>
+              )}
+            </div>
+            <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Transportation Area
+              </label>
+              <select
+                name="areaTransportationId"
+                value={formData.areaTransportationId || ''}
+                onChange={handleInputChange}
+                disabled={formData.hostel}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                  formData.hostel ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''
+                }`}
+              >
+                <option value="">No Transportation</option>
+                {transportationAreas.map(area => (
+                  <option key={area.id} value={area.id}>
+                    {area.areaName} - ₹{area.price}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                {formData.hostel 
+                  ? 'Transportation is not available for hostel students' 
+                  : 'Students will be charged transportation fee based on selected area'}
+              </p>
             </div>
           </div>
 
