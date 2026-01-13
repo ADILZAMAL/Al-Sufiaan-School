@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBriefcase, FiUserCheck, FiClock, FiEdit, FiDollarSign, FiPrinter, FiCheckCircle } from 'react-icons/fi';
-// import { useQuery } from '@tanstack/react-query';
 import { useQuery } from "react-query";
 import { getStudentById, getStudentFeeTimeline } from '../api';
 import { getSchoolById } from '../../../api/school';
@@ -9,12 +8,6 @@ import { Student } from '../types';
 import EditStudentModal from '../components/EditStudentModal';
 import AdmissionFormModal from '../components/AdmissionFormModal';
 import FeeTimeline from '../components/FeeTimeline';
-
-// interface TransportationArea {
-//   id: number;
-//   areaName: string;
-//   price: number;
-// }
 
 const formatDateOnly = (iso: string) =>
   new Date(iso).toLocaleDateString('en-CA', {

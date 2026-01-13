@@ -2,8 +2,6 @@ import React, { useContext, useState } from "react";
 import Toast from "../components/common/Toast";
 import { useQuery } from "react-query";
 import * as apiClient from "../features/auth/api";
-// import { loadStripe, Stripe } from "@stripe/stripe-js";
-
 
 type ToastMessage = {
   message: string;

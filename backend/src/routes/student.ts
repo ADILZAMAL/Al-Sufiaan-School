@@ -1,6 +1,4 @@
 import { Router } from 'express';
-// import { authenticate } from '../middleware/auth';
-// import { authorize } from '../middleware/roleAuth';
 import verifyToken from '../middleware/auth';
 import { body } from 'express-validator';
 import {Gender, BloodGroup, Religion} from "../models/Student"
