@@ -137,7 +137,6 @@ const AddVendorBillModal: React.FC<AddVendorBillModalProps> = ({
               name="amount"
               value={formData.amount || ''}
               onChange={handleInputChange}
-              step="0.01"
               min="0"
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.amount ? 'border-red-300' : 'border-gray-300'

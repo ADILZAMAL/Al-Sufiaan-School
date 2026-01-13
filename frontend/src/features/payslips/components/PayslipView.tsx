@@ -374,7 +374,6 @@ const PayslipView: React.FC<PayslipViewProps> = ({
                       type="number"
                       min="0.01"
                       max={currentPayslip.remainingAmount || currentPayslip.netSalary}
-                      step="0.01"
                       value={paymentForm.paymentAmount === 0 ? '' : paymentForm.paymentAmount}
                       onChange={(e) => setPaymentForm({
                         ...paymentForm,

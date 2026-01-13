@@ -269,7 +269,6 @@ const TransportationAreaPricing: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Transport Fee Price (₹) *</label>
                 <input
                   type="number"
-                  step="0.01"
                   min="0"
                   value={formData.price}
                   onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}

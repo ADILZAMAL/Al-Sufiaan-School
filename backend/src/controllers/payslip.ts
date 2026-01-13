@@ -459,6 +459,9 @@ export const makePayment = async (req: Request, res: Response) => {
             return sendError(res, 'Invalid payment method. Must be Cash, UPI, or Bank Transfer', 400);
         }
 
+        // Round payment amount to 2 decimal places to avoid floating-point precision issues
+        const roundedPaymentAmount = parseFloat(parseFloat(paymentAmount.toString()).toFixed(2));
+
         // Get payslip
         const payslip = await Payslip.findByPk(id, { transaction });
         if (!payslip) {
@@ -473,9 +476,9 @@ export const makePayment = async (req: Request, res: Response) => {
         }
 
         // Check if payment amount exceeds remaining amount
-        if (paymentAmount > payslip.remainingAmount) {
+        if (roundedPaymentAmount > payslip.remainingAmount) {
             await transaction.rollback();
-            return sendError(res, `Payment amount (₹${paymentAmount}) exceeds remaining amount (₹${payslip.remainingAmount})`, 400);
+            return sendError(res, `Payment amount (₹${roundedPaymentAmount}) exceeds remaining amount (₹${payslip.remainingAmount})`, 400);
         }
 
         // Get user ID from request
@@ -502,7 +505,7 @@ export const makePayment = async (req: Request, res: Response) => {
         // Create expense entry first
         const expenseName = `${payslip.staffName}-SALARY-${payslip.payslipNumber}`;
         const expense = await Expense.create({
-            amount: paymentAmount,
+            amount: roundedPaymentAmount,
             name: expenseName,
             categoryId: salaryCategory.id,
             userId: userId,
@@ -513,7 +516,7 @@ export const makePayment = async (req: Request, res: Response) => {
         // Create payment record
         const payment = await PayslipPayment.create({
             payslipId: payslip.id,
-            paymentAmount: paymentAmount,
+            paymentAmount: roundedPaymentAmount,
             paymentDate: new Date(),
             paymentMethod: paymentMethod,
             notes: notes || null,
@@ -523,8 +526,8 @@ export const makePayment = async (req: Request, res: Response) => {
         }, { transaction });
 
         // Update payslip payment tracking
-        const newTotalPaid = parseFloat(payslip.totalPaidAmount.toString()) + parseFloat(paymentAmount.toString());
-        const newRemainingAmount = parseFloat(payslip.netSalary.toString()) - newTotalPaid;
+        const newTotalPaid = parseFloat(parseFloat(payslip.totalPaidAmount.toString()).toFixed(2)) + roundedPaymentAmount;
+        const newRemainingAmount = parseFloat(parseFloat(payslip.netSalary.toString()).toFixed(2)) - newTotalPaid;
         
         let newPaymentStatus: 'UNPAID' | 'PARTIAL' | 'PAID' = 'PARTIAL';
         if (newRemainingAmount === 0) {
