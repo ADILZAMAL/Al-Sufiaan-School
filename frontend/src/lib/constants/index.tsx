@@ -1,4 +1,4 @@
-import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCog, HiOutlineCurrencyDollar, HiOutlineTruck, HiOutlineUserCircle, HiOutlineAcademicCap, HiOutlineLibrary } from 'react-icons/hi'
+import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCog, HiOutlineCurrencyDollar, HiOutlineTruck, HiOutlineUserCircle, HiOutlineAcademicCap, HiOutlineLibrary, HiOutlineBell } from 'react-icons/hi'
 
 export const DASHBOARD_SIDEBAR_LINKS = [
 	{
@@ -80,6 +80,12 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				label: 'Incoming Payments',
 				path: 'fee/incoming-payments',
 				icon: <HiOutlineCurrencyDollar />
+			},
+			{
+				key: 'payment-reminder',
+				label: 'Payment Reminder',
+				path: 'fee/payment-reminder',
+				icon: <HiOutlineBell />
 			}
 		]
 	},

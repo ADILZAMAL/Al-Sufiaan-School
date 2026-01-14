@@ -100,6 +100,10 @@ export interface Student {
   
   // Fee information
   totalDue?: number; // Total outstanding fee amount
+  
+  // Payment reminder fields
+  paymentReminderDate?: string; // Payment reminder date
+  paymentRemainderRemarks?: string; // Payment reminder remarks
 }
 
 // Create Student Request - matches what backend expects
@@ -144,6 +148,12 @@ export interface CreateStudentRequest {
 export interface UpdateStudentRequest extends Partial<CreateStudentRequest> {
   // Add any fields that might be needed specifically for updates
   id?: number; // Sometimes needed for update operations
+}
+
+// Update Payment Reminder Request
+export interface UpdatePaymentReminderRequest {
+  paymentReminderDate?: string | null;
+  paymentRemainderRemarks?: string | null;
 }
 
 // Enhanced Student Form Data with better type safety

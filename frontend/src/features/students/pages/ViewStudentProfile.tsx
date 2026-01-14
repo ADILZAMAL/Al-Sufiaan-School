@@ -8,6 +8,7 @@ import { Student } from '../types';
 import EditStudentModal from '../components/EditStudentModal';
 import AdmissionFormModal from '../components/AdmissionFormModal';
 import FeeTimeline from '../components/FeeTimeline';
+import PaymentReminderCard from '../components/PaymentReminderCard';
 
 const formatDateOnly = (iso: string) =>
   new Date(iso).toLocaleDateString('en-CA', {
@@ -284,6 +285,14 @@ const ViewStudentProfile: React.FC = () => {
                 fatherName: student.fatherName,
               }}
               school={school}
+            />
+          </div>
+
+          {/* Payment Reminder Section */}
+          <div>
+            <PaymentReminderCard 
+              student={student} 
+              onUpdate={() => refetch()}
             />
           </div>
 

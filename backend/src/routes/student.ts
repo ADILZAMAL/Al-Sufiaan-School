@@ -9,7 +9,9 @@ import {
   createStudent,
   updateStudent,
   deleteStudent,
-  getStudentsByClass
+  getStudentsByClass,
+  getStudentsWithPaymentReminders,
+  updatePaymentReminder
 } from '../controllers/student';
 import { generateMonthlyFee, getStudentFeeTimelineController, collectFeePaymentController } from '../controllers/monthlyFee';
 
@@ -217,6 +219,8 @@ router.get('/', verifyToken, getAllStudents);
 
 router.post('/', verifyToken, createStudentValidation, createStudent);
 
+// Payment reminder routes (must come before /:id route)
+router.get('/payment-reminders', verifyToken, getStudentsWithPaymentReminders);
 
 router.get('/class/:classId', verifyToken, getStudentsByClass);
 router.get('/:id', verifyToken, getStudentById);
@@ -244,5 +248,8 @@ router.post(
   verifyToken,
   collectFeePaymentController
 )
+
+// Update payment reminder (must come after /:id route)
+router.patch('/:id/payment-reminder', verifyToken, updatePaymentReminder);
 
 export default router;
