@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaUserGraduate, FaFilter } from "react-icons/fa";
+import { FaPlus, FaSearch, FaUserGraduate } from "react-icons/fa";
 import { FiUsers, FiTrendingUp, FiUserCheck } from 'react-icons/fi';
 import StudentList from '../components/StudentList';
 import AddStudentModal from '../components/AddStudentModal';
@@ -7,6 +7,12 @@ import EditStudentModal from '../components/EditStudentModal';
 import DeleteStudentModal from '../components/DeleteStudentModal';
 import { Student, Gender } from '../types';
 import { studentApi } from '../api';
+
+interface ClassData {
+  id: number;
+  name: string;
+  sections: Array<{ id: number; name: string }>;
+}
 
 const StudentPage: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -16,6 +22,9 @@ const StudentPage: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+  const [classes, setClasses] = useState<ClassData[]>([]);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -31,8 +40,23 @@ const StudentPage: React.FC = () => {
     }
   };
 
+  const fetchClasses = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/classes`, {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (data.success) {
+        setClasses(data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch classes:', error);
+    }
+  };
+
   useEffect(() => {
     fetchStudents();
+    fetchClasses();
   }, []);
 
   const handleAddStudent = () => {
@@ -61,11 +85,39 @@ const StudentPage: React.FC = () => {
     fetchStudents();
   };
 
-  const filteredStudents = students.filter(student =>
-    student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = students.filter(student => {
+    // Search filter
+    const matchesSearch = 
+      student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Class filter
+    const matchesClass = selectedClassId === null || student.classId === selectedClassId;
+    
+    // Section filter
+    const matchesSection = selectedSectionId === null || student.sectionId === selectedSectionId;
+    
+    return matchesSearch && matchesClass && matchesSection;
+  });
+
+  // Get sections for selected class
+  const availableSections = selectedClassId 
+    ? classes.find(c => c.id === selectedClassId)?.sections || []
+    : [];
+
+  // Handle class change - reset section filter
+  const handleClassChange = (classId: string) => {
+    const id = classId === 'all' ? null : parseInt(classId);
+    setSelectedClassId(id);
+    setSelectedSectionId(null); // Reset section when class changes
+  };
+
+  // Handle clear filters
+  const handleClearFilters = () => {
+    setSelectedClassId(null);
+    setSelectedSectionId(null);
+  };
 
   // Statistics cards data
   const stats = {
@@ -161,7 +213,7 @@ const StudentPage: React.FC = () => {
 
         {/* Search and Actions Bar */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-col lg:flex-row gap-4 items-center">
             <div className="relative flex-1 max-w-lg">
               <FaSearch className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -169,22 +221,58 @@ const StudentPage: React.FC = () => {
                 placeholder="Search by name, admission number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full pl-12 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
             
             <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <FaFilter className="text-gray-600 w-4 h-4" />
-                <span className="hidden sm:inline text-sm font-medium">Filter</span>
-              </button>
+              <div className="flex flex-col">
+                <select
+                  value={selectedClassId === null ? 'all' : selectedClassId.toString()}
+                  onChange={(e) => handleClassChange(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm"
+                >
+                  <option value="all">All Classes</option>
+                  {classes.map((classItem) => (
+                    <option key={classItem.id} value={classItem.id.toString()}>
+                      {classItem.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex flex-col">
+                <select
+                  value={selectedSectionId === null ? 'all' : selectedSectionId.toString()}
+                  onChange={(e) => setSelectedSectionId(e.target.value === 'all' ? null : parseInt(e.target.value))}
+                  disabled={selectedClassId === null}
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="all">All Sections</option>
+                  {availableSections.map((section) => (
+                    <option key={section.id} value={section.id.toString()}>
+                      {section.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {(selectedClassId !== null || selectedSectionId !== null) && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="px-3 py-2.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors h-[42px]"
+                >
+                  Clear
+                </button>
+              )}
               
               <button
                 onClick={handleAddStudent}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 shadow-md"
+                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 shadow-md text-sm font-medium h-[42px]"
               >
                 <FaPlus className="w-4 h-4" />
-                <span className="font-medium">Add Student</span>
+                <span>Add Student</span>
               </button>
             </div>
           </div>
