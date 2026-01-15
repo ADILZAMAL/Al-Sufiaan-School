@@ -156,6 +156,18 @@ export interface UpdatePaymentReminderRequest {
   paymentRemainderRemarks?: string | null;
 }
 
+// Regenerate Monthly Fee Request
+export interface RegenerateMonthlyFeeRequest {
+  month: number;
+  calendarYear: number;
+  hostel?: boolean;
+  transportationAreaId?: number;
+  dayboarding?: boolean;
+  newAdmission?: boolean;
+  discount?: number;
+  discountReason?: string;
+}
+
 // Enhanced Student Form Data with better type safety
 export interface StudentFormData {
   // Admission Information

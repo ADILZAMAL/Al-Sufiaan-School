@@ -13,7 +13,7 @@ import {
   getStudentsWithPaymentReminders,
   updatePaymentReminder
 } from '../controllers/student';
-import { generateMonthlyFee, getStudentFeeTimelineController, collectFeePaymentController } from '../controllers/monthlyFee';
+import { generateMonthlyFee, getStudentFeeTimelineController, collectFeePaymentController, regenerateMonthlyFee } from '../controllers/monthlyFee';
 
 const router = Router();
 
@@ -247,6 +247,13 @@ router.post(
   '/:studentId/fees/:monthlyFeeId/collect',
   verifyToken,
   collectFeePaymentController
+)
+
+// Regenerate monthly fee
+router.post(
+  '/:studentId/fees/:monthlyFeeId/regenerate',
+  verifyToken,
+  regenerateMonthlyFee
 )
 
 // Update payment reminder (must come after /:id route)

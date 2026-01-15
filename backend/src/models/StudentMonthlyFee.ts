@@ -29,6 +29,8 @@ class StudentMonthlyFee extends Model{
   public discountReason?: string;
   public generatedAt!: Date;
   public generatedBy!: number;
+  public lastEditedAt?: Date;
+  public lastEditedBy?: number;
 
   // Association properties
   public readonly feeItems?: StudentMonthlyFeeItem[];
@@ -116,6 +118,20 @@ export const initStudentMonthlyFeeModel = (sequelize: Sequelize) => {
       },
       onUpdate: 'CASCADE',
       onDelete: 'RESTRICT',
+    },
+    lastEditedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    lastEditedBy: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+          model: User,
+          key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'SET NULL',
     },
   },
   {

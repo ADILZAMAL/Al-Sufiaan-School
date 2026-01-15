@@ -683,3 +683,147 @@ export async function verifyPaymentController(req: Request, res: Response) {
     return sendError(res, 'Failed to verify payment', 500);
   }
 }
+
+// Controller to regenerate monthly fee
+export async function regenerateMonthlyFee(req: Request, res: Response) {
+  try {
+    const { studentId, monthlyFeeId } = req.params;
+    const { month, calendarYear, hostel = false, transportationAreaId, discount = 0, discountReason, newAdmission = false, dayboarding = false }: GenerateFeeRequest = req.body;
+    const userId = parseInt(req.userId);
+
+    // Validate inputs
+    if (!studentId || !monthlyFeeId) {
+      return sendError(res, "studentId and monthlyFeeId params are required", 400);
+    }
+
+    if (!month || !calendarYear) {
+      return sendError(res, "Missing required fields: month, calendarYear", 400);
+    }
+
+    if (month < 1 || month > 12) {
+      return sendError(res, "Invalid month. Must be between 1 and 12", 400);
+    }
+
+    if (discount < 0) {
+      return sendError(res, "Discount cannot be negative", 400);
+    }
+
+    if(hostel && transportationAreaId){
+      return sendError(res, "Student cannot have both hostel and transportation services", 400);  
+    }
+
+    // Find existing StudentMonthlyFee
+    const existingFee = await StudentMonthlyFee.findOne({
+      where: {
+        id: monthlyFeeId,
+        studentId,
+      },
+      include: [
+        {
+          model: StudentFeePayment,
+          as: 'payments',
+        },
+      ],
+    });
+
+    if (!existingFee) {
+      return sendError(res, "Monthly fee not found", 404);
+    }
+
+    // Check if any payments exist - block regeneration if yes
+    if (existingFee.payments && existingFee.payments.length > 0) {
+      return sendError(res, "Cannot regenerate fee that has received payments", 400);
+    }
+
+    // Verify the month and year match
+    if (existingFee.month !== month || existingFee.calendarYear !== calendarYear) {
+      return sendError(res, "Month/year in request does not match existing fee", 400);
+    }
+
+    // Verify student exists and get class info
+    const student = await Student.findByPk(studentId);
+
+    if (!student) {
+      return sendError(res, "Student not found", 404);
+    }
+
+    if (!student.classId) {
+      return sendError(res, "Student is not assigned to any class", 400);
+    }
+
+    // Fetch school data for hostel and admission fees
+    const school = await School.findByPk(student.schoolId);
+    
+    if (!school) {
+      return sendError(res, "School not found", 404);
+    }
+
+    // Recalculate fee items based on student's preferences
+    const feeItems: StudentMonthlyFeeItemCreationAttributes[] = await calculateFeeItems(
+      student.classId,
+      hostel,
+      transportationAreaId,
+      newAdmission,
+      dayboarding,
+      school
+    );
+
+    if (feeItems.length === 0) {
+      return sendError(res, "No fee items could be calculated", 400);
+    }
+
+    // Calculate subtotal
+    const subtotal = feeItems.reduce((sum, item) => sum + item.amount, 0);
+
+    // Apply discount
+    if (discount > subtotal) {
+      return sendError(res, "Discount cannot exceed total amount", 400);
+    }
+
+    const finalAmount = subtotal - discount;
+
+    // Hard delete existing StudentMonthlyFeeItems (force: true to bypass soft delete)
+    await StudentMonthlyFeeItem.destroy({
+      where: {
+        studentMonthlyFeeId: monthlyFeeId,
+      },
+      force: true, // Hard delete to avoid unique constraint violation
+    });
+
+    // Update StudentMonthlyFee with new totals
+    await existingFee.update({
+      totalConfiguredAmount: subtotal,
+      totalAdjustment: discount,
+      totalPayableAmount: finalAmount,
+      status: StudentMonthlyFeeStatus.UNPAID,
+      discountReason,
+      lastEditedBy: userId,
+      lastEditedAt: new Date(),
+    });
+
+    // Create new StudentMonthlyFeeItems
+    const feeItemsToCreate = feeItems.map(item => ({
+      studentMonthlyFeeId: parseInt(monthlyFeeId),
+      feeType: item.feeType,
+      amount: item.amount,
+    }));
+
+    await StudentMonthlyFeeItem.bulkCreate(feeItemsToCreate);
+
+    // Return the updated monthly fee with items
+    const updatedFeeWithItems = await StudentMonthlyFee.findByPk(monthlyFeeId, {
+      include: [
+        {
+          model: StudentMonthlyFeeItem,
+          as: 'feeItems',
+          attributes: ['id', 'feeType', 'amount']
+        },
+      ],
+    });
+
+    return sendSuccess(res, updatedFeeWithItems, "Fee regenerated successfully", 200);
+  } catch (error) {
+    console.error("Error regenerating monthly fee:", error);
+    return sendError(res, "Failed to regenerate monthly fee", 500);
+  }
+}
