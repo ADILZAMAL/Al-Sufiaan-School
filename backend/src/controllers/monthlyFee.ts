@@ -437,10 +437,6 @@ export async function collectFeePaymentController(req: Request, res: Response) {
   const { amountPaid, paymentMode, referenceNumber, remarks } = req.body;
   const userId = parseInt(req.userId);
 
-  if (!amountPaid || amountPaid <= 0) {
-    return sendError(res, 'Amount paid must be greater than 0', 400);
-  }
-
   if (!paymentMode || paymentMode.trim() === '') {
     return sendError(res, 'Payment mode is required', 400);
   }
@@ -472,6 +468,19 @@ export async function collectFeePaymentController(req: Request, res: Response) {
     const dueAmount = totalPayable - alreadyPaid;
 
     // Validate payment amount
+    // Allow 0 amount only when due amount is 0 and status is UNPAID
+    if (dueAmount === 0 && monthlyFee.status === StudentMonthlyFeeStatus.UNPAID) {
+      // Allow 0 payment to change status from unpaid to paid
+      if (amountPaid < 0) {
+        return sendError(res, 'Amount paid cannot be negative', 400);
+      }
+    } else {
+      // For all other cases, require amount > 0
+      if (!amountPaid || amountPaid <= 0) {
+        return sendError(res, 'Amount paid must be greater than 0', 400);
+      }
+    }
+
     if (amountPaid > dueAmount) {
       return sendError(res, `Amount paid cannot exceed due amount of ₹${dueAmount.toLocaleString('en-IN')}`, 400);
     }

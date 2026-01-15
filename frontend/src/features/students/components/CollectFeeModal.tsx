@@ -62,9 +62,19 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
     e.preventDefault();
     setError('');
 
-    if (!amountPaid || amountPaid <= 0) {
-      setError('Amount paid must be greater than 0');
-      return;
+    // Allow 0 amount only when due amount is 0, otherwise require amount > 0
+    if (dueAmount === 0) {
+      // Allow 0 payment when due amount is 0 (status will be updated to paid)
+      if (amountPaid < 0) {
+        setError('Amount paid cannot be negative');
+        return;
+      }
+    } else {
+      // For non-zero due amounts, require amount > 0
+      if (!amountPaid || amountPaid <= 0) {
+        setError('Amount paid must be greater than 0');
+        return;
+      }
     }
 
     if (amountPaid > dueAmount) {
