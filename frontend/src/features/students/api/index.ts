@@ -4,7 +4,9 @@ import {
   StudentResponse,
   CreateStudentRequest,
   StudentFilters,
-  UpdateStudentRequest
+  UpdateStudentRequest,
+  UpdatePaymentReminderRequest,
+  RegenerateMonthlyFeeRequest
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
@@ -271,6 +273,35 @@ export const studentApi = {
       method: 'POST',
       body: JSON.stringify(paymentData),
     });
+  },
+
+  // Regenerate monthly fee for a student
+  regenerateMonthlyFee: async (studentId: number, monthlyFeeId: number, feeData: RegenerateMonthlyFeeRequest): Promise<{
+    success: boolean;
+    message: string;
+    data: any;
+  }> => {
+    return await apiRequest(`/students/${studentId}/fees/${monthlyFeeId}/regenerate`, {
+      method: 'POST',
+      body: JSON.stringify(feeData),
+    });
+  },
+
+  // Get students with payment reminders
+  getStudentsWithPaymentReminders: async (): Promise<Student[]> => {
+    const body = await apiRequest('/students/payment-reminders');
+    return body.data;
+  },
+
+  // Update payment reminder for a student
+  updatePaymentReminder: async (studentId: number, reminderData: {
+    paymentReminderDate?: string | null;
+    paymentRemainderRemarks?: string | null;
+  }): Promise<StudentResponse> => {
+    return await apiRequest(`/students/${studentId}/payment-reminder`, {
+      method: 'PATCH',
+      body: JSON.stringify(reminderData),
+    });
   }
 };
 
@@ -286,3 +317,6 @@ export const deleteStudent = studentApi.deleteStudent;
 export const getStudentFeeTimeline = studentApi.getStudentFeeTimeline;
 export const generateMonthlyFee = studentApi.generateMonthlyFee;
 export const collectFeePayment = studentApi.collectFeePayment;
+export const regenerateMonthlyFee = studentApi.regenerateMonthlyFee;
+export const getStudentsWithPaymentReminders = studentApi.getStudentsWithPaymentReminders;
+export const updatePaymentReminder = studentApi.updatePaymentReminder;

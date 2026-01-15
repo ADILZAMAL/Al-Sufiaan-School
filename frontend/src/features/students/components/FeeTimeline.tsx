@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus, FiChevronDown, FiChevronRight, FiFileText } from 'react-icons/fi';
-import { generateMonthlyFee, collectFeePayment } from '../api';
+import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus, FiChevronDown, FiChevronRight, FiFileText, FiRefreshCw } from 'react-icons/fi';
+import { generateMonthlyFee, collectFeePayment, regenerateMonthlyFee } from '../api';
 import GenerateFeeModal from './GenerateFeeModal';
 import CollectFeeModal from './CollectFeeModal';
 import FeeReceiptModal from './FeeReceiptModal';
@@ -35,6 +35,8 @@ interface FeeTimelineEntry {
   discountReason?: string | null;
   feeItems?: FeeItem[] | null;
   payments?: PaymentDetail[];
+  lastEditedAt?: string;
+  lastEditedBy?: number;
 }
 
 interface StudentInfo {
@@ -156,6 +158,18 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
       throw error;
     } finally {
       setCollectingPayment(false);
+    }
+  };
+
+  const handleRegenerateFee = async (feeData: any) => {
+    setGeneratingFee(true);
+    try {
+      await regenerateMonthlyFee(studentId, selectedEntry!.monthlyFeeId!, feeData);
+      onRefresh();
+    } catch (error: any) {
+      throw error;
+    } finally {
+      setGeneratingFee(false);
     }
   };
 
@@ -359,18 +373,41 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                           {getStatusBadge(entry.status)}
                         </td>
                         <td className="px-4 py-3 text-center whitespace-nowrap">
-                          {entry.status !== 'paid' && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openCollectModal(entry);
-                              }}
-                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-                              title="Collect Payment"
-                            >
-                              Collect
-                            </button>
-                          )}
+                          <div className="flex items-center justify-center gap-2">
+                            {/* Regenerate button - only show if fee exists and no payments */}
+                            {entry.status == 'unpaid' && (!entry.payments || entry.payments.length === 0) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openGenerateModal(entry);
+                                }}
+                                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                                title="Regenerate Fee"
+                              >
+                                <FiRefreshCw className="mr-1 h-4 w-4" />
+                                Regenerate
+                              </button>
+                            )}
+                            
+                            {/* Collect button - show if unpaid/partial */}
+                            {entry.status !== 'paid' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openCollectModal(entry);
+                                }}
+                                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                                title="Collect Payment"
+                              >
+                                Collect
+                              </button>
+                            )}
+                            
+                            {/* Regenerated indicator */}
+                            {entry.lastEditedAt && (
+                              <FiRefreshCw className="h-4 w-4 text-orange-500" title="Fee was regenerated" />
+                            )}
+                          </div>
                         </td>
                       </>
                     )}
@@ -442,7 +479,7 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
         </table>
       </div>
 
-      {/* Generate Fee Modal */}
+      {/* Generate/Regenerate Fee Modal */}
       {selectedEntry && (
         <GenerateFeeModal
           isOpen={isGenerateModalOpen}
@@ -450,7 +487,7 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
             setIsGenerateModalOpen(false);
             setSelectedEntry(null);
           }}
-          onGenerate={handleGenerateFee}
+          onGenerate={selectedEntry.status === 'not_generated' ? handleGenerateFee : handleRegenerateFee}
           month={selectedEntry.month}
           calendarYear={selectedEntry.calendarYear}
           label={selectedEntry.label}

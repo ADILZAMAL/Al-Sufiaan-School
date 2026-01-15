@@ -230,3 +230,98 @@ export const getStudentsByClass = async (req: Request, res: Response) => {
     return sendError(res, 'Failed to fetch students', 500);
   }
 };
+
+// Get students with payment reminders
+export const getStudentsWithPaymentReminders = async (req: Request, res: Response) => {
+  try {
+    const schoolId = req.schoolId;
+    if (!schoolId) {
+      return sendError(res, 'School ID not found in request');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const students = await Student.findAll({
+      where: {
+        schoolId,
+        paymentReminderDate: {
+          [Op.not]: null,
+          [Op.lte]: today
+        }
+      },
+      include: [
+        { association: 'school', attributes: ['id', 'name'] },
+        { association: 'class', attributes: ['id', 'name'] },
+        { association: 'section', attributes: ['id', 'name'] },
+        { association: 'creator', attributes: ['firstName', 'lastName'] }
+      ]
+    });
+
+    return sendSuccess(res, students, 'Students with payment reminders retrieved successfully');
+  } catch (error) {
+    console.error('Error fetching students with payment reminders:', error);
+    return sendError(res, 'Failed to fetch students with payment reminders', 500);
+  }
+};
+
+// Update payment reminder for a student
+export const updatePaymentReminder = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { paymentReminderDate, paymentRemainderRemarks } = req.body;
+
+    const student = await Student.findByPk(id);
+    if (!student) {
+      return sendError(res, 'Student not found', 404);
+    }
+
+    // Check if this is a clear operation (both fields null/empty)
+    const isClearing = 
+      (paymentReminderDate === null || paymentReminderDate === '' || paymentReminderDate === undefined) &&
+      (paymentRemainderRemarks === null || paymentRemainderRemarks === '' || paymentRemainderRemarks === undefined);
+
+    // If not clearing, date is required
+    if (!isClearing) {
+      // Validate that date is provided
+      if (!paymentReminderDate || paymentReminderDate === null || paymentReminderDate === '') {
+        return sendError(res, 'Reminder date is required. Please select a date.', 400);
+      }
+
+      // Validate that date is not in the past
+      const selectedDate = new Date(paymentReminderDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        return sendError(res, 'Cannot set payment reminder for past dates. Please select today or a future date.', 400);
+      }
+    }
+
+    // Update only payment reminder fields
+    const updateData: any = {};
+    if (paymentReminderDate !== undefined) {
+      updateData.paymentReminderDate = paymentReminderDate === null || paymentReminderDate === '' ? null : paymentReminderDate;
+    }
+    if (paymentRemainderRemarks !== undefined) {
+      updateData.paymentRemainderRemarks = paymentRemainderRemarks === null || paymentRemainderRemarks === '' ? null : paymentRemainderRemarks;
+    }
+
+    await student.update(updateData);
+
+    const updatedStudent = await Student.findByPk(id, {
+      include: [
+        { association: 'school', attributes: ['id', 'name'] },
+        { association: 'class', attributes: ['id', 'name'] },
+        { association: 'section', attributes: ['id', 'name'] },
+        { association: 'creator', attributes: ['firstName', 'lastName'] }
+      ]
+    });
+
+    return sendSuccess(res, updatedStudent, 'Payment reminder updated successfully');
+  } catch (error) {
+    console.error('Error updating payment reminder:', error);
+    return sendError(res, 'Failed to update payment reminder', 500);
+  }
+};

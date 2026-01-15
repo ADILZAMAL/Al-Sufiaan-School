@@ -30,7 +30,6 @@ const StudentPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await studentApi.getStudents();
-      console.log("testing", response)
       setStudents(response || []);
     } catch (error) {
       console.error('Failed to fetch students:', error);

@@ -5,7 +5,8 @@ import {
   getStudentFeeTimelineController,
   collectFeePaymentController,
   getAllIncomingPayments,
-  verifyPaymentController
+  verifyPaymentController,
+  regenerateMonthlyFee
 } from '../controllers/monthlyFee';
 
 const router = Router();
@@ -29,6 +30,13 @@ router.post(
   '/students/:studentId/fees/:monthlyFeeId/payments',
   verifyToken,
   collectFeePaymentController
+);
+
+// Regenerate monthly fee for a student
+router.post(
+  '/students/:studentId/fees/:monthlyFeeId/regenerate',
+  verifyToken,
+  regenerateMonthlyFee
 );
 
 // Get all incoming payments

@@ -78,6 +78,8 @@ class Student extends Model {
   public hostel!: boolean;
   public areaTransportationId?: number; // Foreign Key to TransportationAreaPricing
   public createdBy!: number; //Foreign Key
+  public paymentReminderDate?: Date; // Payment reminder date
+  public paymentRemainderRemarks?: string; // Payment reminder remarks
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -376,6 +378,14 @@ Student.init(
       },
       onUpdate: 'CASCADE',
       onDelete: 'RESTRICT',
+    },
+    paymentReminderDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    paymentRemainderRemarks: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
     createdAt: {
       type: DataTypes.DATE,

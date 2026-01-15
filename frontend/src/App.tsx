@@ -25,6 +25,7 @@ import ClassFeePricing from "./features/fees/pages/ClassFeePricing"
 import FeeLayout from "./features/fees/pages/FeeLayout"
 import TransportationAreaPricing from "./features/transportation/pages/TransportationAreaPricing"
 import IncomingPayments from "./features/fees/pages/IncomingPayments"
+import PaymentReminder from "./features/fees/pages/PaymentReminder"
 import UserManagement from "./features/users/pages/UserManagement"
 import StudentPage from "./features/students/pages/StudentPage"
 import ViewStudentProfile from "./features/students/pages/ViewStudentProfile"
@@ -145,6 +146,10 @@ const router = createBrowserRouter([
           {
             path: "incoming-payments",
             element: <IncomingPayments />
+          },
+          {
+            path: "payment-reminder",
+            element: <PaymentReminder />
           }
         ]
       },
