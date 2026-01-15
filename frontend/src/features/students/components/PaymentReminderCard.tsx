@@ -43,29 +43,32 @@ const PaymentReminderCard: React.FC<PaymentReminderCardProps> = ({ student, onUp
   );
 
   const handleSave = () => {
+    // Validate that a date is required
+    if (!reminderDate || reminderDate.trim() === '') {
+      showToast({ 
+        message: 'Reminder date is required. Please select a date.', 
+        type: 'ERROR' 
+      });
+      return;
+    }
+
     // Validate that date is not in the past
-    if (reminderDate) {
-      const selectedDate = new Date(reminderDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      selectedDate.setHours(0, 0, 0, 0);
-      
-      if (selectedDate < today) {
-        showToast({ 
-          message: 'Cannot set payment reminder for past dates. Please select today or a future date.', 
-          type: 'ERROR' 
-        });
-        return;
-      }
+    const selectedDate = new Date(reminderDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    if (selectedDate < today) {
+      showToast({ 
+        message: 'Cannot set payment reminder for past dates. Please select today or a future date.', 
+        type: 'ERROR' 
+      });
+      return;
     }
 
     const data: { paymentReminderDate?: string | null; paymentRemainderRemarks?: string | null } = {};
     
-    if (reminderDate) {
-      data.paymentReminderDate = reminderDate;
-    } else {
-      data.paymentReminderDate = null;
-    }
+    data.paymentReminderDate = reminderDate;
     
     if (remarks.trim()) {
       data.paymentRemainderRemarks = remarks.trim();
@@ -155,10 +158,11 @@ const PaymentReminderCard: React.FC<PaymentReminderCardProps> = ({ student, onUp
               value={reminderDate}
               onChange={(e) => setReminderDate(e.target.value)}
               min={getTodayDate()}
+              required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Leave empty to clear reminder. Select today or a future date. Reminders with dates on or before today will appear in the Payment Reminder dashboard.
+              <span className="text-red-600 font-medium">* Required.</span> Select today or a future date. Reminders with dates on or before today will appear in the Payment Reminder dashboard.
             </p>
           </div>
 

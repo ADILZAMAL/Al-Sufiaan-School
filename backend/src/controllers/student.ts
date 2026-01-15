@@ -276,8 +276,19 @@ export const updatePaymentReminder = async (req: Request, res: Response) => {
       return sendError(res, 'Student not found', 404);
     }
 
-    // Validate that date is not in the past
-    if (paymentReminderDate !== undefined && paymentReminderDate !== null && paymentReminderDate !== '') {
+    // Check if this is a clear operation (both fields null/empty)
+    const isClearing = 
+      (paymentReminderDate === null || paymentReminderDate === '' || paymentReminderDate === undefined) &&
+      (paymentRemainderRemarks === null || paymentRemainderRemarks === '' || paymentRemainderRemarks === undefined);
+
+    // If not clearing, date is required
+    if (!isClearing) {
+      // Validate that date is provided
+      if (!paymentReminderDate || paymentReminderDate === null || paymentReminderDate === '') {
+        return sendError(res, 'Reminder date is required. Please select a date.', 400);
+      }
+
+      // Validate that date is not in the past
       const selectedDate = new Date(paymentReminderDate);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
