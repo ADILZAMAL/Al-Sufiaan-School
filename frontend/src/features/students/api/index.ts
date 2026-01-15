@@ -294,10 +294,7 @@ export const studentApi = {
   },
 
   // Update payment reminder for a student
-  updatePaymentReminder: async (studentId: number, reminderData: {
-    paymentReminderDate?: string | null;
-    paymentRemainderRemarks?: string | null;
-  }): Promise<StudentResponse> => {
+  updatePaymentReminder: async (studentId: number, reminderData: UpdatePaymentReminderRequest): Promise<StudentResponse> => {
     return await apiRequest(`/students/${studentId}/payment-reminder`, {
       method: 'PATCH',
       body: JSON.stringify(reminderData),
