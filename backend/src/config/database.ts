@@ -21,6 +21,7 @@ import {initStudentModel} from "../models/Student"
 import {initStudentMonthlyFeeModel} from "../models/StudentMonthlyFee"
 import {initStudentMonthlyFeeItemModel} from "../models/StudentMonthlyFeeItem"
 import {initStudentFeePaymentModel} from "../models/StudentFeePayment"
+import {initAttendanceModel} from "../models/Attendance"
 import "dotenv/config";
 
 const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER || '', process.env.DB_PASSWORD, {
@@ -59,6 +60,7 @@ initStudentModel(sequelize);
 initStudentMonthlyFeeModel(sequelize);
 initStudentMonthlyFeeItemModel(sequelize);
 initStudentFeePaymentModel(sequelize);
+initAttendanceModel(sequelize);
 //Sync the Model with the database
 sequelize.sync()
     .then(() => {

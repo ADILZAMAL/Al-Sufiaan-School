@@ -42,7 +42,8 @@ export const login = async (req: Request, res: Response) => {
       maxAge: 86400000,
     });
 
-    sendSuccess(res, { userId: user.id, schoolId: user.schoolId, role: user.role }, 'Login successful');
+    // Also return token in response body for mobile apps
+    sendSuccess(res, { userId: user.id, schoolId: user.schoolId, role: user.role, token }, 'Login successful');
   } catch (error) {
     console.log(error);
     sendError(res, 'Something went wrong');

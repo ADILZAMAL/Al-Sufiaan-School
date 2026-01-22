@@ -2,8 +2,36 @@ import express, { Request, Response } from 'express'
 import verifyToken from '../middleware/auth'
 import { check, validationResult } from 'express-validator'
 import Section from '../models/Section'
+import { sendSuccess, sendError } from '../utils/response';
 
 const router = express.Router();
+
+// GET sections by classId
+router.get("/", verifyToken, async (req: Request, res: Response) => {
+    try {
+        const { classId } = req.query;
+        const schoolId = req.schoolId;
+
+        if (!schoolId) {
+            return sendError(res, 'School ID not found in request', 400);
+        }
+
+        const whereClause: any = { schoolId };
+        if (classId) {
+            whereClause.classId = classId;
+        }
+
+        const sections = await Section.findAll({
+            where: whereClause,
+            order: [['name', 'ASC']],
+        });
+
+        return sendSuccess(res, sections, 'Sections retrieved successfully');
+    } catch (error) {
+        console.error('Error fetching sections:', error);
+        return sendError(res, 'Failed to fetch sections', 500);
+    }
+});
 
 router.post("/", verifyToken,
     [

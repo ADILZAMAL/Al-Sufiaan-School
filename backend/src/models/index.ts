@@ -20,6 +20,7 @@ import Student from './Student';
 import StudentMonthlyFee from './StudentMonthlyFee';
 import StudentMonthlyFeeItem from './StudentMonthlyFeeItem';
 import StudentFeePayment from './StudentFeePayment';
+import Attendance from './Attendance';
 
 // School associations
 School.hasMany(User, { foreignKey: 'schoolId', as: 'users' });
@@ -37,12 +38,14 @@ School.hasMany(VendorPayment, { foreignKey: 'schoolId', as: 'vendorPayments' });
 School.hasMany(ClassFeePricing, { foreignKey: 'schoolId', as: 'classFeePricing' });
 School.hasMany(TransportationAreaPricing, { foreignKey: 'schoolId', as: 'transportationAreaPricing' });
 School.hasMany(Student, { foreignKey: 'schoolId', as: 'students' });
+School.hasMany(Attendance, { foreignKey: 'schoolId', as: 'attendances' });
 
 // User associations
 User.belongsTo(School, { foreignKey: 'schoolId', as: 'School' });
 User.hasMany(Expense, { foreignKey: 'userId', as: 'expenses' });
 User.hasMany(Payslip, { foreignKey: 'generatedBy', as: 'generatedPayslips' });
 User.hasMany(PayslipPayment, { foreignKey: 'paidBy', as: 'paymentsMade' });
+User.hasMany(Attendance, { foreignKey: 'markedBy', as: 'markedAttendances' });
 
 // Class associations
 Class.belongsTo(School, { foreignKey: 'schoolId', as: 'classSchool' });
@@ -149,6 +152,7 @@ School.hasMany(StudentMonthlyFee, { foreignKey: 'schoolId', as: 'studentMonthlyF
 
 // Additional Student associations
 Student.hasMany(StudentMonthlyFee, { foreignKey: 'studentId', as: 'monthlyFees' });
+Student.hasMany(Attendance, { foreignKey: 'studentId', as: 'attendances' });
 
 // StudentFeePayment associations
 StudentFeePayment.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
@@ -162,4 +166,9 @@ Student.hasMany(StudentFeePayment, { foreignKey: 'studentId', as: 'feePayments' 
 StudentMonthlyFee.hasMany(StudentFeePayment, { foreignKey: 'studentMonthlyFeeId', as: 'payments' });
 School.hasMany(StudentFeePayment, { foreignKey: 'schoolId', as: 'studentFeePayments' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, ClassFeePricing, TransportationAreaPricing, Student, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment };
+// Attendance associations
+Attendance.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+Attendance.belongsTo(User, { foreignKey: 'markedBy', as: 'markedByUser' });
+Attendance.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, ClassFeePricing, TransportationAreaPricing, Student, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance };

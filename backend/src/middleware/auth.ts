@@ -12,14 +12,23 @@ declare global {
 }
 
 const verifyToken = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies["auth_token"];
+  // Check for token in cookies (web) or Authorization header (mobile)
+  let token = req.cookies["auth_token"];
+  
+  // If no cookie token, check Authorization header (for mobile apps)
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
   
   // Debug logging
   console.log('Auth middleware - Cookies received:', req.cookies);
   console.log('Auth middleware - Token:', token ? 'Present' : 'Missing');
   
   if (!token) {
-    console.log('Auth middleware - No token found in cookies');
+    console.log('Auth middleware - No token found in cookies or Authorization header');
     return res.status(401).json({ message: "unauthorized" });
   }
 
