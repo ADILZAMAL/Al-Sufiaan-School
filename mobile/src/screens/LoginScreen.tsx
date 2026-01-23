@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -50,6 +51,13 @@ const LoginScreen: React.FC = () => {
       style={styles.container}
     >
       <View style={styles.content}>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../../assets/school-logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
         <Text style={styles.title}>Al-Sufiaan School</Text>
         <Text style={styles.subtitle}>Attendance System</Text>
 
@@ -102,6 +110,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  logo: {
+    width: 150,
+    height: 150,
   },
   title: {
     fontSize: 32,

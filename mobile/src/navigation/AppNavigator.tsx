@@ -1,5 +1,6 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import { Image, View, Text, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import ClassSelectionScreen from '../screens/ClassSelectionScreen';
@@ -16,6 +17,29 @@ export type RootStackParamList = {
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
+
+const HeaderLogo = () => (
+  <View style={headerStyles.container}>
+    <Image
+      source={require('../../assets/school-logo.png')}
+      style={headerStyles.logo}
+      resizeMode="contain"
+    />
+  </View>
+);
+
+const headerStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 32,
+    height: 32,
+    marginRight: 8,
+  },
+});
 
 const AppNavigator: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -34,6 +58,7 @@ const AppNavigator: React.FC = () => {
         headerTitleStyle: {
           fontWeight: 'bold',
         },
+        headerTitle: () => <HeaderLogo />,
       }}
     >
       {!isAuthenticated ? (

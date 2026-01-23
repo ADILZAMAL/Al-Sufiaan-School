@@ -1,11 +1,13 @@
 {
   "expo": {
-    "name": "Al-Sufiaan Attendance",
+    "name": "Al Sufiaan School",
     "slug": "alsufiaan-attendance",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/school-logo.png",
     "splash": {
+      "image": "./assets/school-logo.png",
       "backgroundColor": "#3b82f6",
       "resizeMode": "contain"
     },
