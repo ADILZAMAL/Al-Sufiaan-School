@@ -49,8 +49,11 @@ export default function AttendanceCalendar({ studentId }: AttendanceCalendarProp
   };
 
   const formatDate = (day: number): string => {
-    const date = new Date(selectedYear, selectedMonth, day);
-    return date.toISOString().split('T')[0];
+    // Format manually to avoid timezone conversion issues
+    const year = selectedYear;
+    const month = String(selectedMonth + 1).padStart(2, '0'); // Months are 0-indexed
+    const dayStr = String(day).padStart(2, '0');
+    return `${year}-${month}-${dayStr}`;
   };
 
   const getRecordForDate = (dateStr: string): AttendanceCalendarRecord | null => {
