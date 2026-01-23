@@ -30,6 +30,8 @@ import UserManagement from "./features/users/pages/UserManagement"
 import StudentPage from "./features/students/pages/StudentPage"
 import ViewStudentProfile from "./features/students/pages/ViewStudentProfile"
 import SchoolSettings from "./features/general/pages/SchoolSettings"
+import Holidays from "./features/attendance/pages/Holidays"
+import AttendanceDashboard from "./features/attendance/pages/AttendanceDashboard"
 
 
 const router = createBrowserRouter([
@@ -169,6 +171,14 @@ const router = createBrowserRouter([
             element: <ViewStudentProfile />
           }
         ]
+      },
+      {
+        path: "attendance",
+        element: <AttendanceDashboard />
+      },
+      {
+        path: "holidays",
+        element: <Holidays />
       },
       {
         path: "school-settings",

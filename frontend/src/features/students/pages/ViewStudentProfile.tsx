@@ -9,6 +9,7 @@ import EditStudentModal from '../components/EditStudentModal';
 import AdmissionFormModal from '../components/AdmissionFormModal';
 import FeeTimeline from '../components/FeeTimeline';
 import PaymentReminderCard from '../components/PaymentReminderCard';
+import AttendanceCalendar from '../../attendance/components/AttendanceCalendar';
 
 const formatDateOnly = (iso: string) =>
   new Date(iso).toLocaleDateString('en-CA', {
@@ -286,6 +287,15 @@ const ViewStudentProfile: React.FC = () => {
               }}
               school={school}
             />
+          </div>
+
+          {/* Attendance Calendar Section */}
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center pb-2 border-b border-gray-200">
+              <FiCalendar className="h-5 w-5 mr-2 text-orange-600" />
+              Attendance Calendar
+            </h3>
+            <AttendanceCalendar studentId={Number(id)} />
           </div>
 
           {/* Payment Reminder Section */}

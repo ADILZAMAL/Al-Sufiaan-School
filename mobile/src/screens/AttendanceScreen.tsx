@@ -291,7 +291,7 @@ const AttendanceScreen: React.FC = () => {
             disableBottomSwipe
             backgroundColor="transparent"
             cardVerticalMargin={0}
-            marginTop={20}
+             marginTop={20}
             marginBottom={80}
           />
         </View>

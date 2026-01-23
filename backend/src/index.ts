@@ -22,6 +22,7 @@ import transportationAreaPricingRouter from './routes/transportationAreaPricing'
 import studentRouter from './routes/student'
 import monthlyFeeRouter from './routes/monthlyFee'
 import attendanceRouter from './routes/attendance'
+import holidayRouter from './routes/holiday'
 import sequelize from './config/database';
 import './models'; // Import for associations
 import cookieParser from "cookie-parser";
@@ -35,7 +36,6 @@ app.use(cors({
     origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) {
-            console.log('CORS: Allowing request with no origin');
             return callback(null, true);
         }
         
@@ -50,17 +50,11 @@ app.use(cors({
             'https://www.alsufiaanschool.in',
             // Environment variable (fallback)
             process.env.FRONTEND_URL
-        ].filter(Boolean);
-        
-        console.log(`CORS: Checking origin: ${origin}`);
-        console.log(`CORS: Allowed origins: ${allowedOrigins.join(', ')}`);
-        
+        ].filter(Boolean); 
         if (allowedOrigins.includes(origin)) {
-            console.log(`CORS: Origin ${origin} is allowed`);
             return callback(null, true);
         }
         
-        console.error(`CORS: Origin ${origin} is NOT allowed`);
         return callback(new Error(`CORS policy violation: Origin ${origin} is not allowed`));
     },
     credentials: true,
@@ -116,6 +110,7 @@ app.use('/api/transportation-area-pricing', transportationAreaPricingRouter)
 app.use('/api/students', studentRouter)
 app.use('/api/fees', monthlyFeeRouter)
 app.use('/api/attendance', attendanceRouter)
+app.use('/api/holidays', holidayRouter)
 
 app.listen(7000, async () => {
     console.log("Server is running on port 7000")

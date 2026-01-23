@@ -8,7 +8,9 @@ import {
   getAttendanceById,
   updateAttendance,
   getAttendanceStats,
+  getAllAttendanceStats,
   getStudentsWithAttendance,
+  getStudentAttendanceCalendar,
 } from '../controllers/attendance';
 
 const router = Router();
@@ -128,7 +130,9 @@ const getAttendanceStatsValidation = [
 router.post('/', verifyToken, bulkMarkAttendanceValidation, bulkMarkAttendance);
 router.get('/', verifyToken, getAttendanceQueryValidation, getAttendance);
 router.get('/stats', verifyToken, getAttendanceStatsValidation, getAttendanceStats);
+router.get('/stats/all', verifyToken, getAllAttendanceStats);
 router.get('/students/:classId/:sectionId', verifyToken, getStudentsWithAttendance);
+router.get('/calendar/:studentId', verifyToken, getStudentAttendanceCalendar);
 router.get('/:id', verifyToken, getAttendanceById);
 router.put('/:id', verifyToken, updateAttendanceValidation, updateAttendance);
 
