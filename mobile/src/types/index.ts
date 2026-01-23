@@ -85,3 +85,15 @@ export interface BulkAttendanceResponse {
     error: string;
   }>;
 }
+
+export interface Holiday {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  reason?: string | null;
+  schoolId: number;
+  createdBy: number;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -20,6 +20,11 @@
       "package": "com.alsufiaanschool.attendance",
       "backgroundColor": "#3b82f6"
     },
-    "web": {}
+    "web": {},
+    "extra": {
+      "eas": {
+        "projectId": "09ebdba5-d51d-405b-a0e1-95b840e8152b"
+      }
+    }
   }
 }

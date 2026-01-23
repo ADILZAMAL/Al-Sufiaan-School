@@ -25,7 +25,7 @@ const getBaseURL = () => {
   }
   
   // Production
-  return 'https://alsufiaanschool.in/api';
+  return 'https://al-sufiaan-school-backend.onrender.com/api';
 };
 
 const BASE_URL = getBaseURL();

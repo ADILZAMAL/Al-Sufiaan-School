@@ -13,6 +13,7 @@ import { Section } from '../types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import { useAuth } from '../context/AuthContext';
 
 type SectionSelectionScreenRouteProp = RouteProp<RootStackParamList, 'SectionSelection'>;
 type SectionSelectionScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SectionSelection'>;
@@ -21,6 +22,7 @@ const SectionSelectionScreen: React.FC = () => {
   const route = useRoute<SectionSelectionScreenRouteProp>();
   const navigation = useNavigation<SectionSelectionScreenNavigationProp>();
   const { classId, className } = route.params;
+  const { logout } = useAuth();
 
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,12 @@ const SectionSelectionScreen: React.FC = () => {
       const data = await sectionsApi.getSectionsByClass(classId);
       setSections(data);
     } catch (err: any) {
+      // Check if error is unauthorized (401)
+      if (err.response?.status === 401) {
+        // Logout and redirect to login (AppNavigator will handle navigation)
+        await logout();
+        return;
+      }
       setError(err.response?.data?.message || 'Failed to load sections');
       console.error('Error loading sections:', err);
     } finally {
