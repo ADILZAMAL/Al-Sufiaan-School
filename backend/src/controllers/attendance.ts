@@ -19,177 +19,161 @@ const isHolidayCheck = async (schoolId: number, date: Date): Promise<Holiday | n
 
 // Bulk mark attendance
 export const bulkMarkAttendance = async (req: Request, res: Response) => {
-  console.log(req.body);
-  const errors = validationResult(req);
-  console.log("testing 2", errors.array());
-  if (!errors.isEmpty()) {
-    return sendError(res, 'Validation failed', 400, errors.array());
+  const errorsResult = validationResult(req);
+  if (!errorsResult.isEmpty()) {
+    return sendError(res, 'Validation failed', 400, errorsResult.array());
   }
 
+  const { attendances, date } = req.body;
+  const schoolId = req.schoolId;
+  const userId = req.userId;
 
-  const transaction = await sequelize.transaction();
+  if (!schoolId || !userId) {
+    return sendError(res, 'School ID or User ID not found in request', 400);
+  }
 
-  try {
-    const { attendances, date } = req.body;
-    const schoolId = req.schoolId;
-    const userId = req.userId;
+  if (!Array.isArray(attendances) || attendances.length === 0) {
+    return sendError(res, 'Attendances array is required and cannot be empty', 400);
+  }
 
-    if (!schoolId || !userId) {
-      await transaction.rollback();
-      return sendError(res, 'School ID or User ID not found in request', 400);
-    }
-    if (!Array.isArray(attendances) || attendances.length === 0) {
-      await transaction.rollback();
-      return sendError(res, 'Attendances array is required and cannot be empty', 400);
-    }
+  if (!date) {
+    return sendError(res, 'Date is required', 400);
+  }
 
-    if (!date) {
-      await transaction.rollback();
-      return sendError(res, 'Date is required', 400);
-    }
+  // Normalize date
+  const attendanceDate = new Date(date);
+  attendanceDate.setHours(0, 0, 0, 0);
 
-    // Validate date is not in the future
-    const attendanceDate = new Date(date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    attendanceDate.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    if (attendanceDate > today) {
-      await transaction.rollback();
-      return sendError(res, 'Cannot mark attendance for future dates', 400);
-    }
+  if (attendanceDate > today) {
+    return sendError(res, 'Cannot mark attendance for future dates', 400);
+  }
 
-    // Check if the date is a holiday
-    const holiday = await isHolidayCheck(parseInt(String(schoolId)), attendanceDate);
-    if (holiday) {
-      await transaction.rollback();
-      return sendError(
-        res,
-        `Cannot mark attendance on holiday: ${holiday.name}`,
-        400
-      );
-    }
+  // Holiday check (NO transaction)
+  const holiday = await isHolidayCheck(Number(schoolId), attendanceDate);
+  if (holiday) {
+    return sendError(
+      res,
+      `Cannot mark attendance on holiday: ${holiday.name}`,
+      400
+    );
+  }
 
-    const results: any[] = [];
-    const errors: any[] = [];
-    let successCount = 0;
-    let failedCount = 0;
+  const studentIds = attendances.map((a: any) => a.studentId);
 
-    for (const attendance of attendances) {
-      try {
-        const { studentId, status, remarks } = attendance;
+  // Fetch students in ONE query
+  const students = await Student.findAll({
+    where: {
+      id: { [Op.in]: studentIds },
+      schoolId,
+    },
+  });
 
-        if (!studentId || !status) {
-          errors.push({
-            studentId: studentId || null,
-            error: 'Student ID and status are required',
-          });
-          failedCount++;
-          continue;
-        }
+  const studentMap = new Map(students.map(s => [s.id, s]));
 
-        // Verify student belongs to the school
-        const student = await Student.findOne({
-          where: { id: studentId, schoolId },
-          transaction,
-        });
+  let successCount = 0;
+  let failedCount = 0;
+  const resultAttendances: any[] = [];
+  const errors: any[] = [];
 
-        if (!student) {
-          errors.push({
-            studentId,
-            error: 'Student not found or does not belong to this school',
-          });
-          failedCount++;
-          continue;
-        }
-
-        // Check if attendance already exists
-        const existingAttendance = await Attendance.findOne({
-          where: {
-            studentId,
-            date,
-            schoolId,
-          },
-          transaction,
-        });
-
-        if (existingAttendance) {
-          // Update existing attendance
-          await existingAttendance.update(
-            {
-              status,
-              markedBy: userId,
-              remarks: remarks || null,
-            },
-            { transaction }
-          );
-          results.push(existingAttendance);
-        } else {
-          // Create new attendance
-          const newAttendance = await Attendance.create(
-            {
-              studentId,
-              date,
-              status,
-              markedBy: userId,
-              schoolId,
-              remarks: remarks || null,
-            },
-            { transaction }
-          );
-          results.push(newAttendance);
-        }
-        successCount++;
-      } catch (error: any) {
-        errors.push({
-          studentId: attendance.studentId,
-          error: error.message || 'Failed to process attendance',
-        });
-        failedCount++;
-      }
-    }
-
-    if (failedCount > 0 && successCount === 0) {
-      await transaction.rollback();
-      return sendError(res, 'All attendance records failed', 400, { errors });
-    }
-
-    await transaction.commit();
-
-    // Fetch created/updated attendances with student details
-    const attendanceIds = results.map((r) => r.id);
-    const attendancesWithDetails = await Attendance.findAll({
+  // ✅ Managed transaction (auto commit / rollback)
+  await sequelize.transaction(async (transaction) => {
+    // Fetch existing attendance in bulk
+    const existingAttendances = await Attendance.findAll({
       where: {
-        id: { [Op.in]: attendanceIds },
+        studentId: { [Op.in]: studentIds },
+        date,
+        schoolId,
       },
-      include: [
-        {
-          association: 'student',
-          attributes: ['id', 'firstName', 'lastName', 'rollNumber'],
-        },
-        {
-          association: 'markedByUser',
-          attributes: ['id', 'firstName', 'lastName'],
-        },
-      ],
+      transaction,
     });
 
-
-    return sendSuccess(
-      res,
-      {
-        success: successCount,
-        failed: failedCount,
-        attendances: attendancesWithDetails,
-        errors: errors.length > 0 ? errors : undefined,
-      },
-      `Attendance marked successfully for ${successCount} student(s)${failedCount > 0 ? `. ${failedCount} failed.` : ''}`
+    const attendanceMap = new Map(
+      existingAttendances.map(a => [a.studentId, a])
     );
-  } catch (error: any) {
-    await transaction.rollback();
-    console.error('Error marking attendance:', error);
-    return sendError(res, 'Failed to mark attendance', 500);
-  }
+
+    for (const entry of attendances) {
+      const { studentId, status, remarks } = entry;
+
+      if (!studentId || !status) {
+        errors.push({ studentId, error: 'Student ID and status are required' });
+        failedCount++;
+        continue;
+      }
+
+      if (!studentMap.has(studentId)) {
+        errors.push({
+          studentId,
+          error: 'Student not found or does not belong to this school',
+        });
+        failedCount++;
+        continue;
+      }
+
+      const existing = attendanceMap.get(studentId);
+
+      if (existing) {
+        await existing.update(
+          {
+            status,
+            remarks: remarks || null,
+            markedBy: userId,
+          },
+          { transaction }
+        );
+        resultAttendances.push(existing);
+      } else {
+        const created = await Attendance.create(
+          {
+            studentId,
+            date,
+            status,
+            remarks: remarks || null,
+            markedBy: userId,
+            schoolId,
+          },
+          { transaction }
+        );
+        resultAttendances.push(created);
+      }
+
+      successCount++;
+    }
+
+    if (successCount === 0) {
+      throw new Error('All attendance records failed');
+    }
+  });
+
+  // Fetch enriched response AFTER commit
+  const attendancesWithDetails = await Attendance.findAll({
+    where: { id: resultAttendances.map(a => a.id) },
+    include: [
+      {
+        association: 'student',
+        attributes: ['id', 'firstName', 'lastName', 'rollNumber'],
+      },
+      {
+        association: 'markedByUser',
+        attributes: ['id', 'firstName', 'lastName'],
+      },
+    ],
+  });
+
+  return sendSuccess(
+    res,
+    {
+      success: successCount,
+      failed: failedCount,
+      attendances: attendancesWithDetails,
+      errors: errors.length ? errors : undefined,
+    },
+    `Attendance marked successfully for ${successCount} student(s)${
+      failedCount ? `. ${failedCount} failed.` : ''
+    }`
+  );
 };
 
 // Get attendance records
