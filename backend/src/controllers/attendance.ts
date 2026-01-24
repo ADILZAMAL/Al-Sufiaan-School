@@ -24,7 +24,7 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
     return sendError(res, 'Validation failed', 400, errorsResult.array());
   }
 
-  const { attendances, date } = req.body;
+  const { attendances } = req.body;
   const schoolId = req.schoolId;
   const userId = req.userId;
 
@@ -36,20 +36,9 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
     return sendError(res, 'Attendances array is required and cannot be empty', 400);
   }
 
-  if (!date) {
-    return sendError(res, 'Date is required', 400);
-  }
-
   // Normalize date
-  const attendanceDate = new Date(date);
+  const attendanceDate = new Date();
   attendanceDate.setHours(0, 0, 0, 0);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  if (attendanceDate > today) {
-    return sendError(res, 'Cannot mark attendance for future dates', 400);
-  }
 
   // Holiday check (NO transaction)
   const holiday = await isHolidayCheck(Number(schoolId), attendanceDate);
@@ -84,8 +73,8 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
     const existingAttendances = await Attendance.findAll({
       where: {
         studentId: { [Op.in]: studentIds },
-        date,
         schoolId,
+        date: attendanceDate,
       },
       transaction,
     });
@@ -128,11 +117,11 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
         const created = await Attendance.create(
           {
             studentId,
-            date,
             status,
             remarks: remarks || null,
             markedBy: userId,
             schoolId,
+            date: attendanceDate,
           },
           { transaction }
         );

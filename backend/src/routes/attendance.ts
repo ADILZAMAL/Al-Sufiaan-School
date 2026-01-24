@@ -17,22 +17,6 @@ const router = Router();
 
 // Validation rules for bulk marking attendance
 const bulkMarkAttendanceValidation = [
-  body('date')
-    .notEmpty()
-    .withMessage('Date is required')
-    .isISO8601()
-    .withMessage('Date must be a valid date format (YYYY-MM-DD)')
-    .toDate()
-    .custom((value) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const selectedDate = new Date(value);
-      selectedDate.setHours(0, 0, 0, 0);
-      if (selectedDate > today) {
-        throw new Error('Cannot mark attendance for future dates');
-      }
-      return true;
-    }),
   body('attendances')
     .isArray({ min: 1 })
     .withMessage('Attendances array is required and must contain at least one record'),

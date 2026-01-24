@@ -68,7 +68,6 @@ export interface LoginResponse {
 }
 
 export interface BulkAttendanceRequest {
-  date: string;
   attendances: Array<{
     studentId: number;
     status: AttendanceStatus;

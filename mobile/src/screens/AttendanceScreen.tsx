@@ -161,7 +161,6 @@ const AttendanceScreen: React.FC = () => {
     setSaving(true);
     try {
       const today = new Date();
-      const dateString = formatDate(today);
       const attendances: BulkAttendanceRequest['attendances'] = Array.from(attendanceState.entries()).map(
         ([studentId, status]) => ({
           studentId,
@@ -171,7 +170,6 @@ const AttendanceScreen: React.FC = () => {
       );
 
       const requestData: BulkAttendanceRequest = {
-        date: dateString,
         attendances,
       };
 
