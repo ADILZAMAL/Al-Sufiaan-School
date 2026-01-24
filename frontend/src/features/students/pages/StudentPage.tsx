@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from 'react-query';
 import { FaPlus, FaSearch, FaUserGraduate } from "react-icons/fa";
 import { FiUsers, FiTrendingUp, FiUserCheck } from 'react-icons/fi';
 import StudentList from '../components/StudentList';
@@ -7,16 +8,10 @@ import EditStudentModal from '../components/EditStudentModal';
 import DeleteStudentModal from '../components/DeleteStudentModal';
 import { Student, Gender } from '../types';
 import { studentApi } from '../api';
-
-interface ClassData {
-  id: number;
-  name: string;
-  sections: Array<{ id: number; name: string }>;
-}
+import { fetchClasses, ClassType, SectionType } from '../../class/api';
 
 const StudentPage: React.FC = () => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -24,39 +19,20 @@ const StudentPage: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
-  const [classes, setClasses] = useState<ClassData[]>([]);
 
-  const fetchStudents = async () => {
-    setLoading(true);
-    try {
-      const response = await studentApi.getStudents();
-      setStudents(response || []);
-    } catch (error) {
-      console.error('Failed to fetch students:', error);
-      setStudents([]);
-    } finally {
-      setLoading(false);
+  const { data: students = [], isLoading: loading } = useQuery<Student[]>(
+    'fetchStudents',
+    () => studentApi.getStudents(),
+    {
+      staleTime: 5 * 60 * 1000,
+      keepPreviousData: true,
     }
-  };
+  );
 
-  const fetchClasses = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/classes`, {
-        credentials: 'include',
-      });
-      const data = await response.json();
-      if (data.success) {
-        setClasses(data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch classes:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchStudents();
-    fetchClasses();
-  }, []);
+  const { data: classes = [] } = useQuery<ClassType[]>(
+    'fetchClasses',
+    fetchClasses
+  );
 
   const handleAddStudent = () => {
     setShowAddModal(true);
@@ -81,7 +57,7 @@ const StudentPage: React.FC = () => {
 
   const handleSuccess = () => {
     handleModalClose();
-    fetchStudents();
+    queryClient.invalidateQueries('fetchStudents');
   };
 
   const filteredStudents = students.filter(student => {
@@ -101,7 +77,7 @@ const StudentPage: React.FC = () => {
   });
 
   // Get sections for selected class
-  const availableSections = selectedClassId 
+  const availableSections: SectionType[] = selectedClassId 
     ? classes.find(c => c.id === selectedClassId)?.sections || []
     : [];
 

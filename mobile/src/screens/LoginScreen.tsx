@@ -9,12 +9,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import SchoolLogo from '../../assets/school-logo.svg';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -52,11 +52,7 @@ const LoginScreen: React.FC = () => {
     >
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <Image
-            source={require('../../assets/school-logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <SchoolLogo width={150} height={150} />
         </View>
         <Text style={styles.title}>Al-Sufiaan School</Text>
         <Text style={styles.subtitle}>Attendance System</Text>

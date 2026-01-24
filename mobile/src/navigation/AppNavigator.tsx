@@ -1,12 +1,13 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Image, View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import ClassSelectionScreen from '../screens/ClassSelectionScreen';
 import SectionSelectionScreen from '../screens/SectionSelectionScreen';
 import AttendanceScreen from '../screens/AttendanceScreen';
 import LoadingScreen from '../screens/LoadingScreen';
+import SchoolLogo from '../../assets/school-logo.svg';
 
 export type RootStackParamList = {
   Loading: undefined;
@@ -20,11 +21,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 const HeaderLogo = () => (
   <View style={headerStyles.container}>
-    <Image
-      source={require('../../assets/school-logo.png')}
-      style={headerStyles.logo}
-      resizeMode="contain"
-    />
+    <SchoolLogo width={32} height={32} />
   </View>
 );
 
