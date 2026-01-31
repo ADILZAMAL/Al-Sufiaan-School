@@ -7,7 +7,8 @@ import {
   getAllIncomingPayments,
   verifyPaymentController,
   regenerateMonthlyFee,
-  getFeeDashboardController
+  getFeeDashboardController,
+  getStudentsWithDuesController
 } from '../controllers/monthlyFee';
 
 const router = Router();
@@ -60,6 +61,13 @@ router.get(
   '/dashboard',
   verifyToken,
   getFeeDashboardController
+);
+
+// Get students with dues for a specific month
+router.get(
+  '/students-with-dues',
+  verifyToken,
+  getStudentsWithDuesController
 );
 
 export default router;

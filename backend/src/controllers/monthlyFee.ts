@@ -923,3 +923,90 @@ export async function getFeeDashboardController(req: Request, res: Response) {
     return sendError(res, 'Failed to fetch fee dashboard data', 500);
   }
 }
+
+// Controller to get students with dues for a specific month
+export async function getStudentsWithDuesController(req: Request, res: Response) {
+  try {
+    const schoolId = parseInt(req.schoolId);
+    const { month, calendarYear } = req.query;
+
+    if (!month || !calendarYear) {
+      return sendError(res, 'Month and calendarYear query parameters are required', 400);
+    }
+
+    const monthNum = parseInt(month as string);
+    const yearNum = parseInt(calendarYear as string);
+
+    if (monthNum < 1 || monthNum > 12) {
+      return sendError(res, 'Invalid month. Must be between 1 and 12', 400);
+    }
+
+    // Validate: Only allow past or present months, not future months
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentYear = now.getFullYear();
+
+    if (yearNum > currentYear || (yearNum === currentYear && monthNum > currentMonth)) {
+      return sendError(res, 'Cannot query future months. Only past or present months are allowed', 400);
+    }
+
+    // Fetch all monthly fees for the specified month/year with student and payment info
+    const monthlyFees = await StudentMonthlyFee.findAll({
+      where: {
+        schoolId,
+        month: monthNum,
+        calendarYear: yearNum,
+      },
+      include: [
+        {
+          model: Student,
+          as: 'student',
+          attributes: ['id', 'firstName', 'lastName', 'admissionNumber', 'email', 'phone', 'studentPhoto', 'classId'],
+          include: [
+            {
+              model: Class,
+              as: 'class',
+              attributes: ['id', 'name'],
+            },
+          ],
+        },
+        {
+          model: StudentFeePayment,
+          as: 'payments',
+          attributes: ['amountPaid'],
+        },
+      ],
+    });
+
+    // Filter students with dues (unpaid or partial payments)
+    const studentsWithDues = monthlyFees
+      .map((fee: any) => {
+        const totalPayable = Number(fee.totalPayableAmount);
+        const paidAmount = fee.payments?.reduce(
+          (sum: number, p: any) => sum + Number(p.amountPaid),
+          0
+        ) || 0;
+        const dueAmount = totalPayable - paidAmount;
+
+        // Only include if there's a due amount
+        if (dueAmount > 0) {
+          return {
+            studentId: fee.studentId,
+            monthlyFeeId: fee.id,
+            student: fee.student,
+            totalPayableAmount: totalPayable,
+            paidAmount,
+            dueAmount,
+            status: fee.status,
+          };
+        }
+        return null;
+      })
+      .filter((item) => item !== null);
+
+    return sendSuccess(res, studentsWithDues, 'Students with dues retrieved successfully');
+  } catch (error) {
+    console.error('Error fetching students with dues:', error);
+    return sendError(res, 'Failed to fetch students with dues', 500);
+  }
+}

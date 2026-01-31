@@ -92,6 +92,12 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				label: 'Payment Reminder',
 				path: 'fee/payment-reminder',
 				icon: <HiOutlineBell />
+			},
+			{
+				key: 'students-with-dues',
+				label: 'Students With Dues',
+				path: 'fee/students-with-dues',
+				icon: <HiOutlineUsers />
 			}
 		]
 	},
