@@ -138,7 +138,7 @@ const StudentsWithDues: React.FC = () => {
         </div>
 
         {/* Loading State */}
-        {isLoading && (
+        {isLoading === true && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-red-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading students with dues...</p>
@@ -146,7 +146,7 @@ const StudentsWithDues: React.FC = () => {
         )}
 
         {/* Error State */}
-        {error && (
+        {error !== null && error !== undefined && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <div className="bg-red-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
               <FiAlertCircle className="h-8 w-8 text-red-600" />

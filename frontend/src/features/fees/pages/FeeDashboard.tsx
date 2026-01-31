@@ -167,7 +167,7 @@ export default function FeeDashboard() {
                   </td>
                 </tr>
               ) : (
-                monthlyStats.map((stat, index) => {
+                monthlyStats.map((stat, _) => {
                   const collectionRate = stat.totalGenerated > 0
                     ? ((stat.totalCollected / stat.totalGenerated) * 100).toFixed(1)
                     : '0.0';
