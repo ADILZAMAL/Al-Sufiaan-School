@@ -6,7 +6,8 @@ import {
   collectFeePaymentController,
   getAllIncomingPayments,
   verifyPaymentController,
-  regenerateMonthlyFee
+  regenerateMonthlyFee,
+  getFeeDashboardController
 } from '../controllers/monthlyFee';
 
 const router = Router();
@@ -52,6 +53,13 @@ router.post(
   verifyToken,
   requireRole(['SUPER_ADMIN', 'ADMIN']),
   verifyPaymentController
+);
+
+// Get fee dashboard data for last 12 months
+router.get(
+  '/dashboard',
+  verifyToken,
+  getFeeDashboardController
 );
 
 export default router;

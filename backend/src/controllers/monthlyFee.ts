@@ -836,3 +836,90 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
     return sendError(res, "Failed to regenerate monthly fee", 500);
   }
 }
+
+// Controller to get fee dashboard data for last 12 months
+export async function getFeeDashboardController(req: Request, res: Response) {
+  try {
+    const schoolId = parseInt(req.schoolId);
+    
+    // Calculate last 12 months (from current month going backwards)
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentYear = now.getFullYear();
+    
+    const months: Array<{ month: number; calendarYear: number }> = [];
+    
+    for (let i = 0; i < 12; i++) {
+      let month = currentMonth - i;
+      let year = currentYear;
+      
+      // Handle year boundaries
+      while (month <= 0) {
+        month += 12;
+        year -= 1;
+      }
+      
+      months.push({ month, calendarYear: year });
+    }
+    
+    // Build where clause for all month/year combinations
+    const whereConditions = months.map(m => ({
+      month: m.month,
+      calendarYear: m.calendarYear,
+    }));
+    
+    // Fetch all monthly fees for these months with payments, filtered by schoolId
+    const monthlyFees = await StudentMonthlyFee.findAll({
+      where: {
+        schoolId,
+        [Op.or]: whereConditions,
+      },
+      include: [
+        {
+          model: StudentFeePayment,
+          as: 'payments',
+          attributes: ['amountPaid'],
+        },
+      ],
+    });
+    
+    // Calculate stats for each month
+    const monthlyStats = months.map(({ month, calendarYear }) => {
+      // Find fees for this month
+      const feesForMonth = monthlyFees.filter(
+        (fee) => fee.month === month && fee.calendarYear === calendarYear
+      );
+      
+      // Calculate total generated
+      const totalGenerated = feesForMonth.reduce(
+        (sum, fee) => sum + Number(fee.totalPayableAmount),
+        0
+      );
+      
+      // Calculate total collected
+      const totalCollected = feesForMonth.reduce((sum, fee) => {
+        const paymentsSum = fee.payments?.reduce(
+          (paymentSum: number, payment: any) => paymentSum + Number(payment.amountPaid),
+          0
+        ) || 0;
+        return sum + paymentsSum;
+      }, 0);
+      
+      // Calculate total due
+      const totalDue = totalGenerated - totalCollected;
+      
+      return {
+        month,
+        calendarYear,
+        totalGenerated,
+        totalCollected,
+        totalDue,
+      };
+    });
+    
+    return sendSuccess(res, monthlyStats, 'Fee dashboard data retrieved successfully');
+  } catch (error) {
+    console.error('Error fetching fee dashboard:', error);
+    return sendError(res, 'Failed to fetch fee dashboard data', 500);
+  }
+}

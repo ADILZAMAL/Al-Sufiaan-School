@@ -26,6 +26,7 @@ import FeeLayout from "./features/fees/pages/FeeLayout"
 import TransportationAreaPricing from "./features/transportation/pages/TransportationAreaPricing"
 import IncomingPayments from "./features/fees/pages/IncomingPayments"
 import PaymentReminder from "./features/fees/pages/PaymentReminder"
+import FeeDashboard from "./features/fees/pages/FeeDashboard"
 import UserManagement from "./features/users/pages/UserManagement"
 import StudentPage from "./features/students/pages/StudentPage"
 import ViewStudentProfile from "./features/students/pages/ViewStudentProfile"
@@ -136,6 +137,10 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <ClassFeePricing />
+          },
+          {
+            path: "dashboard",
+            element: <FeeDashboard />
           },
           {
             path: "class-pricing",
