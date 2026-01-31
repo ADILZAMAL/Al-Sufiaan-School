@@ -160,7 +160,7 @@ export default function AttendanceDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {classStatsList.map((item, index) => (
+                {classStatsList.map((item, _) => (
                   <tr key={`${item.classId}-${item.sectionId}`} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {item.className}
