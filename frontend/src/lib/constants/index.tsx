@@ -20,12 +20,6 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				icon: <HiOutlineChartBar />
 			},
 			{
-				key: 'expense-settings',
-				label: 'Settings',
-				path: 'expense/settings',
-				icon: <HiOutlineCog />
-			},
-			{
 				key: 'vendors',
 				label: 'Vendors',
 				path: 'expense/vendors',
@@ -68,18 +62,6 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				label: 'Fee Dashboard',
 				path: 'fee/dashboard',
 				icon: <HiOutlineChartBar />
-			},
-			{
-				key: 'class-pricing',
-				label: 'Class Pricing',
-				path: 'fee/class-pricing',
-				icon: <HiOutlineChartBar />
-			},
-			{
-				key: 'transportation-pricing',
-				label: 'Transportation Pricing',
-				path: 'fee/transportation-pricing',
-				icon: <HiOutlineTruck />
 			},
 			{
 				key: 'incoming-payments',
