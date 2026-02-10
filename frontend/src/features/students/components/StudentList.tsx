@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FiUser, FiPhone, FiMail } from 'react-icons/fi';
 import { Student, Gender } from '../types';
 
@@ -12,10 +12,13 @@ const StudentList: React.FC<StudentListProps> = ({
   students, 
   loading = false
 }) => {
-  const navigate =  useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleView = (student: Student) => {
-    navigate(`/dashboard/students/${student.id}`);
+    // Preserve current search params when navigating to student profile
+    const searchParams = location.search;
+    navigate(`/dashboard/students/${student.id}${searchParams}`);
   };
 
   const getFullName = (student: Student) => {

@@ -10,7 +10,7 @@ const Dashboard: React.FC = () => {
     if (!isLoggedIn)
         navigate("/sign-in");
     return (
-        <div className="bg-neutral-100 h-screen w-screen flex flex-row">
+        <div className="bg-neutral-100 flex flex-row">
             <Sidebar />
             <div className="flex flex-col flex-1 min-w-0">
                 <div className="flex items-center p-4 bg-white border-b border-gray-200">

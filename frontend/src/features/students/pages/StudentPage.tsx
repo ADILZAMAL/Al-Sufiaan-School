@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
+import { useSearchParams } from 'react-router-dom';
 import { FaPlus, FaSearch, FaUserGraduate } from "react-icons/fa";
 import { FiUsers, FiTrendingUp, FiUserCheck } from 'react-icons/fi';
 import StudentList from '../components/StudentList';
@@ -12,13 +13,23 @@ import { fetchClasses, ClassType, SectionType } from '../../class/api';
 
 const StudentPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isInitialMount = useRef(true);
+  
+  // Initialize state from URL params
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
-  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(() => {
+    const classId = searchParams.get('classId');
+    return classId ? parseInt(classId) : null;
+  });
+  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(() => {
+    const sectionId = searchParams.get('sectionId');
+    return sectionId ? parseInt(sectionId) : null;
+  });
 
   const { data: students = [], isLoading: loading } = useQuery<Student[]>(
     'fetchStudents',
@@ -33,6 +44,28 @@ const StudentPage: React.FC = () => {
     'fetchClasses',
     fetchClasses
   );
+
+  // Update URL params when filters change
+  useEffect(() => {
+    // Skip on initial mount since we already initialized from URL params
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const params = new URLSearchParams();
+    if (searchTerm) params.set('search', searchTerm);
+    if (selectedClassId !== null) params.set('classId', selectedClassId.toString());
+    if (selectedSectionId !== null) params.set('sectionId', selectedSectionId.toString());
+    
+    // Only update if params actually changed to avoid unnecessary updates
+    const newParams = params.toString();
+    const currentParams = searchParams.toString();
+    if (currentParams !== newParams) {
+      setSearchParams(params, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, selectedClassId, selectedSectionId]);
 
   const handleAddStudent = () => {
     setShowAddModal(true);
@@ -92,6 +125,7 @@ const StudentPage: React.FC = () => {
   const handleClearFilters = () => {
     setSelectedClassId(null);
     setSelectedSectionId(null);
+    setSearchTerm('');
   };
 
   // Statistics cards data

@@ -36,7 +36,7 @@ const Sidebar: React.FC = () => {
     return (
 		<div className={classNames(
             "bg-gray-50 p-3 flex flex-col font-sans border-r border-gray-200 transition-all duration-300 ease-in-out",
-            isSidebarOpen ? "w-64" : "w-16"
+            isSidebarOpen ? "w-64" : "w-24"
         )}>
 			<div className="flex items-center gap-3 px-1 py-3">
 				<img src="/img/school-logo.png" alt="Al Sufiaan School" className="w-12 h-12 flex-shrink-0" />
@@ -46,7 +46,7 @@ const Sidebar: React.FC = () => {
                     </span>
                 )}
 			</div>
-			<div className="py-8 flex flex-1 flex-col gap-4">
+			<div className="py-8 flex flex-col gap-4">
 
 				{DASHBOARD_SIDEBAR_LINKS.map((link) => (
 					<SidebarLink 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBriefcase, FiUserCheck, FiClock, FiEdit, FiDollarSign, FiPrinter, FiCheckCircle } from 'react-icons/fi';
 import { useQuery } from "react-query";
 import { getStudentById, getStudentFeeTimeline } from '../api';
@@ -28,8 +28,12 @@ const getCreator = (student: Student) => {
 const ViewStudentProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAdmissionFormOpen, setIsAdmissionFormOpen] = useState(false);
+  
+  // Extract search params from current location to preserve filters
+  const searchParams = location.search;
 
   const { data: student, isLoading, error, refetch } = useQuery({
     queryKey: ['student', id],
@@ -89,7 +93,7 @@ const ViewStudentProfile: React.FC = () => {
         </div>
         <h3 className="text-lg font-medium text-gray-900">Student not found</h3>
         <button
-          onClick={() => navigate('/dashboard/students')}
+          onClick={() => navigate(`/dashboard/students${searchParams}`)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           Back to Students
