@@ -264,7 +264,7 @@ const SchoolSettings: React.FC = () => {
         });
         showToast({ message: 'Class pricing created successfully!', type: 'SUCCESS' });
       },
-      onError: (error: Error) => {
+      onError: (error: any) => {
         showToast({ message: error.message || 'Failed to create class pricing', type: 'ERROR' });
       }
     });
@@ -303,7 +303,7 @@ const SchoolSettings: React.FC = () => {
             });
             showToast({ message: 'Transportation pricing updated successfully!', type: 'SUCCESS' });
           },
-          onError: (error: Error) => {
+          onError: (error: any) => {
             showToast({ message: error.message || 'Failed to update transportation pricing', type: 'ERROR' });
           }
         });
@@ -320,7 +320,7 @@ const SchoolSettings: React.FC = () => {
             });
             showToast({ message: 'Transportation pricing created successfully!', type: 'SUCCESS' });
           },
-          onError: (error: Error) => {
+          onError: (error: any) => {
             showToast({ message: error.message || 'Failed to create transportation pricing', type: 'ERROR' });
           }
         });
@@ -350,7 +350,7 @@ const SchoolSettings: React.FC = () => {
           onSuccess: () => {
             showToast({ message: 'Transportation pricing deleted successfully!', type: 'SUCCESS' });
           },
-          onError: (error: Error) => {
+          onError: (error: any) => {
             showToast({ message: error.message || 'Failed to delete transportation pricing', type: 'ERROR' });
           }
         });

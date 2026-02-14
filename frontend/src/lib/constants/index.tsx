@@ -1,4 +1,4 @@
-import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCog, HiOutlineCurrencyDollar, HiOutlineTruck, HiOutlineUserCircle, HiOutlineAcademicCap, HiOutlineLibrary, HiOutlineBell, HiOutlineCalendar, HiOutlineSun } from 'react-icons/hi'
+import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCurrencyDollar, HiOutlineUserCircle, HiOutlineAcademicCap, HiOutlineLibrary, HiOutlineBell, HiOutlineCalendar, HiOutlineSun } from 'react-icons/hi'
 
 export const DASHBOARD_SIDEBAR_LINKS = [
 	{
