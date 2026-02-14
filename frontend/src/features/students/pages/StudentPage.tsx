@@ -128,12 +128,12 @@ const StudentPage: React.FC = () => {
     setSearchTerm('');
   };
 
-  // Statistics cards data
+  // Statistics cards data - based on filtered students
   const stats = {
-    total: students.length,
-    active: students.filter(s => !s.deletedAt).length,
-    male: students.filter(s => s.gender === Gender.MALE).length,
-    female: students.filter(s => s.gender === Gender.FEMALE).length,
+    total: filteredStudents.length,
+    active: filteredStudents.filter(s => !s.deletedAt).length,
+    male: filteredStudents.filter(s => s.gender === Gender.MALE).length,
+    female: filteredStudents.filter(s => s.gender === Gender.FEMALE).length,
   };
 
   return (
