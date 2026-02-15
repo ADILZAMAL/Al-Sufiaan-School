@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import {FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBriefcase, FiUserCheck, FiClock, FiEdit, FiDollarSign, FiPrinter, FiCheckCircle } from 'react-icons/fi';
+import {FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBriefcase, FiUserCheck, FiClock, FiEdit, FiDollarSign, FiPrinter, FiCheckCircle, FiXCircle, FiUserX } from 'react-icons/fi';
 import { useQuery } from "react-query";
-import { getStudentById, getStudentFeeTimeline } from '../api';
+import { getStudentById, getStudentFeeTimeline, markStudentLeftSchool } from '../api';
 import { getSchoolById } from '../../../api/school';
 import { Student } from '../types';
 import EditStudentModal from '../components/EditStudentModal';
@@ -10,6 +10,7 @@ import AdmissionFormModal from '../components/AdmissionFormModal';
 import FeeTimeline from '../components/FeeTimeline';
 import PaymentReminderCard from '../components/PaymentReminderCard';
 import AttendanceCalendar from '../../attendance/components/AttendanceCalendar';
+import { useAppContext } from '../../../providers/AppContext';
 
 const formatDateOnly = (iso: string) =>
   new Date(iso).toLocaleDateString('en-CA', {
@@ -29,8 +30,10 @@ const ViewStudentProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { showToast } = useAppContext();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAdmissionFormOpen, setIsAdmissionFormOpen] = useState(false);
+  const [isMarkingLeftSchool, setIsMarkingLeftSchool] = useState(false);
   
   // Extract search params from current location to preserve filters
   const searchParams = location.search;
@@ -71,6 +74,38 @@ const ViewStudentProfile: React.FC = () => {
 
   const handleFeeTimelineRefresh = () => {
     refetchTimeline();
+  };
+
+  const handleMarkLeftSchool = async () => {
+    if (!student) return;
+
+    const isActive = student.active !== false;
+    const action = isActive ? 'mark as left school' : 'mark as active';
+    const confirmMessage = isActive 
+      ? `Are you sure you want to mark ${student.firstName} ${student.lastName} as left school? This will disable fee generation and attendance tracking.`
+      : `Are you sure you want to mark ${student.firstName} ${student.lastName} as active?`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    setIsMarkingLeftSchool(true);
+    try {
+      await markStudentLeftSchool(Number(id), !isActive);
+      showToast({ 
+        message: `Student ${!isActive ? 'marked as active' : 'marked as left school'} successfully`, 
+        type: 'SUCCESS' 
+      });
+      refetch();
+      refetchTimeline();
+    } catch (error: any) {
+      showToast({ 
+        message: error.message || `Failed to ${action}`, 
+        type: 'ERROR' 
+      });
+    } finally {
+      setIsMarkingLeftSchool(false);
+    }
   };
 
   if (isLoading) {
@@ -127,6 +162,25 @@ const ViewStudentProfile: React.FC = () => {
                 <FiEdit className="h-4 w-4" />
                 <span>Edit Profile</span>
               </button>
+              {student.active !== false ? (
+                <button
+                  onClick={handleMarkLeftSchool}
+                  disabled={isMarkingLeftSchool}
+                  className="flex items-center space-x-2 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FiUserX className="h-4 w-4" />
+                  <span>{isMarkingLeftSchool ? 'Processing...' : 'Mark as Left School'}</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleMarkLeftSchool}
+                  disabled={isMarkingLeftSchool}
+                  className="flex items-center space-x-2 px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FiCheckCircle className="h-4 w-4" />
+                  <span>{isMarkingLeftSchool ? 'Processing...' : 'Mark as Active'}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -290,6 +344,7 @@ const ViewStudentProfile: React.FC = () => {
                 fatherName: student.fatherName,
               }}
               school={school}
+              studentActive={student.active !== false}
             />
           </div>
 
@@ -299,7 +354,7 @@ const ViewStudentProfile: React.FC = () => {
               <FiCalendar className="h-5 w-5 mr-2 text-orange-600" />
               Attendance Calendar
             </h3>
-            <AttendanceCalendar studentId={Number(id)} />
+            <AttendanceCalendar studentId={Number(id)} studentActive={student.active !== false} />
           </div>
 
           {/* Payment Reminder Section */}

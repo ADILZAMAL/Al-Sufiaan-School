@@ -40,6 +40,7 @@ export const studentApi = {
     if (filters.classId) params.append('classId', filters.classId.toString());
     if (filters.sectionId) params.append('sectionId', filters.sectionId.toString());
     if (filters.gender) params.append('gender', filters.gender);
+    if (filters.active !== undefined) params.append('active', filters.active.toString());
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
     const body = await apiRequest(`/students?${params.toString()}`);
@@ -299,6 +300,14 @@ export const studentApi = {
       method: 'PATCH',
       body: JSON.stringify(reminderData),
     });
+  },
+
+  // Mark student as left school
+  markLeftSchool: async (id: number, active: boolean = false): Promise<StudentResponse> => {
+    return await apiRequest(`/students/${id}/left-school`, {
+      method: 'PUT',
+      body: JSON.stringify({ active }),
+    });
   }
 };
 
@@ -317,3 +326,4 @@ export const collectFeePayment = studentApi.collectFeePayment;
 export const regenerateMonthlyFee = studentApi.regenerateMonthlyFee;
 export const getStudentsWithPaymentReminders = studentApi.getStudentsWithPaymentReminders;
 export const updatePaymentReminder = studentApi.updatePaymentReminder;
+export const markStudentLeftSchool = studentApi.markLeftSchool;

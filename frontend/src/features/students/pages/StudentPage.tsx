@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { useSearchParams } from 'react-router-dom';
 import { FaPlus, FaSearch, FaUserGraduate } from "react-icons/fa";
-import { FiUsers, FiTrendingUp, FiUserCheck } from 'react-icons/fi';
+import { FiUsers, FiTrendingUp } from 'react-icons/fi';
 import StudentList from '../components/StudentList';
 import AddStudentModal from '../components/AddStudentModal';
 import EditStudentModal from '../components/EditStudentModal';
@@ -30,10 +30,15 @@ const StudentPage: React.FC = () => {
     const sectionId = searchParams.get('sectionId');
     return sectionId ? parseInt(sectionId) : null;
   });
+  const [activeFilter, setActiveFilter] = useState<boolean>(() => {
+    const active = searchParams.get('active');
+    return active === null ? true : active === 'true';
+  });
 
+  // Load all students on initial load - no filtering on backend
   const { data: students = [], isLoading: loading } = useQuery<Student[]>(
     'fetchStudents',
-    () => studentApi.getStudents(),
+    () => studentApi.getStudents({}),
     {
       staleTime: 5 * 60 * 1000,
       keepPreviousData: true,
@@ -57,6 +62,7 @@ const StudentPage: React.FC = () => {
     if (searchTerm) params.set('search', searchTerm);
     if (selectedClassId !== null) params.set('classId', selectedClassId.toString());
     if (selectedSectionId !== null) params.set('sectionId', selectedSectionId.toString());
+    if (activeFilter !== true) params.set('active', activeFilter.toString());
     
     // Only update if params actually changed to avoid unnecessary updates
     const newParams = params.toString();
@@ -65,7 +71,7 @@ const StudentPage: React.FC = () => {
       setSearchParams(params, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, selectedClassId, selectedSectionId]);
+  }, [searchTerm, selectedClassId, selectedSectionId, activeFilter]);
 
   const handleAddStudent = () => {
     setShowAddModal(true);
@@ -90,12 +96,13 @@ const StudentPage: React.FC = () => {
 
   const handleSuccess = () => {
     handleModalClose();
-    queryClient.invalidateQueries('fetchStudents');
+    queryClient.invalidateQueries(['fetchStudents']);
   };
 
   const filteredStudents = students.filter(student => {
     // Search filter
     const matchesSearch = 
+      !searchTerm ||
       student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase());
@@ -106,7 +113,10 @@ const StudentPage: React.FC = () => {
     // Section filter
     const matchesSection = selectedSectionId === null || student.sectionId === selectedSectionId;
     
-    return matchesSearch && matchesClass && matchesSection;
+    // Active filter
+    const matchesActive = student.active === activeFilter;
+    
+    return matchesSearch && matchesClass && matchesSection && matchesActive;
   });
 
   // Get sections for selected class
@@ -126,14 +136,16 @@ const StudentPage: React.FC = () => {
     setSelectedClassId(null);
     setSelectedSectionId(null);
     setSearchTerm('');
+    setActiveFilter(true);
   };
 
   // Statistics cards data - based on filtered students
   const stats = {
     total: filteredStudents.length,
-    active: filteredStudents.filter(s => !s.deletedAt).length,
+    active: filteredStudents.filter(s => s.active).length,
     male: filteredStudents.filter(s => s.gender === Gender.MALE).length,
     female: filteredStudents.filter(s => s.gender === Gender.FEMALE).length,
+    totalDue: filteredStudents.reduce((sum, student) => sum + (student.totalDue || 0), 0),
   };
 
   return (
@@ -177,21 +189,6 @@ const StudentPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Students</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.active}</p>
-                <p className="text-sm text-blue-600 mt-2">
-                  {((stats.active / stats.total) * 100).toFixed(1)}% of total
-                </p>
-              </div>
-              <div className="bg-green-100 p-3 rounded-lg">
-                <FiUserCheck className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="text-sm font-medium text-gray-600">Male Students</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">{stats.male}</p>
                 <p className="text-sm text-gray-600 mt-2">
@@ -215,6 +212,20 @@ const StudentPage: React.FC = () => {
               </div>
               <div className="bg-pink-100 p-3 rounded-lg">
                 <div className="w-6 h-6 bg-pink-600 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Due</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  ₹{stats.totalDue.toLocaleString('en-IN')}
+                </p>
+                <p className="text-sm text-orange-600 mt-2">
+                  Outstanding fees
+                </p>
               </div>
             </div>
           </div>
@@ -266,7 +277,18 @@ const StudentPage: React.FC = () => {
                 </select>
               </div>
               
-              {(selectedClassId !== null || selectedSectionId !== null) && (
+              <div className="flex flex-col">
+                <select
+                  value={activeFilter ? 'active' : 'inactive'}
+                  onChange={(e) => setActiveFilter(e.target.value === 'active')}
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              
+              {(selectedClassId !== null || selectedSectionId !== null || activeFilter !== true) && (
                 <button
                   type="button"
                   onClick={handleClearFilters}

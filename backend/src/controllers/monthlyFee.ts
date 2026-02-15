@@ -74,6 +74,10 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
       return sendError(res, "Student not found", 404);
     }
 
+    if (!student.active) {
+      return sendError(res, "Cannot generate fee for student who has left school", 400);
+    }
+
     if (!student.classId) {
       return sendError(res, "Student is not assigned to any class", 400);
     }

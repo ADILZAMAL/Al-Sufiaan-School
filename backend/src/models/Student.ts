@@ -80,10 +80,10 @@ class Student extends Model {
   public createdBy!: number; //Foreign Key
   public paymentReminderDate?: Date; // Payment reminder date
   public paymentRemainderRemarks?: string; // Payment reminder remarks
+  public active!: boolean; // Whether student is active (has not left school)
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
-  public readonly deletedAt?: Date;
 
   // Virtual field for full name
   get fullName(): string {
@@ -386,6 +386,11 @@ Student.init(
     paymentRemainderRemarks: {
       type: DataTypes.TEXT,
       allowNull: true,
+    },
+    active: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
     },
     createdAt: {
       type: DataTypes.DATE,

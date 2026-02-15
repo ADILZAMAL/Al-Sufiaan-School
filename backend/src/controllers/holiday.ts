@@ -41,8 +41,31 @@ export const checkHolidayOverlap = async (
   return !!overlappingHoliday;
 };
 
-// Check if a specific date is a holiday
+// Helper function to check if a date is Sunday
+const isSunday = (date: Date): boolean => {
+  const dayOfWeek = date.getDay();
+  return dayOfWeek === 0; // 0 = Sunday
+};
+
+// Check if a specific date is a holiday (including Sundays)
 export const isHoliday = async (schoolId: number, date: Date): Promise<Holiday | null> => {
+  // First check if it's a Sunday
+  if (isSunday(date)) {
+    // Return a virtual Sunday holiday object
+    return {
+      id: -1, // Special ID for Sunday
+      schoolId,
+      startDate: date,
+      endDate: date,
+      name: 'Sunday',
+      reason: 'Weekly holiday',
+      createdBy: -1,
+      createdAt: date,
+      updatedAt: date,
+    } as Holiday;
+  }
+
+  // Check database holidays
   const holiday = await Holiday.findOne({
     where: {
       schoolId,
@@ -69,16 +92,24 @@ export const createHoliday = async (req: Request, res: Response) => {
       return sendError(res, 'School ID or User ID not found in request', 400);
     }
 
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
     // Validate endDate is not before startDate
-    if (new Date(endDate) < new Date(startDate)) {
+    if (end < start) {
       return sendError(res, 'End date must be equal to or after start date', 400);
+    }
+
+    // Prevent creating single-day holidays on Sunday
+    if (start.getTime() === end.getTime() && start.getDay() === 0) {
+      return sendError(res, 'Cannot create a holiday on Sunday. Sundays are automatically considered holidays.', 400);
     }
 
     // Check for overlapping holidays
     const hasOverlap = await checkHolidayOverlap(
       parseInt(String(schoolId)),
-      new Date(startDate),
-      new Date(endDate)
+      start,
+      end
     );
 
     if (hasOverlap) {
@@ -101,7 +132,7 @@ export const createHoliday = async (req: Request, res: Response) => {
   }
 };
 
-// Get all holidays for a school
+// Get all holidays for a school (excluding single-day Sunday holidays)
 export const getHolidays = async (req: Request, res: Response) => {
   try {
     const schoolId = req.schoolId;
@@ -142,7 +173,22 @@ export const getHolidays = async (req: Request, res: Response) => {
       ],
     });
 
-    return sendSuccess(res, holidays, 'Holidays retrieved successfully');
+    // Filter out single-day holidays that fall on Sunday
+    // Multi-day holidays (like summer vacation) are always included, even if they contain Sundays
+    const filteredHolidays = holidays.filter((holiday) => {
+      const start = new Date(holiday.startDate);
+      const end = new Date(holiday.endDate);
+      
+      // If it's a single day and it's a Sunday, exclude it
+      if (start.getTime() === end.getTime()) {
+        return start.getDay() !== 0; // Exclude if it's Sunday
+      }
+      
+      // Include all multi-day holidays (vacations, etc.) even if they contain Sundays
+      return true;
+    });
+
+    return sendSuccess(res, filteredHolidays, 'Holidays retrieved successfully');
   } catch (error) {
     console.error('Error fetching holidays:', error);
     return sendError(res, 'Failed to fetch holidays', 500);
@@ -208,15 +254,23 @@ export const updateHoliday = async (req: Request, res: Response) => {
     const newStartDate = startDate || holiday.startDate;
     const newEndDate = endDate || holiday.endDate;
 
-    if (new Date(newEndDate) < new Date(newStartDate)) {
+    const start = new Date(newStartDate);
+    const end = new Date(newEndDate);
+
+    if (end < start) {
       return sendError(res, 'End date must be equal to or after start date', 400);
+    }
+
+    // Prevent updating to a single-day holiday on Sunday
+    if (start.getTime() === end.getTime() && start.getDay() === 0) {
+      return sendError(res, 'Cannot update holiday to Sunday. Sundays are automatically considered holidays.', 400);
     }
 
     // Check for overlapping holidays (excluding current holiday)
     const hasOverlap = await checkHolidayOverlap(
       parseInt(String(schoolId)),
-      new Date(newStartDate),
-      new Date(newEndDate),
+      start,
+      end,
       parseInt(id)
     );
 
@@ -288,7 +342,38 @@ export const checkIsHoliday = async (req: Request, res: Response) => {
       return sendError(res, 'Date is required', 400);
     }
 
-    const holiday = await isHoliday(parseInt(String(schoolId)), new Date(date));
+    const checkDate = new Date(date);
+    
+    // Check if it's a Sunday
+    if (checkDate.getDay() === 0) {
+      return sendSuccess(
+        res,
+        { 
+          isHoliday: true, 
+          holiday: {
+            id: -1,
+            schoolId: parseInt(String(schoolId)),
+            startDate: date,
+            endDate: date,
+            name: 'Sunday',
+            reason: 'Weekly holiday',
+            createdBy: -1,
+            createdAt: checkDate,
+            updatedAt: checkDate,
+          }
+        },
+        'Date is a holiday (Sunday)'
+      );
+    }
+
+    // Check database holidays
+    const holiday = await Holiday.findOne({
+      where: {
+        schoolId: parseInt(String(schoolId)),
+        startDate: { [Op.lte]: checkDate },
+        endDate: { [Op.gte]: checkDate },
+      },
+    });
 
     if (!holiday) {
       return sendSuccess(res, { isHoliday: false }, 'Date is not a holiday');

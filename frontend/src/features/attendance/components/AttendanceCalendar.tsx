@@ -3,9 +3,10 @@ import { getStudentCalendar, type StudentAttendanceCalendar, type AttendanceCale
 
 interface AttendanceCalendarProps {
   studentId: number;
+  studentActive?: boolean;
 }
 
-export default function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
+export default function AttendanceCalendar({ studentId, studentActive = true }: AttendanceCalendarProps) {
   const [calendar, setCalendar] = useState<StudentAttendanceCalendar | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -56,9 +57,39 @@ export default function AttendanceCalendar({ studentId }: AttendanceCalendarProp
     return `${year}-${month}-${dayStr}`;
   };
 
-  const getRecordForDate = (dateStr: string): AttendanceCalendarRecord | null => {
-    if (!calendar) return null;
-    return calendar.attendanceRecords.find(r => r.date === dateStr) || null;
+  const isSunday = (year: number, month: number, day: number): boolean => {
+    const date = new Date(year, month, day);
+    return date.getDay() === 0; // 0 = Sunday
+  };
+
+  const getRecordForDate = (dateStr: string, day?: number): AttendanceCalendarRecord | null => {
+    if (!calendar) {
+      // If no calendar data yet, check if it's a Sunday
+      if (day !== undefined && isSunday(selectedYear, selectedMonth, day)) {
+        return {
+          date: dateStr,
+          status: 'HOLIDAY',
+          name: 'Sunday',
+          reason: 'Weekly holiday',
+        };
+      }
+      return null;
+    }
+    
+    const record = calendar.attendanceRecords.find(r => r.date === dateStr);
+    if (record) return record;
+    
+    // If no record found, check if it's a Sunday
+    if (day !== undefined && isSunday(selectedYear, selectedMonth, day)) {
+      return {
+        date: dateStr,
+        status: 'HOLIDAY',
+        name: 'Sunday',
+        reason: 'Weekly holiday',
+      };
+    }
+    
+    return null;
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -89,6 +120,23 @@ export default function AttendanceCalendar({ studentId }: AttendanceCalendarProp
       <div className="bg-white rounded-lg shadow p-6">
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!studentActive) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Attendance Calendar</h2>
+        <div className="text-center py-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+          </div>
+          <p className="text-gray-600 font-medium">Student has left school</p>
+          <p className="text-sm text-gray-500 mt-2">Attendance tracking is disabled for students who have left school.</p>
         </div>
       </div>
     );
@@ -134,7 +182,7 @@ export default function AttendanceCalendar({ studentId }: AttendanceCalendarProp
         {Array.from({ length: getDaysInMonth(selectedYear, selectedMonth) }).map((_, index) => {
           const day = index + 1;
           const dateStr = formatDate(day);
-          const record = getRecordForDate(dateStr);
+          const record = getRecordForDate(dateStr, day);
 
           return (
             <div

@@ -104,6 +104,9 @@ export interface Student {
   // Payment reminder fields
   paymentReminderDate?: string; // Payment reminder date
   paymentRemainderRemarks?: string; // Payment reminder remarks
+  
+  // Active status
+  active?: boolean; // Whether student is active (has not left school)
 }
 
 // Create Student Request - matches what backend expects
@@ -248,6 +251,7 @@ export interface StudentFilters {
   classId?: number;
   sectionId?: number;
   gender?: Gender;
+  active?: boolean;
   page?: number;
   limit?: number;
   sortBy?: string;

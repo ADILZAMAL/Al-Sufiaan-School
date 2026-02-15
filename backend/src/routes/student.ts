@@ -11,7 +11,8 @@ import {
   deleteStudent,
   getStudentsByClass,
   getStudentsWithPaymentReminders,
-  updatePaymentReminder
+  updatePaymentReminder,
+  markStudentLeftSchool
 } from '../controllers/student';
 import { generateMonthlyFee, getStudentFeeTimelineController, collectFeePaymentController, regenerateMonthlyFee } from '../controllers/monthlyFee';
 
@@ -258,5 +259,8 @@ router.post(
 
 // Update payment reminder (must come after /:id route)
 router.patch('/:id/payment-reminder', verifyToken, updatePaymentReminder);
+
+// Mark student as left school (must come after /:id route)
+router.put('/:id/left-school', verifyToken, markStudentLeftSchool);
 
 export default router;

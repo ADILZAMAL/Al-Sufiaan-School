@@ -15,6 +15,32 @@ export const getAllStudents = async (req: Request, res: Response) => {
 
     const whereClause: any = {schoolId};
 
+    // Handle active filter
+    if (req.query.active !== undefined) {
+      const activeValue = req.query.active;
+      if (activeValue === 'true') {
+        whereClause.active = true;
+      } else if (activeValue === 'false') {
+        whereClause.active = false;
+      }
+    }
+
+    // Handle classId filter
+    if (req.query.classId !== undefined) {
+      const classId = parseInt(req.query.classId as string);
+      if (!isNaN(classId)) {
+        whereClause.classId = classId;
+      }
+    }
+
+    // Handle sectionId filter
+    if (req.query.sectionId !== undefined) {
+      const sectionId = parseInt(req.query.sectionId as string);
+      if (!isNaN(sectionId)) {
+        whereClause.sectionId = sectionId;
+      }
+    }
+
     const students = await Student.findAll({
       where: whereClause,
       include: [
@@ -323,5 +349,40 @@ export const updatePaymentReminder = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating payment reminder:', error);
     return sendError(res, 'Failed to update payment reminder', 500);
+  }
+};
+
+// Mark student as left school
+export const markStudentLeftSchool = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { active } = req.body; // Expect active boolean in request body
+
+    const student = await Student.findByPk(id);
+    if (!student) {
+      return sendError(res, 'Student not found', 404);
+    }
+
+    // Update active status (if active is provided, use it; otherwise toggle to false)
+    const newActiveStatus = active !== undefined ? active : false;
+    await student.update({ active: newActiveStatus });
+
+    const updatedStudent = await Student.findByPk(id, {
+      include: [
+        { association: 'school', attributes: ['id', 'name'] },
+        { association: 'class', attributes: ['id', 'name'] },
+        { association: 'section', attributes: ['id', 'name'] },
+        { association: 'creator', attributes: ['firstName', 'lastName'] }
+      ]
+    });
+
+    const message = newActiveStatus 
+      ? 'Student marked as active successfully' 
+      : 'Student marked as left school successfully';
+
+    return sendSuccess(res, updatedStudent, message);
+  } catch (error) {
+    console.error('Error marking student as left school:', error);
+    return sendError(res, 'Failed to update student status', 500);
   }
 };

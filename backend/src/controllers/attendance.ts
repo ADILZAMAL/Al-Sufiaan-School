@@ -5,8 +5,31 @@ import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
 import sequelize from '../config/database';
 
-// Check if a specific date is a holiday
+// Helper function to check if a date is Sunday
+const isSunday = (date: Date): boolean => {
+  const dayOfWeek = date.getDay();
+  return dayOfWeek === 0; // 0 = Sunday
+};
+
+// Check if a specific date is a holiday (including Sundays)
 const isHolidayCheck = async (schoolId: number, date: Date): Promise<Holiday | null> => {
+  // First check if it's a Sunday
+  if (isSunday(date)) {
+    // Return a virtual Sunday holiday object
+    return {
+      id: -1, // Special ID for Sunday
+      schoolId,
+      startDate: date,
+      endDate: date,
+      name: 'Sunday',
+      reason: 'Weekly holiday',
+      createdBy: -1,
+      createdAt: date,
+      updatedAt: date,
+    } as Holiday;
+  }
+
+  // Check database holidays
   const holiday = await Holiday.findOne({
     where: {
       schoolId,
@@ -577,12 +600,13 @@ export const getStudentsWithAttendance = async (req: Request, res: Response) => 
 
     const attendanceDate = new Date(date as string);
 
-    // Get all students for the class/section
+    // Get all active students for the class/section
     const students = await Student.findAll({
       where: {
         classId: parseInt(classId),
         sectionId: parseInt(sectionId),
         schoolId,
+        active: true, // Only show active students
       },
       include: [
         { association: 'class', attributes: ['id', 'name'] },
@@ -741,6 +765,44 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       }
     });
 
+    // Add all Sundays as holidays (if not already in holiday map or attendance)
+    // Determine date range: from student admission date (or 2 years ago) to today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let startDate: Date;
+    if (student.admissionDate) {
+      startDate = new Date(student.admissionDate);
+      startDate.setHours(0, 0, 0, 0);
+    } else {
+      // If no admission date, go back 2 years
+      startDate = new Date(today);
+      startDate.setFullYear(today.getFullYear() - 2);
+    }
+    
+    // Find the first Sunday on or before the start date
+    const firstSunday = new Date(startDate);
+    const dayOfWeek = firstSunday.getDay();
+    const daysToSubtract = dayOfWeek === 0 ? 0 : dayOfWeek;
+    firstSunday.setDate(firstSunday.getDate() - daysToSubtract);
+    
+    // Add all Sundays from start date to today
+    const currentSunday = new Date(firstSunday);
+    while (currentSunday <= today) {
+      const dateStr = currentSunday.toISOString().split('T')[0];
+      // Only add if not already in holiday map (from database holidays)
+      // Note: We add Sundays even if there's attendance, but attendance will take precedence in merge
+      if (!holidayMap.has(dateStr)) {
+        holidayMap.set(dateStr, {
+          date: dateStr,
+          status: 'HOLIDAY',
+          name: 'Sunday',
+          reason: 'Weekly holiday',
+        });
+      }
+      // Move to next Sunday
+      currentSunday.setDate(currentSunday.getDate() + 7);
+    }
+
     // Merge attendance and holidays into a single array
     const combinedRecords = new Map<string, any>();
 
@@ -768,7 +830,7 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
     const attendancePercentage =
       workingDays > 0 ? ((presentCount / workingDays) * 100).toFixed(2) : '0';
 
-    // Count total holidays
+    // Count total holidays (including Sundays)
     let totalHolidayDays = 0;
     holidays.forEach((h) => {
       const start = new Date(h.startDate);
@@ -776,6 +838,12 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       const diffTime = Math.abs(end.getTime() - start.getTime());
       totalHolidayDays += Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     });
+    
+    // Count Sundays that are in the date range and not already counted in holidays
+    const sundayCount = Array.from(holidayMap.values()).filter((h: any) => 
+      h.name === 'Sunday' && !attendanceMap.has(h.date)
+    ).length;
+    totalHolidayDays += sundayCount;
 
     return sendSuccess(
       res,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus, FiChevronDown, FiChevronRight, FiFileText, FiRefreshCw } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus, FiChevronDown, FiChevronRight, FiFileText, FiRefreshCw, FiXCircle } from 'react-icons/fi';
 import { generateMonthlyFee, collectFeePayment, regenerateMonthlyFee } from '../api';
 import GenerateFeeModal from './GenerateFeeModal';
 import CollectFeeModal from './CollectFeeModal';
@@ -58,6 +58,7 @@ interface FeeTimelineProps {
   onRefresh: () => void;
   student?: StudentInfo;
   school?: School;
+  studentActive?: boolean;
 }
 
 const FeeTimeline: React.FC<FeeTimelineProps> = ({ 
@@ -66,7 +67,8 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
   studentId,
   onRefresh,
   student,
-  school
+  school,
+  studentActive = true
 }) => {
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
@@ -299,16 +301,23 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                     {entry.status === 'not_generated' ? (
                       <>
                         <td colSpan={10} className="px-4 py-3 text-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openGenerateModal(entry);
-                            }}
-                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                          >
-                            <FiPlus className="mr-1 h-4 w-4" />
-                            Generate Fee
-                          </button>
+                          {studentActive ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openGenerateModal(entry);
+                              }}
+                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                            >
+                              <FiPlus className="mr-1 h-4 w-4" />
+                              Generate Fee
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-500 bg-gray-100 rounded-lg">
+                              <FiXCircle className="mr-1 h-4 w-4" />
+                              Student has left school - Fee generation disabled
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-center">
                           {getStatusBadge(entry.status)}
