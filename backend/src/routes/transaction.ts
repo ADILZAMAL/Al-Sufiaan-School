@@ -95,8 +95,24 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = (page - 1) * limit;
 
+    const { paymentMode, status } = req.query;
+
+    const where: any = {
+      schoolId: req.schoolId,
+    };
+
+    if (typeof paymentMode === 'string' && paymentMode.trim() !== '') {
+      where.modeOfPayment = paymentMode.trim();
+    }
+
+    if (status === 'verified') {
+      where.isVerified = true;
+    } else if (status === 'pending') {
+      where.isVerified = false;
+    }
+
     const { count, rows: transactions } = await Transaction.findAndCountAll({
-      where: { schoolId: req.schoolId },
+      where,
       include: [
         {
           model: TransactionItem,

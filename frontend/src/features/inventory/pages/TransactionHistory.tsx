@@ -1,34 +1,33 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import * as apiClient from "../api";
 import { TransactionType } from "../api";
-import { FaChevronDown, FaChevronUp, FaSearch, FaCheck, FaClock, FaCheckCircle } from "react-icons/fa";
+import { FaChevronDown, FaChevronUp, FaCheck, FaClock, FaCheckCircle } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { getCurrentSchool } from "../../../api/school";
 
 const TransactionHistory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedTransactions, setExpandedTransactions] = useState<Set<number>>(new Set());
-  const [searchTerm, setSearchTerm] = useState("");
+  const [paymentModeFilter, setPaymentModeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "verified" | "pending">("all");
   const [verifyingTransactions, setVerifyingTransactions] = useState<Set<number>>(new Set());
   
   const queryClient = useQueryClient();
 
+  const { data: school } = useQuery("currentSchool", getCurrentSchool);
+  const paymentModes: string[] = school?.paymentModes || [];
+
+  const effectivePaymentMode = paymentModeFilter === "all" ? undefined : paymentModeFilter;
+  const effectiveStatus = statusFilter === "all" ? undefined : statusFilter;
+
   const { data: transactionData, isLoading } = useQuery(
-    ["fetchTransactions", currentPage],
-    () => apiClient.fetchTransactions(currentPage, 20),
+    ["fetchTransactions", currentPage, effectivePaymentMode, effectiveStatus],
+    () => apiClient.fetchTransactions(currentPage, 20, effectivePaymentMode, effectiveStatus),
     {
       keepPreviousData: true,
     }
   );
-
-  const filteredTransactions = useMemo(() => {
-    if (!transactionData?.transactions) return [];
-    return transactionData.transactions.filter((transaction: TransactionType) =>
-      transaction.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.className.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.sectionName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [transactionData?.transactions, searchTerm]);
 
   const toggleTransactionExpansion = (transactionId: number) => {
     const newExpanded = new Set(expandedTransactions);
@@ -157,15 +156,45 @@ const TransactionHistory = () => {
             </Link>
           </div>
           <div className="flex items-center gap-4 mt-4 md:mt-0">
-            <div className="relative">
-              <FaSearch className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search transactions..."
-                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex flex-col md:flex-row gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Mode
+                </label>
+                <select
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm bg-white"
+                  value={paymentModeFilter}
+                  onChange={(e) => {
+                    setPaymentModeFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="all">All Modes</option>
+                  {paymentModes.map((mode) => (
+                    <option key={mode} value={mode}>
+                      {mode}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
+                </label>
+                <select
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm bg-white"
+                  value={statusFilter}
+                  onChange={(e) => {
+                    const value = e.target.value as "all" | "verified" | "pending";
+                    setStatusFilter(value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="all">All Status</option>
+                  <option value="verified">Verified</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -211,7 +240,7 @@ const TransactionHistory = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredTransactions.map((transaction: TransactionType) => (
+                    {(transactionData?.transactions || []).map((transaction: TransactionType) => (
                       <React.Fragment key={transaction.id}>
                         <tr 
                           className="hover:bg-gray-50 cursor-pointer"
@@ -304,9 +333,11 @@ const TransactionHistory = () => {
                     ))}
                   </tbody>
                 </table>
-                {filteredTransactions.length === 0 && (
+                {(!transactionData?.transactions || transactionData.transactions.length === 0) && (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? "No transactions found matching your search." : "No transactions found."}
+                    {paymentModeFilter === "all" && statusFilter === "all"
+                      ? "No transactions found."
+                      : "No transactions found for the selected filters."}
                   </div>
                 )}
               </div>

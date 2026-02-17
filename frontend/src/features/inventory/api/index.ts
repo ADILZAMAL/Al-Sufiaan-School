@@ -108,8 +108,25 @@ export const fetchRecentTransactions = async (): Promise<TransactionType[]> => {
     return body.data;
 }
 
-export const fetchTransactions = async (page: number = 1, limit: number = 20) => {
-    const response = await fetch(`${API_BASE_URL}/api/transactions?page=${page}&limit=${limit}`, {
+export const fetchTransactions = async (
+    page: number = 1,
+    limit: number = 20,
+    paymentMode?: string,
+    status?: "verified" | "pending"
+) => {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+
+    if (paymentMode) {
+        params.append("paymentMode", paymentMode);
+    }
+
+    if (status) {
+        params.append("status", status);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/transactions?${params.toString()}`, {
         credentials: "include"
     })
     const body = await response.json();

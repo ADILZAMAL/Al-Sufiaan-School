@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import {FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBriefcase, FiUserCheck, FiClock, FiEdit, FiDollarSign, FiPrinter, FiCheckCircle, FiXCircle, FiUserX } from 'react-icons/fi';
+import {FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBriefcase, FiUserCheck, FiClock, FiEdit, FiDollarSign, FiPrinter, FiCheckCircle, FiUserX } from 'react-icons/fi';
 import { useQuery } from "react-query";
 import { getStudentById, getStudentFeeTimeline, markStudentLeftSchool } from '../api';
 import { getSchoolById } from '../../../api/school';
