@@ -4,6 +4,7 @@ import { login } from '../controllers/auth';
 import { Request, Response } from 'express';
 import verifyToken from '../middleware/auth';
 import { sendSuccess } from '../utils/response';
+import { getAuthCookieClearOptions } from '../utils/cookieOptions';
 
 const router = express.Router();
 
@@ -124,9 +125,9 @@ router.get("/validate-token", verifyToken, (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/AuthResponse'
  */
 router.post("/logout", (req: Request, res: Response) => {
-    res.cookie("auth_token", "", {
-        expires: new Date(0),
-    });
+    // Use the same cookie options as login to ensure proper clearing in cross-site scenarios
+    const cookieOptions = getAuthCookieClearOptions();
+    res.cookie("auth_token", "", cookieOptions);
     sendSuccess(res, {}, 'Signed out');
 });
 

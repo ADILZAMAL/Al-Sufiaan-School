@@ -31,6 +31,10 @@ import { swaggerSpec } from './config/swagger';
 
 const app = express();
 
+// Trust proxy for Render and other hosting platforms
+// This ensures req.secure and req.protocol work correctly behind proxies
+app.set('trust proxy', 1);
+
 // CORS must be configured before other middleware
 app.use(cors({
     origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {

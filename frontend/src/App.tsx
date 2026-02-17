@@ -7,6 +7,7 @@ import Contact from "./features/general/pages/Contact"
 import Fees from "./features/fees/pages/Fees"
 import SignIn from "./features/auth/pages/SignIn"
 import Dashboard from "./components/layout/Dashboard"
+import ProtectedRoute from "./components/routing/ProtectedRoute"
 import Class from "./features/class/pages/Class"
 import Inventory from "./features/inventory/pages/Inventory"
 import ExpenseLayout from "./features/expenses/pages/ExpenseLayout"
@@ -67,8 +68,12 @@ const router = createBrowserRouter([
   },
   {
     path: "/dashboard",
-    element: <Dashboard />,
+    element: <ProtectedRoute />,
     children: [
+      {
+        path: "",
+        element: <Dashboard />,
+        children: [
       {
         path: "expense",
         element: <ExpenseLayout />,
@@ -193,6 +198,8 @@ const router = createBrowserRouter([
       {
         path: "school-settings",
         element: <SchoolSettings />
+      }
+        ]
       }
     ]
   }

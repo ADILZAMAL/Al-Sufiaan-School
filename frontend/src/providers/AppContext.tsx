@@ -11,6 +11,7 @@ type ToastMessage = {
 type AppContext = {
   showToast: (toastMessage: ToastMessage) => void;
   isLoggedIn: boolean;
+  isAuthLoading: boolean;
   userRole: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | null;
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
@@ -26,7 +27,7 @@ export const AppContextProvider = ({
   const [toast, setToast] = useState<ToastMessage | undefined>(undefined);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
-  const { data: userData, isError } = useQuery(
+  const { data: userData, isError, isLoading: isAuthLoading } = useQuery(
     "validateToken",
     apiClient.validateToken,
     {
@@ -44,7 +45,8 @@ export const AppContextProvider = ({
         showToast: (toastMessage) => {
           setToast(toastMessage);
         },
-        isLoggedIn: !isError,
+        isLoggedIn: !!userData?.data, // Check for actual user data, not just absence of error
+        isAuthLoading,
         userRole: userData?.data?.role || null,
         isSidebarOpen,
         toggleSidebar,

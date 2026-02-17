@@ -1,14 +1,9 @@
 import React from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import HamburgerIcon from '../common/HamburgerIcon';
-import { useAppContext } from '../../providers/AppContext';
 
 const Dashboard: React.FC = () => {
-    const { isLoggedIn } = useAppContext();
-    const navigate = useNavigate();
-    if (!isLoggedIn)
-        navigate("/sign-in");
     return (
         <div className="bg-neutral-100 flex flex-row">
             <Sidebar />

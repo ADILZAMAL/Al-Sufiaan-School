@@ -4,6 +4,7 @@ import User from '../models/User';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendError, sendSuccess } from '../utils/response';
+import { getAuthCookieOptions } from '../utils/cookieOptions';
 
 export const login = async (req: Request, res: Response) => {
   const errors = validationResult(req);
@@ -35,12 +36,11 @@ export const login = async (req: Request, res: Response) => {
       }
     );
 
-    res.cookie('auth_token', token, {
-      httpOnly: true,
-      secure: true, // Required when sameSite is 'none'
-      sameSite: 'none',
-      maxAge: 86400000,
-    });
+    const cookieOptions = {
+      ...getAuthCookieOptions(),
+      maxAge: 86400000, // 1 day in milliseconds
+    };
+    res.cookie('auth_token', token, cookieOptions);
 
     // Also return token in response body for mobile apps
     sendSuccess(res, { userId: user.id, schoolId: user.schoolId, role: user.role, token }, 'Login successful');
