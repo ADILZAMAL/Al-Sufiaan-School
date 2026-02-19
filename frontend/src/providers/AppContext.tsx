@@ -27,7 +27,7 @@ export const AppContextProvider = ({
   const [toast, setToast] = useState<ToastMessage | undefined>(undefined);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
-  const { data: userData, isError, isLoading: isAuthLoading } = useQuery(
+  const { data: userData, isLoading: isAuthLoading } = useQuery(
     "validateToken",
     apiClient.validateToken,
     {
