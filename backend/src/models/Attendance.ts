@@ -2,6 +2,7 @@ import { DataTypes, Model, Sequelize } from 'sequelize';
 import School from './School';
 import Student from './Student';
 import User from './User';
+import AcademicSession from './AcademicSession';
 import sequelize from '../config/database';
 
 /* ===========================
@@ -15,6 +16,7 @@ export enum AttendanceStatus {
 class Attendance extends Model {
   public id!: number;
   public studentId!: number; // Foreign Key
+  public sessionId!: number; // Foreign Key
   public date!: Date;
   public status!: AttendanceStatus;
   public markedBy!: number; // Foreign Key to User
@@ -42,6 +44,16 @@ export const initAttendanceModel = (sequelize: Sequelize) => {
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
+      },
+      sessionId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: AcademicSession,
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'RESTRICT',
       },
       date: {
         type: DataTypes.DATEONLY,
@@ -123,6 +135,10 @@ export const initAttendanceModel = (sequelize: Sequelize) => {
         {
           fields: ['status'],
           name: 'attendances_status_index',
+        },
+        {
+          fields: ['sessionId'],
+          name: 'attendances_session_index',
         },
       ],
     }

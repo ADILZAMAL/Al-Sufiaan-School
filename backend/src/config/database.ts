@@ -17,6 +17,8 @@ import {initVendorPaymentModel} from '../models/VendorPayment';
 import {initClassFeePricingModel} from '../models/ClassFeePricing';
 import {initTransportationAreaPricingModel} from '../models/TransportationAreaPricing';
 import {initStudentModel} from "../models/Student"
+import {initAcademicSessionModel} from "../models/AcademicSession"
+import {initStudentEnrollmentModel} from "../models/StudentEnrollment"
 import {initStudentMonthlyFeeModel} from "../models/StudentMonthlyFee"
 import {initStudentMonthlyFeeItemModel} from "../models/StudentMonthlyFeeItem"
 import {initStudentFeePaymentModel} from "../models/StudentFeePayment"
@@ -56,6 +58,8 @@ initVendorPaymentModel(sequelize);
 initClassFeePricingModel(sequelize);
 initTransportationAreaPricingModel(sequelize);
 initStudentModel(sequelize);
+initAcademicSessionModel(sequelize);
+initStudentEnrollmentModel(sequelize);
 initStudentMonthlyFeeModel(sequelize);
 initStudentMonthlyFeeItemModel(sequelize);
 initStudentFeePaymentModel(sequelize);

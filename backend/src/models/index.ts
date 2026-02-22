@@ -16,6 +16,8 @@ import VendorPayment from './VendorPayment';
 import ClassFeePricing from './ClassFeePricing';
 import TransportationAreaPricing from './TransportationAreaPricing';
 import Student from './Student';
+import AcademicSession from './AcademicSession';
+import StudentEnrollment from './StudentEnrollment';
 import StudentMonthlyFee from './StudentMonthlyFee';
 import StudentMonthlyFeeItem from './StudentMonthlyFeeItem';
 import StudentFeePayment from './StudentFeePayment';
@@ -39,6 +41,7 @@ School.hasMany(TransportationAreaPricing, { foreignKey: 'schoolId', as: 'transpo
 School.hasMany(Student, { foreignKey: 'schoolId', as: 'students' });
 School.hasMany(Attendance, { foreignKey: 'schoolId', as: 'attendances' });
 School.hasMany(Holiday, { foreignKey: 'schoolId', as: 'holidays' });
+School.hasMany(AcademicSession, { foreignKey: 'schoolId', as: 'academicSessions' });
 
 // User associations
 User.belongsTo(School, { foreignKey: 'schoolId', as: 'School' });
@@ -173,4 +176,23 @@ Attendance.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 Holiday.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 Holiday.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, Staff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, ClassFeePricing, TransportationAreaPricing, Student, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday };
+// AcademicSession associations
+AcademicSession.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+AcademicSession.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+AcademicSession.hasMany(Class, { foreignKey: 'sessionId', as: 'classes' });
+AcademicSession.hasMany(StudentEnrollment, { foreignKey: 'sessionId', as: 'enrollments' });
+AcademicSession.hasMany(Attendance, { foreignKey: 'sessionId', as: 'sessionAttendances' });
+AcademicSession.hasMany(StudentMonthlyFee, { foreignKey: 'sessionId', as: 'monthlyFees' });
+
+// Class session association (sessionId added to class table)
+Class.belongsTo(AcademicSession, { foreignKey: 'sessionId', as: 'session' });
+
+// StudentEnrollment associations
+StudentEnrollment.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+StudentEnrollment.belongsTo(AcademicSession, { foreignKey: 'sessionId', as: 'session' });
+StudentEnrollment.belongsTo(Class, { foreignKey: 'classId', as: 'class' });
+StudentEnrollment.belongsTo(Section, { foreignKey: 'sectionId', as: 'section' });
+StudentEnrollment.belongsTo(User, { foreignKey: 'promotedBy', as: 'promoter' });
+Student.hasMany(StudentEnrollment, { foreignKey: 'studentId', as: 'enrollments' });
+
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, Staff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, ClassFeePricing, TransportationAreaPricing, Student, AcademicSession, StudentEnrollment, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday };
