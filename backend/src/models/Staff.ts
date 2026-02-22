@@ -1,8 +1,9 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import School from './School';
 
-class TeachingStaff extends Model {
+class Staff extends Model {
     public id!: number;
+    public staffType!: 'teaching' | 'non-teaching';
     public name!: string;
     public gender!: 'Male' | 'Female' | 'Other';
     public dateOfBirth!: Date;
@@ -14,11 +15,12 @@ class TeachingStaff extends Model {
     public highestAcademicQualification!: string;
     public tradeDegree!: string;
     public highestProfessionalQualification!: string;
-    public mathematicsLevel!: string;
-    public scienceLevel!: string;
-    public englishLevel!: string;
-    public socialScienceLevel!: string;
-    public scheduleVIIILanguageLevel!: string;
+    public role!: string;
+    public mathematicsLevel!: string | null;
+    public scienceLevel!: string | null;
+    public englishLevel!: string | null;
+    public socialScienceLevel!: string | null;
+    public scheduleVIIILanguageLevel!: string | null;
     public typeOfDisability!: string;
     public natureOfAppointment!: string;
     public dateOfJoiningService!: Date;
@@ -35,12 +37,16 @@ class TeachingStaff extends Model {
     public readonly updatedAt!: Date;
 }
 
-export const initTeachingStaffModel = (sequelize: Sequelize) => {
-    TeachingStaff.init({
+export const initStaffModel = (sequelize: Sequelize) => {
+    Staff.init({
         id: {
             type: DataTypes.INTEGER,
             autoIncrement: true,
             primaryKey: true,
+        },
+        staffType: {
+            type: DataTypes.ENUM('teaching', 'non-teaching'),
+            allowNull: false,
         },
         name: {
             type: DataTypes.STRING,
@@ -82,29 +88,14 @@ export const initTeachingStaffModel = (sequelize: Sequelize) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
-  highestProfessionalQualification: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  role: {
-    type: DataTypes.ENUM(
-      'Principal',
-      'Vice Principal',
-      'Head of Department (HOD)',
-      'PGT (Post Graduate Teacher)',
-      'TGT (Trained Graduate Teacher)',
-      'PRT (Primary Teacher)',
-      'NTT (Nursery Teacher)',
-      'Assistant Teacher',
-      'Special Educator',
-      'Physical Education Teacher (PET)',
-      'Art / Music / Dance Teacher',
-      'Computer Teacher',
-      'Librarian',
-      'Lab Assistant'
-    ),
-    allowNull: false,
-  },
+        highestProfessionalQualification: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        role: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
         mathematicsLevel: {
             type: DataTypes.STRING(50),
             allowNull: true,
@@ -190,25 +181,29 @@ export const initTeachingStaffModel = (sequelize: Sequelize) => {
         }
     }, {
         sequelize,
-        modelName: 'TeachingStaff',
-        tableName: 'teaching_staff',
+        modelName: 'Staff',
+        tableName: 'staff',
         indexes: [
             {
-                name: 'teaching_staff_email_index',
+                name: 'staff_email_index',
                 unique: true,
                 fields: ['email']
             },
             {
-                name: 'teaching_staff_aadhaar_index',
+                name: 'staff_aadhaar_index',
                 unique: true,
                 fields: ['aadhaarNumber']
             },
             {
-                name: 'teaching_staff_school_index',
+                name: 'staff_school_index',
                 fields: ['schoolId']
+            },
+            {
+                name: 'staff_type_index',
+                fields: ['staffType']
             }
         ]
     });
 };
 
-export default TeachingStaff;
+export default Staff;

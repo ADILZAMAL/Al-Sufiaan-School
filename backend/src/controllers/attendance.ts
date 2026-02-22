@@ -375,9 +375,9 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
       return sendError(res, 'Date is required', 400);
     }
 
-    // Get all students in the school (single query)
+    // Get all active students in the school (single query)
     const students = await Student.findAll({
-      where: { schoolId },
+      where: { schoolId, active: true },
       attributes: ['id', 'classId', 'sectionId'],
     });
 
@@ -512,7 +512,7 @@ export const getAttendanceStats = async (req: Request, res: Response) => {
     }
 
     // Build student filter conditions
-    const studentWhereClause: any = { schoolId };
+    const studentWhereClause: any = { schoolId, active: true };
     if (classId) {
       studentWhereClause.classId = classId;
     }

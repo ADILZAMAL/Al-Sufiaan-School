@@ -6,8 +6,7 @@ import {initSectionModel} from '../models/Section'
 import {initProductModel} from '../models/Product'
 import {initTransactionModel} from '../models/Transaction'
 import {initTransactionItemModel} from '../models/TransactionItem';
-import {initTeachingStaffModel} from '../models/TeachingStaff';
-import {initNonTeachingStaffModel} from '../models/NonTeachingStaff';
+import {initStaffModel} from '../models/Staff';
 import {initPayslipModel} from '../models/Payslip';
 import {initPayslipPaymentModel} from '../models/PayslipPayment';
 import {initExpenseModel} from '../models/Expense';
@@ -48,8 +47,7 @@ initTransactionModel(sequelize)
 initTransactionItemModel(sequelize);
 initExpenseCategoryModel(sequelize);
 initExpenseModel(sequelize);
-initTeachingStaffModel(sequelize);
-initNonTeachingStaffModel(sequelize);
+initStaffModel(sequelize);
 initPayslipModel(sequelize);
 initPayslipPaymentModel(sequelize);
 initVendorModel(sequelize);

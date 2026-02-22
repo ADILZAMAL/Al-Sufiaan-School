@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { HiArrowLeft, HiCheck } from 'react-icons/hi';
-import { teachingStaffApi } from '../api/teachingStaff';
-import { nonTeachingStaffApi } from '../api/nonTeachingStaff';
-import { TeachingStaff, NonTeachingStaff, StaffFormData } from '../types';
+import { staffApi } from '../api/staff';
+import { Staff, StaffFormData } from '../types';
 import { useStaffForm } from '../hooks/useStaffForm';
 import PersonalDetailsForm from '../components/PersonalDetailsForm';
 import EmploymentDetailsForm from '../components/EmploymentDetailsForm';
@@ -12,9 +11,9 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import Toast from '../../../components/common/Toast';
 
 const EditStaffDetails: React.FC = () => {
-  const { type, id } = useParams<{ type: 'teaching' | 'non-teaching'; id: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [staff, setStaff] = useState<TeachingStaff | NonTeachingStaff | null>(null);
+  const [staff, setStaff] = useState<Staff | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -32,33 +31,27 @@ const EditStaffDetails: React.FC = () => {
 
   useEffect(() => {
     fetchStaffDetails();
-  }, [type, id]);
+  }, [id]);
 
   const fetchStaffDetails = async () => {
-    if (!type || !id) return;
-    
+    if (!id) return;
+
     setIsLoading(true);
     try {
-      let staffData;
-      if (type === 'teaching') {
-        staffData = await teachingStaffApi.getById(parseInt(id));
-      } else {
-        staffData = await nonTeachingStaffApi.getById(parseInt(id));
-      }
+      const staffData = await staffApi.getById(parseInt(id));
       setStaff(staffData);
       populateForm(staffData);
     } catch (error: any) {
-      setToast({ 
-        message: error.message || 'Failed to fetch staff details', 
-        type: 'ERROR' 
+      setToast({
+        message: error.message || 'Failed to fetch staff details',
+        type: 'ERROR'
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const populateForm = (staffData: TeachingStaff | NonTeachingStaff) => {
-    // Convert staff data to form data format
+  const populateForm = (staffData: Staff) => {
     const formattedData: Partial<StaffFormData> = {
       name: staffData.name,
       gender: staffData.gender as 'Male' | 'Female' | 'Other',
@@ -82,17 +75,14 @@ const EditStaffDetails: React.FC = () => {
       ifscCode: staffData.ifscCode || ''
     };
 
-    // Add teaching-specific fields if it's a teaching staff
-    if (type === 'teaching') {
-      const teachingStaff = staffData as TeachingStaff;
-      formattedData.mathematicsLevel = teachingStaff.mathematicsLevel || '';
-      formattedData.scienceLevel = teachingStaff.scienceLevel || '';
-      formattedData.englishLevel = teachingStaff.englishLevel || '';
-      formattedData.socialScienceLevel = teachingStaff.socialScienceLevel || '';
-      formattedData.scheduleVIIILanguageLevel = teachingStaff.scheduleVIIILanguageLevel || '';
+    if (staffData.staffType === 'teaching') {
+      formattedData.mathematicsLevel = staffData.mathematicsLevel || '';
+      formattedData.scienceLevel = staffData.scienceLevel || '';
+      formattedData.englishLevel = staffData.englishLevel || '';
+      formattedData.socialScienceLevel = staffData.socialScienceLevel || '';
+      formattedData.scheduleVIIILanguageLevel = staffData.scheduleVIIILanguageLevel || '';
     }
 
-    // Update form data
     Object.entries(formattedData).forEach(([key, value]) => {
       if (value !== undefined) {
         handleChange(key as keyof StaffFormData, value);
@@ -101,7 +91,7 @@ const EditStaffDetails: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!staff?.id || !type) return;
+    if (!staff?.id) return;
 
     setIsSaving(true);
     try {
@@ -112,18 +102,14 @@ const EditStaffDetails: React.FC = () => {
         schoolId: staff.schoolId
       };
 
-      if (type === 'teaching') {
-        await teachingStaffApi.update(staff.id, submitData);
-      } else {
-        await nonTeachingStaffApi.update(staff.id, submitData);
-      }
+      await staffApi.update(staff.id, submitData);
 
       setToast({ message: 'Staff details updated successfully!', type: 'SUCCESS' });
-      setTimeout(() => navigate(`/dashboard/staff/view/${type}/${staff.id}`), 2000);
+      setTimeout(() => navigate(`/dashboard/staff/view/${staff.id}`), 2000);
     } catch (error: any) {
-      setToast({ 
-        message: error.message || 'Failed to update staff details', 
-        type: 'ERROR' 
+      setToast({
+        message: error.message || 'Failed to update staff details',
+        type: 'ERROR'
       });
     } finally {
       setIsSaving(false);
@@ -162,12 +148,14 @@ const EditStaffDetails: React.FC = () => {
     );
   }
 
+  const staffType = staff.staffType;
+
   return (
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Edit {type === 'teaching' ? 'Teaching' : 'Non-Teaching'} Staff
+          Edit {staffType === 'teaching' ? 'Teaching' : 'Non-Teaching'} Staff
         </h1>
         <p className="text-gray-600">Update details for {staff.name}</p>
       </div>
@@ -196,7 +184,7 @@ const EditStaffDetails: React.FC = () => {
               </div>
               <div className="ml-2 text-sm font-medium text-gray-900">
                 {step === 1 && 'Personal & Academic Info'}
-                {step === 2 && (type === 'teaching' ? 'Subject Competencies & Employment' : 'Employment Details')}
+                {step === 2 && (staffType === 'teaching' ? 'Subject Competencies & Employment' : 'Employment Details')}
                 {step === 3 && 'Financial Information'}
               </div>
               {step < 3 && (
@@ -219,7 +207,7 @@ const EditStaffDetails: React.FC = () => {
               formData={formData}
               errors={errors}
               onChange={handleChange}
-              staffType={type}
+              staffType={staffType}
             />
           )}
 
@@ -243,13 +231,13 @@ const EditStaffDetails: React.FC = () => {
           <div className="flex justify-between mt-8 pt-6 border-t">
             <div className="flex space-x-3">
               <button
-                onClick={() => navigate(`/dashboard/staff/view/${type}/${staff.id}`)}
+                onClick={() => navigate(`/dashboard/staff/view/${staff.id}`)}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
                 <HiArrowLeft className="h-4 w-4 mr-2" />
                 Cancel
               </button>
-              
+
               {currentStep > 1 && (
                 <button
                   onClick={prevStep}
@@ -281,7 +269,7 @@ const EditStaffDetails: React.FC = () => {
       <ConfirmationModal
         isOpen={showConfirmation}
         formData={formData}
-        staffType={type!}
+        staffType={staffType}
         onConfirm={handleSubmit}
         onCancel={() => setShowConfirmation(false)}
         isLoading={isSaving}

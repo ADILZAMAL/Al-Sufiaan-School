@@ -18,8 +18,7 @@ import VendorDetail from "./features/vendors/pages/VendorDetail"
 import SellProductsPage from "./features/inventory/pages/SellProductsPage"
 import TransactionHistory from "./features/inventory/pages/TransactionHistory"
 import StaffManagement from "./features/staff/pages/StaffManagement"
-import AddTeachingStaff from "./features/staff/pages/AddTeachingStaff"
-import AddNonTeachingStaff from "./features/staff/pages/AddNonTeachingStaff"
+import AddStaff from "./features/staff/pages/AddStaff"
 import ViewStaffDetails from "./features/staff/pages/ViewStaffDetails"
 import EditStaffDetails from "./features/staff/pages/EditStaffDetails"
 import ClassFeePricing from "./features/fees/pages/ClassFeePricing"
@@ -121,19 +120,15 @@ const router = createBrowserRouter([
         element: <StaffManagement />
       },
       {
-        path: "staff/add-teaching",
-        element: <AddTeachingStaff />
+        path: "staff/add",
+        element: <AddStaff />
       },
       {
-        path: "staff/add-non-teaching",
-        element: <AddNonTeachingStaff />
-      },
-      {
-        path: "staff/view/:type/:id",
+        path: "staff/view/:id",
         element: <ViewStaffDetails />
       },
       {
-        path: "staff/edit/:type/:id",
+        path: "staff/edit/:id",
         element: <EditStaffDetails />
       },
       {

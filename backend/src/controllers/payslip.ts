@@ -3,8 +3,7 @@ import Payslip from '../models/Payslip';
 import PayslipPayment from '../models/PayslipPayment';
 import Expense from '../models/Expense';
 import ExpenseCategory from '../models/ExpenseCategory';
-import TeachingStaff from '../models/TeachingStaff';
-import NonTeachingStaff from '../models/NonTeachingStaff';
+import Staff from '../models/Staff';
 import School from '../models/School';
 import User from '../models/User';
 import { sendSuccess, sendError } from '../utils/response';
@@ -35,12 +34,8 @@ const generatePayslipNumber = async (month: number, year: number, staffId: numbe
 };
 
 // Helper function to get staff details
-const getStaffDetails = async (staffId: number, staffType: 'teaching' | 'non-teaching') => {
-    if (staffType === 'teaching') {
-        return await TeachingStaff.findByPk(staffId);
-    } else {
-        return await NonTeachingStaff.findByPk(staffId);
-    }
+const getStaffDetails = async (staffId: number) => {
+    return await Staff.findByPk(staffId);
 };
 
 // Helper function to calculate next available month for a staff member
@@ -61,8 +56,8 @@ const calculateNextAvailableMonth = async (staffId: number, staffType: 'teaching
 
     if (!latestPayslip) {
         // No previous payslips - use staff's joining date as the starting point
-        const staff = await getStaffDetails(staffId, staffType);
-        
+        const staff = await getStaffDetails(staffId);
+
         if (!staff) {
             throw new Error('Staff member not found');
         }
@@ -189,7 +184,7 @@ export const generatePayslip = async (req: Request, res: Response) => {
         }
 
         // Get staff details
-        const staff = await getStaffDetails(staffId, staffType);
+        const staff = await getStaffDetails(staffId);
         if (!staff) {
             return sendError(res, 'Staff member not found', 404);
         }
@@ -719,6 +714,7 @@ export const getNextAvailableMonth = async (req: Request, res: Response) => {
 
         // Use the helper function to calculate next available month
         const nextAvailableData = await calculateNextAvailableMonth(parseInt(staffId), staffType as 'teaching' | 'non-teaching');
+
         
         if (!nextAvailableData.canGenerate) {
             return sendError(res, 'Cannot generate payslip for future months. All payslips are up to date.', 400);

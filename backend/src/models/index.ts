@@ -7,8 +7,7 @@ import Transaction from './Transaction';
 import Expense from './Expense';
 import ExpenseCategory from './ExpenseCategory';
 import TransactionItem from './TransactionItem';
-import TeachingStaff from './TeachingStaff';
-import NonTeachingStaff from './NonTeachingStaff';
+import Staff from './Staff';
 import Payslip from './Payslip';
 import PayslipPayment from './PayslipPayment';
 import Vendor from './Vendor';
@@ -29,8 +28,7 @@ School.hasMany(Class, { foreignKey: 'schoolId', as: 'classes' });
 School.hasMany(Product, { foreignKey: 'schoolId', as: 'products' });
 School.hasMany(Expense, { foreignKey: 'schoolId', as: 'expenses' });
 School.hasMany(ExpenseCategory, { foreignKey: 'schoolId', as: 'expenseCategories' });
-School.hasMany(TeachingStaff, { foreignKey: 'schoolId', as: 'teachingStaff' });
-School.hasMany(NonTeachingStaff, { foreignKey: 'schoolId', as: 'nonTeachingStaff' });
+School.hasMany(Staff, { foreignKey: 'schoolId', as: 'staff' });
 School.hasMany(Payslip, { foreignKey: 'schoolId', as: 'payslips' });
 School.hasMany(PayslipPayment, { foreignKey: 'schoolId', as: 'payslipPayments' });
 School.hasMany(Vendor, { foreignKey: 'schoolId', as: 'vendors' });
@@ -86,11 +84,8 @@ Expense.hasOne(VendorPayment, { foreignKey: 'expenseId', as: 'vendorPayment' });
 ExpenseCategory.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 ExpenseCategory.hasMany(Expense, { foreignKey: 'categoryId', as: 'expenses' });
 
-// TeachingStaff associations
-TeachingStaff.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
-
-// NonTeachingStaff associations
-NonTeachingStaff.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+// Staff associations
+Staff.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 
 // Payslip associations
 Payslip.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
@@ -178,4 +173,4 @@ Attendance.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 Holiday.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 Holiday.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, TeachingStaff, NonTeachingStaff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, ClassFeePricing, TransportationAreaPricing, Student, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday };
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, Staff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, ClassFeePricing, TransportationAreaPricing, Student, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday };
