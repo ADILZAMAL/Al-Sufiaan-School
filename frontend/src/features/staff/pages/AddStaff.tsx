@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStaffForm } from '../hooks/useStaffForm';
-import { teachingStaffApi } from '../api/teachingStaff';
+import { staffApi } from '../api/staff';
+import { StaffType } from '../types';
 import PersonalDetailsForm from '../components/PersonalDetailsForm';
 import EmploymentDetailsForm from '../components/EmploymentDetailsForm';
 import SubjectLevelSelector from '../components/SubjectLevelSelector';
@@ -9,8 +10,11 @@ import FinancialDetailsForm from '../components/FinancialDetailsForm';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Toast from '../../../components/common/Toast';
 
-const AddTeachingStaff: React.FC = () => {
+const AddStaff: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const staffType = (searchParams.get('type') || 'teaching') as StaffType;
   const navigate = useNavigate();
+
   const {
     formData,
     errors,
@@ -25,6 +29,8 @@ const AddTeachingStaff: React.FC = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'SUCCESS' | 'ERROR' } | null>(null);
 
+  const isTeaching = staffType === 'teaching';
+
   const handleNext = () => {
     if (currentStep === 3) {
       setShowConfirmation(true);
@@ -36,39 +42,43 @@ const AddTeachingStaff: React.FC = () => {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      // Validate required fields before submission
       if (!formData.gender || !['Male', 'Female', 'Other'].includes(formData.gender)) {
         setToast({ message: 'Please select a gender', type: 'ERROR' });
         setIsLoading(false);
         return;
       }
 
-      // Convert form data to API format
       const apiData = {
         ...formData,
+        staffType,
         gender: formData.gender as 'Male' | 'Female' | 'Other',
-        dateOfBirth: formData.dateOfBirth,
         dateOfJoiningService: formData.dateOfJoiningService || undefined,
-        dateOfJoiningPresentSchool: formData.dateOfJoiningService || undefined, // Use same date for both fields
+        dateOfJoiningPresentSchool: formData.dateOfJoiningService || undefined,
         salaryPerMonth: formData.salaryPerMonth ? parseFloat(formData.salaryPerMonth) : undefined,
+        mathematicsLevel: isTeaching ? (formData.mathematicsLevel || undefined) : null,
+        scienceLevel: isTeaching ? (formData.scienceLevel || undefined) : null,
+        englishLevel: isTeaching ? (formData.englishLevel || undefined) : null,
+        socialScienceLevel: isTeaching ? (formData.socialScienceLevel || undefined) : null,
+        scheduleVIIILanguageLevel: isTeaching ? (formData.scheduleVIIILanguageLevel || undefined) : null,
         schoolId: 1 // This should come from context/auth
       };
 
-      await teachingStaffApi.create(apiData);
-      
-      setToast({ message: 'Teaching staff added successfully!', type: 'SUCCESS' });
+      await staffApi.create(apiData as any);
+
+      setToast({
+        message: `${isTeaching ? 'Teaching' : 'Non-teaching'} staff added successfully!`,
+        type: 'SUCCESS'
+      });
       setShowConfirmation(false);
-      
-      // Reset form and redirect after a short delay
+
       setTimeout(() => {
         resetForm();
         navigate('/dashboard/staff');
       }, 2000);
-      
     } catch (error: any) {
-      setToast({ 
-        message: error.message || 'Failed to add teaching staff', 
-        type: 'ERROR' 
+      setToast({
+        message: error.message || 'Failed to add staff',
+        type: 'ERROR'
       });
     } finally {
       setIsLoading(false);
@@ -83,17 +93,19 @@ const AddTeachingStaff: React.FC = () => {
             formData={formData}
             errors={errors}
             onChange={handleChange}
-            staffType="teaching"
+            staffType={staffType}
           />
         );
       case 2:
         return (
           <div className="space-y-8">
-            <SubjectLevelSelector
-              formData={formData}
-              errors={errors}
-              onChange={handleChange}
-            />
+            {isTeaching && (
+              <SubjectLevelSelector
+                formData={formData}
+                errors={errors}
+                onChange={handleChange}
+              />
+            )}
             <EmploymentDetailsForm
               formData={formData}
               errors={errors}
@@ -116,16 +128,14 @@ const AddTeachingStaff: React.FC = () => {
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 1:
-        return 'Personal & Academic Information';
-      case 2:
-        return 'Subject Competencies & Employment Details';
-      case 3:
-        return 'Financial Information';
-      default:
-        return '';
+      case 1: return 'Personal & Academic Information';
+      case 2: return isTeaching ? 'Subject Competencies & Employment Details' : 'Employment Details';
+      case 3: return 'Financial Information';
+      default: return '';
     }
   };
+
+  const pageTitle = isTeaching ? 'Add Teaching Staff' : 'Add Non-Teaching Staff';
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6">
@@ -140,7 +150,7 @@ const AddTeachingStaff: React.FC = () => {
       <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Add Teaching Staff</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{pageTitle}</h1>
           <p className="text-sm sm:text-base text-gray-600">Step {currentStep} of 3: {getStepTitle()}</p>
         </div>
 
@@ -152,7 +162,7 @@ const AddTeachingStaff: React.FC = () => {
                 <div
                   className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full text-sm sm:text-base font-medium ${
                     step <= currentStep
-                      ? 'bg-blue-600 text-white'
+                      ? isTeaching ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
                       : 'bg-gray-300 text-gray-600'
                   }`}
                 >
@@ -161,22 +171,23 @@ const AddTeachingStaff: React.FC = () => {
                 {step < 3 && (
                   <div
                     className={`flex-1 h-1 mx-1 sm:mx-2 ${
-                      step < currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                      step < currentStep
+                        ? isTeaching ? 'bg-blue-600' : 'bg-green-600'
+                        : 'bg-gray-300'
                     }`}
                   />
                 )}
               </React.Fragment>
             ))}
           </div>
-          {/* Step Labels for Mobile */}
           <div className="flex justify-between mt-2 sm:hidden">
-            <span className={`text-xs ${currentStep >= 1 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+            <span className={`text-xs ${currentStep >= 1 ? (isTeaching ? 'text-blue-600' : 'text-green-600') + ' font-medium' : 'text-gray-500'}`}>
               Personal
             </span>
-            <span className={`text-xs ${currentStep >= 2 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+            <span className={`text-xs ${currentStep >= 2 ? (isTeaching ? 'text-blue-600' : 'text-green-600') + ' font-medium' : 'text-gray-500'}`}>
               Employment
             </span>
-            <span className={`text-xs ${currentStep >= 3 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+            <span className={`text-xs ${currentStep >= 3 ? (isTeaching ? 'text-blue-600' : 'text-green-600') + ' font-medium' : 'text-gray-500'}`}>
               Financial
             </span>
           </div>
@@ -196,7 +207,7 @@ const AddTeachingStaff: React.FC = () => {
           >
             Previous
           </button>
-          
+
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 order-1 sm:order-2">
             <button
               onClick={() => navigate('/dashboard/staff')}
@@ -206,7 +217,9 @@ const AddTeachingStaff: React.FC = () => {
             </button>
             <button
               onClick={handleNext}
-              className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className={`w-full sm:w-auto px-6 py-2 text-white rounded-md ${
+                isTeaching ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'
+              }`}
             >
               {currentStep === 3 ? 'Save & Next' : 'Next'}
             </button>
@@ -218,7 +231,7 @@ const AddTeachingStaff: React.FC = () => {
       <ConfirmationModal
         isOpen={showConfirmation}
         formData={formData}
-        staffType="teaching"
+        staffType={staffType}
         onConfirm={handleSubmit}
         onCancel={() => setShowConfirmation(false)}
         isLoading={isLoading}
@@ -227,4 +240,4 @@ const AddTeachingStaff: React.FC = () => {
   );
 };
 
-export default AddTeachingStaff;
+export default AddStaff;

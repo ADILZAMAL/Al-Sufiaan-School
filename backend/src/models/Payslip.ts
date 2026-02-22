@@ -1,7 +1,5 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import School from './School';
-import TeachingStaff from './TeachingStaff';
-import NonTeachingStaff from './NonTeachingStaff';
 import User from './User';
 
 class Payslip extends Model {
@@ -270,7 +268,7 @@ export const initPayslipModel = (sequelize: Sequelize) => {
             {
                 name: 'payslip_unique_staff_month',
                 unique: true,
-                fields: ['staffId', 'staffType', 'month', 'year']
+                fields: ['staffId', 'month', 'year']
             },
             {
                 name: 'payslip_number_index',
@@ -281,11 +279,7 @@ export const initPayslipModel = (sequelize: Sequelize) => {
                 name: 'payslip_school_index',
                 fields: ['schoolId']
             },
-            {
-                name: 'payslip_staff_index',
-                fields: ['staffId', 'staffType']
-            },
-            {
+{
                 name: 'payslip_period_index',
                 fields: ['month', 'year']
             }

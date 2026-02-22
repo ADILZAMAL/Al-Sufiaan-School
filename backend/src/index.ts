@@ -10,8 +10,7 @@ import sectionRouter from './routes/section'
 import transactionRouter from './routes/transaction'
 import expenseRouter from './routes/expense'
 import expenseCategoryRouter from './routes/expenseCategory'
-import teachingStaffRouter from './routes/teachingStaff'
-import nonTeachingStaffRouter from './routes/nonTeachingStaff'
+import staffRouter from './routes/staff'
 import photoUploadRouter from './routes/photoUpload'
 import payslipRouter from './routes/payslip'
 import vendorRouter from './routes/vendor'
@@ -102,8 +101,7 @@ app.use("/api/sections", sectionRouter)
 app.use("/api/transactions", transactionRouter)
 app.use('/api/expenses', expenseRouter)
 app.use('/api/expense-categories', expenseCategoryRouter)
-app.use('/api/teaching-staff', teachingStaffRouter)
-app.use('/api/non-teaching-staff', nonTeachingStaffRouter)
+app.use('/api/staff', staffRouter)
 app.use('/api/photos', photoUploadRouter)
 app.use('/api/payslips', payslipRouter)
 app.use('/api/vendors', vendorRouter)

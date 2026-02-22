@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { HiX, HiCalculator, HiCheck } from 'react-icons/hi';
 import { PayslipFormData, PayslipFormErrors, MONTHS } from '../types';
 import { payslipApi } from '../api/payslips';
-import { TeachingStaff, NonTeachingStaff } from '../../staff/types';
+import { Staff } from '../../staff/types';
 import Toast from '../../../components/common/Toast';
 
 interface PayslipGeneratorProps {
-  staff: TeachingStaff | NonTeachingStaff;
+  staff: Staff;
   staffType: 'teaching' | 'non-teaching';
   isOpen: boolean;
   onClose: () => void;

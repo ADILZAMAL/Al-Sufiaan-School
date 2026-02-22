@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { HiArrowLeft, HiPencil, HiTrash, HiCurrencyRupee, HiPlus } from 'react-icons/hi';
-import { teachingStaffApi } from '../api/teachingStaff';
-import { nonTeachingStaffApi } from '../api/nonTeachingStaff';
-import { TeachingStaff, NonTeachingStaff } from '../types';
+import { staffApi } from '../api/staff';
+import { Staff } from '../types';
 import { payslipApi } from '../../payslips/api/payslips';
 import { Payslip } from '../../payslips/types';
 import PayslipGenerator from '../../payslips/components/PayslipGenerator';
@@ -12,12 +11,12 @@ import PayslipView from '../../payslips/components/PayslipView';
 import Toast from '../../../components/common/Toast';
 
 const ViewStaffDetails: React.FC = () => {
-  const { type, id } = useParams<{ type: 'teaching' | 'non-teaching'; id: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [staff, setStaff] = useState<TeachingStaff | NonTeachingStaff | null>(null);
+  const [staff, setStaff] = useState<Staff | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'SUCCESS' | 'ERROR' } | null>(null);
-  
+
   // Payslip related state
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [isLoadingPayslips, setIsLoadingPayslips] = useState(false);
@@ -26,7 +25,7 @@ const ViewStaffDetails: React.FC = () => {
 
   useEffect(() => {
     fetchStaffDetails();
-  }, [type, id]);
+  }, [id]);
 
   useEffect(() => {
     if (staff?.id) {
@@ -35,12 +34,11 @@ const ViewStaffDetails: React.FC = () => {
   }, [staff]);
 
   const fetchPayslips = async () => {
-    if (!staff?.id || !type) return;
-    
+    if (!staff?.id || !staff.staffType) return;
+
     setIsLoadingPayslips(true);
     try {
-      // Get recent 5 payslips for display
-      const response = await payslipApi.getByStaff(type, staff.id, 1, 5);
+      const response = await payslipApi.getByStaff(staff.staffType, staff.id, 1, 5);
       setPayslips(response.payslips);
     } catch (error: any) {
       console.error('Error fetching payslips:', error);
@@ -59,21 +57,16 @@ const ViewStaffDetails: React.FC = () => {
   };
 
   const fetchStaffDetails = async () => {
-    if (!type || !id) return;
-    
+    if (!id) return;
+
     setIsLoading(true);
     try {
-      let staffData;
-      if (type === 'teaching') {
-        staffData = await teachingStaffApi.getById(parseInt(id));
-      } else {
-        staffData = await nonTeachingStaffApi.getById(parseInt(id));
-      }
+      const staffData = await staffApi.getById(parseInt(id));
       setStaff(staffData);
     } catch (error: any) {
-      setToast({ 
-        message: error.message || 'Failed to fetch staff details', 
-        type: 'ERROR' 
+      setToast({
+        message: error.message || 'Failed to fetch staff details',
+        type: 'ERROR'
       });
     } finally {
       setIsLoading(false);
@@ -81,24 +74,20 @@ const ViewStaffDetails: React.FC = () => {
   };
 
   const handleLeftSchool = async () => {
-    if (!staff?.id || !type) return;
-    
+    if (!staff?.id) return;
+
     if (!window.confirm('Are you sure you want to mark this staff member as left school?')) {
       return;
     }
 
     try {
-      if (type === 'teaching') {
-        await teachingStaffApi.markLeftSchool(staff.id);
-      } else {
-        await nonTeachingStaffApi.markLeftSchool(staff.id);
-      }
+      await staffApi.markLeftSchool(staff.id);
       setToast({ message: 'Staff member marked as left school successfully!', type: 'SUCCESS' });
       setTimeout(() => navigate('/dashboard/staff'), 2000);
     } catch (error: any) {
-      setToast({ 
-        message: error.message || 'Failed to mark staff member as left school', 
-        type: 'ERROR' 
+      setToast({
+        message: error.message || 'Failed to mark staff member as left school',
+        type: 'ERROR'
       });
     }
   };
@@ -132,12 +121,14 @@ const ViewStaffDetails: React.FC = () => {
     );
   }
 
+  const isTeaching = staff.staffType === 'teaching';
+
   return (
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          {type === 'teaching' ? 'Teaching' : 'Non-Teaching'} Staff Details
+          {isTeaching ? 'Teaching' : 'Non-Teaching'} Staff Details
         </h1>
         <p className="text-gray-600">View details for {staff.name}</p>
       </div>
@@ -162,7 +153,7 @@ const ViewStaffDetails: React.FC = () => {
 
         <div className="flex space-x-3">
           <Link
-            to={`/dashboard/staff/edit/${type}/${staff.id}`}
+            to={`/dashboard/staff/edit/${staff.id}`}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
           >
             <HiPencil className="h-4 w-4 mr-2" />
@@ -196,7 +187,7 @@ const ViewStaffDetails: React.FC = () => {
                     />
                   </div>
                 )}
-                
+
                 {/* Personal Details */}
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -262,9 +253,9 @@ const ViewStaffDetails: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-500">Staff Type</label>
                   <p className="mt-1 text-sm text-gray-900">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      type === 'teaching' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                      isTeaching ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
                     }`}>
-                      {type === 'teaching' ? 'Teaching' : 'Non-Teaching'}
+                      {isTeaching ? 'Teaching' : 'Non-Teaching'}
                     </span>
                   </p>
                 </div>
@@ -272,29 +263,29 @@ const ViewStaffDetails: React.FC = () => {
             </div>
 
             {/* Subject Competencies (Teaching Staff Only) */}
-            {type === 'teaching' && (
+            {isTeaching && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Subject Competencies</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-500">Mathematics</label>
-                    <p className="mt-1 text-sm text-gray-900">{(staff as TeachingStaff).mathematicsLevel || 'Not specified'}</p>
+                    <p className="mt-1 text-sm text-gray-900">{staff.mathematicsLevel || 'Not specified'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-500">Science</label>
-                    <p className="mt-1 text-sm text-gray-900">{(staff as TeachingStaff).scienceLevel || 'Not specified'}</p>
+                    <p className="mt-1 text-sm text-gray-900">{staff.scienceLevel || 'Not specified'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-500">English</label>
-                    <p className="mt-1 text-sm text-gray-900">{(staff as TeachingStaff).englishLevel || 'Not specified'}</p>
+                    <p className="mt-1 text-sm text-gray-900">{staff.englishLevel || 'Not specified'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-500">Social Science</label>
-                    <p className="mt-1 text-sm text-gray-900">{(staff as TeachingStaff).socialScienceLevel || 'Not specified'}</p>
+                    <p className="mt-1 text-sm text-gray-900">{staff.socialScienceLevel || 'Not specified'}</p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-500">Language (Schedule VIII)</label>
-                    <p className="mt-1 text-sm text-gray-900">{(staff as TeachingStaff).scheduleVIIILanguageLevel || 'Not specified'}</p>
+                    <p className="mt-1 text-sm text-gray-900">{staff.scheduleVIIILanguageLevel || 'Not specified'}</p>
                   </div>
                 </div>
               </div>
@@ -350,7 +341,6 @@ const ViewStaffDetails: React.FC = () => {
               </div>
             </div>
 
-
             {/* Payslip History */}
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -398,7 +388,7 @@ const ViewStaffDetails: React.FC = () => {
               {payslips.length > 5 && (
                 <div className="mt-4 text-center">
                   <Link
-                    to={`/dashboard/staff/payslips/${type}/${staff.id}`}
+                    to={`/dashboard/staff/payslips/${staff.id}`}
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                   >
                     View All Payslips →
@@ -414,7 +404,7 @@ const ViewStaffDetails: React.FC = () => {
       {showPayslipGenerator && staff && (
         <PayslipGenerator
           staff={staff}
-          staffType={type!}
+          staffType={staff.staffType}
           isOpen={showPayslipGenerator}
           onClose={() => setShowPayslipGenerator(false)}
           onSuccess={handlePayslipGenerated}

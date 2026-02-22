@@ -1,3 +1,41 @@
+export type StaffType = 'teaching' | 'non-teaching';
+
+export interface Staff {
+  id?: number;
+  staffType: StaffType;
+  name: string;
+  gender: 'Male' | 'Female' | 'Other';
+  dateOfBirth: string;
+  socialCategory?: string;
+  mobileNumber: string;
+  email: string;
+  aadhaarNumber: string;
+  nameAsPerAadhaar: string;
+  highestAcademicQualification?: string;
+  tradeDegree?: string;
+  highestProfessionalQualification?: string;
+  role?: string;
+  photoUrl?: string;
+  active?: boolean;
+  mathematicsLevel?: string | null;
+  scienceLevel?: string | null;
+  englishLevel?: string | null;
+  socialScienceLevel?: string | null;
+  scheduleVIIILanguageLevel?: string | null;
+  typeOfDisability?: string;
+  natureOfAppointment?: string;
+  dateOfJoiningService?: string;
+  dateOfJoiningPresentSchool?: string;
+  salaryPerMonth?: number;
+  upiNumber?: string;
+  accountNumber?: string;
+  accountName?: string;
+  ifscCode?: string;
+  schoolId: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface TeachingStaff {
   id?: number;
   name: string;
@@ -64,6 +102,9 @@ export interface NonTeachingStaff {
 }
 
 export interface StaffFormData {
+  // Staff Type
+  staffType: StaffType | '';
+
   // Personal Information
   name: string;
   gender: 'Male' | 'Female' | 'Other' | '';
