@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import { StaffFormData, StaffFormErrors } from '../types';
 
 const initialFormData: StaffFormData = {
+  // Staff Type
+  staffType: '',
   // Personal Information
   name: '',
   gender: '',

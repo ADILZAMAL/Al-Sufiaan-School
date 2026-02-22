@@ -99,7 +99,8 @@ const EditStaffDetails: React.FC = () => {
         ...formData,
         gender: formData.gender || undefined,
         salaryPerMonth: formData.salaryPerMonth ? parseFloat(formData.salaryPerMonth) : undefined,
-        schoolId: staff.schoolId
+        schoolId: staff.schoolId,
+        staffType: staff.staffType
       };
 
       await staffApi.update(staff.id, submitData);
