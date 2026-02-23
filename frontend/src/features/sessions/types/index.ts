@@ -8,6 +8,11 @@ export interface AcademicSession {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+  // populated by getSessionById
+  classCount?: number;
+  enrollmentCount?: number;
+  attendanceCount?: number;
+  feeCount?: number;
 }
 
 export interface StudentEnrollment {
@@ -22,6 +27,7 @@ export interface StudentEnrollment {
   session?: AcademicSession;
   class?: { id: number; name: string };
   section?: { id: number; name: string };
+  student?: { id: number; name: string; admissionNumber?: string };
 }
 
 export interface EnrollStudentRequest {

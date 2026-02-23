@@ -47,21 +47,17 @@ const StudentPage: React.FC = () => {
     const active = searchParams.get('active');
     return active === null ? true : active === 'true';
   });
-  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+  const [manualSessionId, setManualSessionId] = useState<number | null>(null);
 
-  // Fetch active session on mount to set default
-  useQuery<AcademicSession | null>(
+  // Fetch active session — derive selectedSessionId directly from query data
+  // (avoids onSuccess which is skipped when data is served from cache)
+  const { data: activeSession, isLoading: sessionLoading } = useQuery<AcademicSession | null>(
     'activeSession',
     academicSessionApi.getActiveSession,
-    {
-      staleTime: 5 * 60 * 1000,
-      onSuccess: (session) => {
-        if (session && selectedSessionId === null) {
-          setSelectedSessionId(session.id);
-        }
-      },
-    }
+    { staleTime: 5 * 60 * 1000 }
   );
+
+  const selectedSessionId = manualSessionId ?? activeSession?.id ?? null;
 
   // Fetch classes for selected session
   const { data: classes = [] } = useQuery<ClassType[]>(
@@ -106,7 +102,7 @@ const StudentPage: React.FC = () => {
   }, [searchTerm, selectedClassId, selectedSectionId, activeFilter]);
 
   const handleSessionChange = (sessionId: number) => {
-    setSelectedSessionId(sessionId);
+    setManualSessionId(sessionId);
     setSelectedClassId(null);
     setSelectedSectionId(null);
   };
@@ -346,7 +342,7 @@ const StudentPage: React.FC = () => {
         </div>
 
         {/* No session warning */}
-        {selectedSessionId === null && (
+        {!sessionLoading && selectedSessionId === null && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-center">
             <p className="text-amber-700 text-sm font-medium">No active academic session found. Please create and activate a session first.</p>
           </div>

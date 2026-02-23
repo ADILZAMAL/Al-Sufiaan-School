@@ -15,21 +15,15 @@ export default function AttendanceDashboard() {
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]
   );
-  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+  const [manualSessionId, setManualSessionId] = useState<number | null>(null);
 
-  // Fetch active session on mount to set default
-  useQuery<AcademicSession | null>(
+  const { data: activeSession } = useQuery<AcademicSession | null>(
     'activeSession',
     academicSessionApi.getActiveSession,
-    {
-      staleTime: 5 * 60 * 1000,
-      onSuccess: (session) => {
-        if (session && selectedSessionId === null) {
-          setSelectedSessionId(session.id);
-        }
-      },
-    }
+    { staleTime: 5 * 60 * 1000 }
   );
+
+  const selectedSessionId = manualSessionId ?? activeSession?.id ?? null;
 
   const fetchStats = useCallback(async () => {
     if (!selectedDate) return;
@@ -62,7 +56,7 @@ export default function AttendanceDashboard() {
         <h1 className="text-3xl font-bold text-gray-800">Attendance Dashboard</h1>
         <SessionSelector
           value={selectedSessionId}
-          onChange={(id) => setSelectedSessionId(id)}
+          onChange={(id) => setManualSessionId(id)}
         />
       </div>
 

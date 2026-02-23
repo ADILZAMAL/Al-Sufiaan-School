@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { HiArrowLeft, HiCheck } from 'react-icons/hi';
 import { useStaffForm } from '../hooks/useStaffForm';
 import { staffApi } from '../api/staff';
 import { StaffType } from '../types';
@@ -15,21 +16,17 @@ const AddStaff: React.FC = () => {
   const staffType = (searchParams.get('type') || 'teaching') as StaffType;
   const navigate = useNavigate();
 
-  const {
-    formData,
-    errors,
-    currentStep,
-    handleChange,
-    nextStep,
-    prevStep,
-    resetForm
-  } = useStaffForm();
+  const { formData, errors, currentStep, handleChange, nextStep, prevStep, resetForm } =
+    useStaffForm();
 
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'SUCCESS' | 'ERROR' } | null>(null);
 
   const isTeaching = staffType === 'teaching';
+  const accentBtn = isTeaching ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700';
+  const accentLine = isTeaching ? 'bg-blue-600' : 'bg-emerald-600';
+  const accentRing = isTeaching ? 'ring-blue-100' : 'ring-emerald-100';
 
   const handleNext = () => {
     if (currentStep === 3) {
@@ -60,30 +57,31 @@ const AddStaff: React.FC = () => {
         englishLevel: isTeaching ? (formData.englishLevel || undefined) : null,
         socialScienceLevel: isTeaching ? (formData.socialScienceLevel || undefined) : null,
         scheduleVIIILanguageLevel: isTeaching ? (formData.scheduleVIIILanguageLevel || undefined) : null,
-        schoolId: 1 // This should come from context/auth
+        schoolId: 1,
       };
 
       await staffApi.create(apiData as any);
-
       setToast({
         message: `${isTeaching ? 'Teaching' : 'Non-teaching'} staff added successfully!`,
-        type: 'SUCCESS'
+        type: 'SUCCESS',
       });
       setShowConfirmation(false);
-
       setTimeout(() => {
         resetForm();
         navigate('/dashboard/staff');
       }, 2000);
     } catch (error: any) {
-      setToast({
-        message: error.message || 'Failed to add staff',
-        type: 'ERROR'
-      });
+      setToast({ message: error.message || 'Failed to add staff', type: 'ERROR' });
     } finally {
       setIsLoading(false);
     }
   };
+
+  const steps = [
+    { number: 1, label: 'Personal & Academic' },
+    { number: 2, label: isTeaching ? 'Subjects & Employment' : 'Employment' },
+    { number: 3, label: 'Financial' },
+  ];
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -100,134 +98,115 @@ const AddStaff: React.FC = () => {
         return (
           <div className="space-y-8">
             {isTeaching && (
-              <SubjectLevelSelector
-                formData={formData}
-                errors={errors}
-                onChange={handleChange}
-              />
+              <SubjectLevelSelector formData={formData} errors={errors} onChange={handleChange} />
             )}
-            <EmploymentDetailsForm
-              formData={formData}
-              errors={errors}
-              onChange={handleChange}
-            />
+            <EmploymentDetailsForm formData={formData} errors={errors} onChange={handleChange} />
           </div>
         );
       case 3:
-        return (
-          <FinancialDetailsForm
-            formData={formData}
-            errors={errors}
-            onChange={handleChange}
-          />
-        );
+        return <FinancialDetailsForm formData={formData} errors={errors} onChange={handleChange} />;
       default:
         return null;
     }
   };
 
-  const getStepTitle = () => {
-    switch (currentStep) {
-      case 1: return 'Personal & Academic Information';
-      case 2: return isTeaching ? 'Subject Competencies & Employment Details' : 'Employment Details';
-      case 3: return 'Financial Information';
-      default: return '';
-    }
-  };
-
-  const pageTitle = isTeaching ? 'Add Teaching Staff' : 'Add Non-Teaching Staff';
-
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6">
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-3xl mx-auto space-y-6">
 
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{pageTitle}</h1>
-          <p className="text-sm sm:text-base text-gray-600">Step {currentStep} of 3: {getStepTitle()}</p>
+        {/* Page Header */}
+        <div className="flex items-center gap-3">
+          <Link
+            to="/dashboard/staff"
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-gray-900 hover:border-gray-300 transition"
+          >
+            <HiArrowLeft className="w-4 h-4" />
+          </Link>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">
+              {isTeaching ? 'Add Teaching Staff' : 'Add Non-Teaching Staff'}
+            </h1>
+            <p className="text-sm text-gray-500 mt-0.5">Step {currentStep} of 3</p>
+          </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex items-center">
-            {[1, 2, 3].map((step) => (
-              <React.Fragment key={step}>
-                <div
-                  className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full text-sm sm:text-base font-medium ${
-                    step <= currentStep
-                      ? isTeaching ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
-                      : 'bg-gray-300 text-gray-600'
-                  }`}
-                >
-                  {step}
-                </div>
-                {step < 3 && (
+        {/* Stepper */}
+        <div className="bg-white rounded-xl border border-gray-200 px-6 py-5">
+          <div className="flex items-start">
+            {steps.map((step, idx) => (
+              <React.Fragment key={step.number}>
+                <div className="flex flex-col items-center gap-2 shrink-0">
                   <div
-                    className={`flex-1 h-1 mx-1 sm:mx-2 ${
-                      step < currentStep
-                        ? isTeaching ? 'bg-blue-600' : 'bg-green-600'
-                        : 'bg-gray-300'
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      step.number < currentStep
+                        ? `${accentLine} text-white`
+                        : step.number === currentStep
+                        ? `${accentLine} text-white ring-4 ${accentRing}`
+                        : 'bg-gray-100 text-gray-400'
                     }`}
-                  />
+                  >
+                    {step.number < currentStep ? (
+                      <HiCheck className="w-4 h-4" />
+                    ) : (
+                      step.number
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs font-medium text-center leading-tight hidden sm:block max-w-[80px] ${
+                      step.number <= currentStep ? 'text-gray-700' : 'text-gray-400'
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+
+                {idx < steps.length - 1 && (
+                  <div className="flex-1 mx-3 pt-4">
+                    <div
+                      className={`h-0.5 w-full transition-all ${
+                        step.number < currentStep ? accentLine : 'bg-gray-200'
+                      }`}
+                    />
+                  </div>
                 )}
               </React.Fragment>
             ))}
           </div>
-          <div className="flex justify-between mt-2 sm:hidden">
-            <span className={`text-xs ${currentStep >= 1 ? (isTeaching ? 'text-blue-600' : 'text-green-600') + ' font-medium' : 'text-gray-500'}`}>
-              Personal
-            </span>
-            <span className={`text-xs ${currentStep >= 2 ? (isTeaching ? 'text-blue-600' : 'text-green-600') + ' font-medium' : 'text-gray-500'}`}>
-              Employment
-            </span>
-            <span className={`text-xs ${currentStep >= 3 ? (isTeaching ? 'text-blue-600' : 'text-green-600') + ' font-medium' : 'text-gray-500'}`}>
-              Financial
-            </span>
-          </div>
         </div>
 
-        {/* Form Content */}
-        <div className="mb-6 sm:mb-8">
+        {/* Form Card */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
           {renderStepContent()}
         </div>
 
-        {/* Navigation Buttons */}
-        <div className="flex flex-col sm:flex-row justify-between space-y-3 sm:space-y-0">
+        {/* Navigation */}
+        <div className="flex items-center justify-between gap-3 pb-8">
           <button
             onClick={prevStep}
             disabled={currentStep === 1}
-            className="w-full sm:w-auto px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
+            <HiArrowLeft className="w-4 h-4" />
             Previous
           </button>
 
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 order-1 sm:order-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => navigate('/dashboard/staff')}
-              className="w-full sm:w-auto px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 transition"
             >
               Cancel
             </button>
             <button
               onClick={handleNext}
-              className={`w-full sm:w-auto px-6 py-2 text-white rounded-md ${
-                isTeaching ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'
-              }`}
+              className={`px-6 py-2.5 rounded-lg text-white text-sm font-medium transition ${accentBtn}`}
             >
-              {currentStep === 3 ? 'Save & Next' : 'Next'}
+              {currentStep === 3 ? 'Review & Save' : 'Next'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={showConfirmation}
         formData={formData}
@@ -236,6 +215,10 @@ const AddStaff: React.FC = () => {
         onCancel={() => setShowConfirmation(false)}
         isLoading={isLoading}
       />
+
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      )}
     </div>
   );
 };

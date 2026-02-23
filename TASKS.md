@@ -321,17 +321,17 @@ PHASE 5 — Update Existing Backend
   [x] 5.3  Update monthlyFee controller
 
 PHASE 6 — New Frontend Feature
-  [ ] 6.1  API client + types
-  [ ] 6.2  SessionSelector component
-  [ ] 6.3  Session Management page
-  [ ] 6.4  Student Promotion page
+  [x] 6.1  API client + types
+  [x] 6.2  SessionSelector component
+  [x] 6.3  Session Management page
+  [x] 6.4  Student Promotion page
 
 PHASE 7 — Update Existing Frontend
-  [ ] 7.1  Student list + add form
-  [ ] 7.2  Edit student form
-  [ ] 7.3  Student profile
-  [ ] 7.4  Attendance pages
-  [ ] 7.5  Class/section management
+  [x] 7.1  Student list + add form
+  [x] 7.2  Edit student form
+  [x] 7.3  Student profile
+  [x] 7.4  Attendance pages
+  [x] 7.5  Class/section management
 ```
 
 ---

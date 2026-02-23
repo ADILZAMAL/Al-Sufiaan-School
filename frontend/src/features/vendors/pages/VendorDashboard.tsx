@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiPlus, HiSearch } from 'react-icons/hi';
+import { FaBuilding, FaPhone, FaTag } from 'react-icons/fa';
 import { fetchVendors } from '../api';
 import { Vendor } from '../types';
 import AddVendorModal from '../components/AddVendorModal';
+
+const AVATAR_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-purple-100 text-purple-700',
+  'bg-orange-100 text-orange-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-pink-100 text-pink-700',
+  'bg-indigo-100 text-indigo-700',
+];
+
+const getAvatarColor = (name: string) =>
+  AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 
 const VendorDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -29,112 +42,147 @@ const VendorDashboard: React.FC = () => {
   };
 
   const handleAddVendorSuccess = () => {
-    loadVendors(); // Refresh the vendor list
+    loadVendors();
   };
 
-  const filteredVendors = vendors.filter(vendor =>
-    vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.mobile.includes(searchTerm)
+  const filteredVendors = vendors.filter(
+    (vendor) =>
+      vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.mobile.includes(searchTerm)
   );
 
-  return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Vendor Management</h1>
-        <button 
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-        >
-          <HiPlus className="w-5 h-5" />
-          Add Vendor
-        </button>
-      </div>
+  const activeCount = vendors.filter((v) => v.isActive).length;
+  const inactiveCount = vendors.length - activeCount;
 
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative">
-          <HiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+  return (
+    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto space-y-6">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Vendors</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Manage all your school vendors</p>
+          </div>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap"
+          >
+            <HiPlus className="w-4 h-4" />
+            Add Vendor
+          </button>
+        </div>
+
+        {/* Stats */}
+        {!isLoading && vendors.length > 0 && (
+          <div className="grid grid-cols-3 gap-4 max-w-xs">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900">{vendors.length}</p>
+              <p className="text-xs text-gray-500 font-medium mt-0.5">Total</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+              <p className="text-2xl font-bold text-emerald-600">{activeCount}</p>
+              <p className="text-xs text-gray-500 font-medium mt-0.5">Active</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+              <p className="text-2xl font-bold text-red-500">{inactiveCount}</p>
+              <p className="text-xs text-gray-500 font-medium mt-0.5">Inactive</p>
+            </div>
+          </div>
+        )}
+
+        {/* Search */}
+        <div className="relative max-w-sm">
+          <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search vendors..."
+            placeholder="Search by name or mobile..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
-      </div>
 
-      {/* Vendors Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Vendor Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Mobile
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                UPI ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {isLoading ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                  Loading vendors...
-                </td>
-              </tr>
-            ) : filteredVendors.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                  {vendors.length === 0 ? 'No vendors found. Click "Add Vendor" to create your first vendor.' : 'No vendors match your search.'}
-                </td>
-              </tr>
-            ) : (
-              filteredVendors.map((vendor) => (
-                <tr 
-                  key={vendor.id} 
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => navigate(`/dashboard/expense/vendors/${vendor.id}`)}
+        {/* Content */}
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+          </div>
+        ) : filteredVendors.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 py-20 text-center">
+            <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
+              <FaBuilding className="text-blue-300" size={22} />
+            </div>
+            <p className="text-gray-700 font-semibold">
+              {vendors.length === 0 ? 'No vendors yet' : 'No vendors match your search'}
+            </p>
+            {vendors.length === 0 && (
+              <>
+                <p className="text-gray-400 text-sm mt-1">Add your first vendor to get started</p>
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="mt-5 inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{vendor.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vendor.mobile}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vendor.category?.name || 'N/A'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{vendor.upiNumberId || '-'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      vendor.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {vendor.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                </tr>
-              ))
+                  <HiPlus className="w-4 h-4" />
+                  Add First Vendor
+                </button>
+              </>
             )}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredVendors.map((vendor) => (
+              <div
+                key={vendor.id}
+                onClick={() => navigate(`/dashboard/expense/vendors/${vendor.id}`)}
+                className="bg-white rounded-xl border border-gray-200 p-5 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-150 group"
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base shrink-0 ${getAvatarColor(vendor.name)}`}
+                  >
+                    {vendor.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-700 transition-colors">
+                        {vendor.name}
+                      </h3>
+                      <span
+                        className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${
+                          vendor.isActive
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-red-50 text-red-600'
+                        }`}
+                      >
+                        {vendor.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <FaPhone size={10} className="text-gray-400 shrink-0" />
+                        <span>{vendor.mobile}</span>
+                      </div>
+                      {vendor.category && (
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                          <FaTag size={10} className="text-gray-400 shrink-0" />
+                          <span>{vendor.category.name}</span>
+                        </div>
+                      )}
+                      {vendor.upiNumberId && (
+                        <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                          <span className="font-mono truncate">{vendor.upiNumberId}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Add Vendor Modal */}
       <AddVendorModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}

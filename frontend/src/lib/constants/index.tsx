@@ -1,4 +1,4 @@
-import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCurrencyDollar, HiOutlineUserCircle, HiOutlineAcademicCap, HiOutlineLibrary, HiOutlineBell, HiOutlineCalendar, HiOutlineSun } from 'react-icons/hi'
+import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCurrencyDollar, HiOutlineUserCircle, HiOutlineAcademicCap, HiOutlineLibrary, HiOutlineBell, HiOutlineCalendar, HiOutlineSun, HiOutlineBookOpen, HiOutlineArrowCircleUp } from 'react-icons/hi'
 
 export const DASHBOARD_SIDEBAR_LINKS = [
 	{
@@ -94,6 +94,26 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 		label: 'School',
 		path: 'school-settings',
 		icon: <HiOutlineLibrary />
+	},
+	{
+		key: 'sessions',
+		label: 'Sessions',
+		path: 'sessions',
+		icon: <HiOutlineBookOpen />,
+		children: [
+			{
+				key: 'session-management',
+				label: 'Management',
+				path: 'sessions',
+				icon: <HiOutlineBookOpen />
+			},
+			{
+				key: 'student-promotion',
+				label: 'Promote Students',
+				path: 'sessions/promote',
+				icon: <HiOutlineArrowCircleUp />
+			}
+		]
 	},
 	{
 		key: 'attendance',
