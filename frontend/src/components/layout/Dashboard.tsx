@@ -5,19 +5,18 @@ import HamburgerIcon from '../common/HamburgerIcon';
 
 const Dashboard: React.FC = () => {
     return (
-        <div className="bg-neutral-100 flex flex-row">
+        <div className="flex flex-row bg-gray-50 min-h-screen">
             <Sidebar />
             <div className="flex flex-col flex-1 min-w-0">
-                <div className="flex items-center p-4 bg-white border-b border-gray-200">
+                <header className="h-16 flex items-center px-4 bg-white border-b border-gray-200 flex-shrink-0 sticky top-0 z-10">
                     <HamburgerIcon />
-                    <h1 className="ml-4 text-xl font-semibold text-gray-800">Dashboard</h1>
-                </div>
-                <div className="flex-1 p-4 overflow-auto">
+                </header>
+                <main className="flex-1 overflow-auto">
                     <Outlet />
-                </div>
+                </main>
             </div>
         </div>
-    )
+    );
 };
 
 export default Dashboard;
