@@ -2,17 +2,19 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import * as apiClient from "../api";
 import { TransactionType } from "../api";
-import { FaChevronDown, FaChevronUp, FaCheck, FaClock, FaCheckCircle } from "react-icons/fa";
+import { FaChevronDown, FaChevronUp, FaCheck, FaCheckCircle, FaClock } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { getCurrentSchool } from "../../../api/school";
+import { useAppContext } from "../../../providers/AppContext";
 
 const TransactionHistory = () => {
+  const { userRole } = useAppContext();
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedTransactions, setExpandedTransactions] = useState<Set<number>>(new Set());
   const [paymentModeFilter, setPaymentModeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "verified" | "pending">("all");
-  const [verifyingTransactions, setVerifyingTransactions] = useState<Set<number>>(new Set());
-  
+  const [pendingVerifyId, setPendingVerifyId] = useState<number | null>(null);
+
   const queryClient = useQueryClient();
 
   const { data: school } = useQuery("currentSchool", getCurrentSchool);
@@ -24,9 +26,7 @@ const TransactionHistory = () => {
   const { data: transactionData, isLoading } = useQuery(
     ["fetchTransactions", currentPage, effectivePaymentMode, effectiveStatus],
     () => apiClient.fetchTransactions(currentPage, 20, effectivePaymentMode, effectiveStatus),
-    {
-      keepPreviousData: true,
-    }
+    { keepPreviousData: true }
   );
 
   const toggleTransactionExpansion = (transactionId: number) => {
@@ -41,348 +41,343 @@ const TransactionHistory = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    setExpandedTransactions(new Set()); // Reset expanded rows when changing pages
+    setExpandedTransactions(new Set());
   };
 
-  // Mutation for verifying transactions
   const verifyTransactionMutation = useMutation(
     (transactionId: number) => apiClient.verifyTransaction(transactionId),
     {
-      onMutate: (transactionId) => {
-        setVerifyingTransactions(prev => new Set(prev).add(transactionId));
-      },
       onSuccess: () => {
-        // Refetch transactions to get updated data
         queryClient.invalidateQueries(["fetchTransactions"]);
+        setPendingVerifyId(null);
       },
       onError: (error: any) => {
         console.error("Error verifying transaction:", error);
-        alert(error.message || "Failed to verify transaction");
+        setPendingVerifyId(null);
       },
-      onSettled: (_, __, transactionId) => {
-        setVerifyingTransactions(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(transactionId);
-          return newSet;
-        });
-      }
     }
   );
-
-  const handleVerifyTransaction = (transactionId: number) => {
-    if (window.confirm("Are you sure you want to verify this transaction?")) {
-      verifyTransactionMutation.mutate(transactionId);
-    }
-  };
 
   const renderVerificationStatus = (transaction: TransactionType) => {
     if (transaction.isVerified) {
       return (
-        <div className="flex items-center space-x-1">
-          <FaCheckCircle className="text-green-500 text-sm" />
-          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+        <div className="flex items-center gap-1.5">
+          <FaCheckCircle className="text-emerald-500 text-sm" />
+          <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
             Verified
           </span>
         </div>
       );
-    } else {
-      return (
-        <div className="flex items-center space-x-1">
-          <FaClock className="text-yellow-500 text-sm" />
-          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-            Pending
-          </span>
-        </div>
-      );
     }
+    return (
+      <div className="flex items-center gap-1.5">
+        <FaClock className="text-amber-500 text-sm" />
+        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+          Pending
+        </span>
+      </div>
+    );
   };
 
   const renderVerificationAction = (transaction: TransactionType) => {
     if (transaction.isVerified) {
       return (
-        <span className="text-xs text-gray-500">
-          Verified by {transaction.verifiedBy}
+        <span className="text-xs text-gray-400">
+          by {transaction.verifiedBy}
         </span>
       );
-    } else {
-      const isVerifying = verifyingTransactions.has(transaction.id);
+    }
+
+    if (userRole !== "SUPER_ADMIN") return null;
+
+    const isVerifying = verifyTransactionMutation.isLoading && pendingVerifyId === transaction.id;
+
+    if (pendingVerifyId === transaction.id) {
       return (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleVerifyTransaction(transaction.id);
-          }}
-          disabled={isVerifying}
-          className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
-        >
-          {isVerifying ? (
-            <>
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-              <span>Verifying...</span>
-            </>
-          ) : (
-            <>
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <span className="text-xs text-gray-600">Confirm?</span>
+          <button
+            onClick={() => verifyTransactionMutation.mutate(transaction.id)}
+            disabled={isVerifying}
+            className="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+          >
+            {isVerifying ? (
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+            ) : (
               <FaCheck className="text-xs" />
-              <span>Verify</span>
-            </>
-          )}
-        </button>
+            )}
+            Yes
+          </button>
+          <button
+            onClick={() => setPendingVerifyId(null)}
+            className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            No
+          </button>
+        </div>
       );
     }
+
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setPendingVerifyId(transaction.id);
+        }}
+        className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
+      >
+        <FaCheck className="text-xs" />
+        Verify
+      </button>
+    );
   };
+
+  const statusTabs: { label: string; value: "all" | "verified" | "pending" }[] = [
+    { label: "All", value: "all" },
+    { label: "Verified", value: "verified" },
+    { label: "Pending", value: "pending" },
+  ];
 
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">Transaction History</h2>
-            <Link
-              to="/dashboard/inventory"
-              className="text-blue-600 hover:text-blue-800 text-sm"
-            >
-              ← Back to Inventory
-            </Link>
-          </div>
-          <div className="flex items-center gap-4 mt-4 md:mt-0">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Payment Mode
-                </label>
-                <select
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm bg-white"
-                  value={paymentModeFilter}
-                  onChange={(e) => {
-                    setPaymentModeFilter(e.target.value);
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div>
+          <Link to="/dashboard/inventory" className="text-sm text-blue-600 hover:text-blue-800">
+            ← Back to Inventory
+          </Link>
+          <h2 className="text-2xl font-bold text-gray-900 mt-1">Transaction History</h2>
+        </div>
+
+        {/* Filter Bar */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+              Status
+            </span>
+            <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
+              {statusTabs.map((tab) => (
+                <button
+                  key={tab.value}
+                  onClick={() => {
+                    setStatusFilter(tab.value);
                     setCurrentPage(1);
                   }}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    statusFilter === tab.value
+                      ? "bg-white shadow-sm text-gray-900"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
                 >
-                  <option value="all">All Modes</option>
-                  {paymentModes.map((mode) => (
-                    <option key={mode} value={mode}>
-                      {mode}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
-                </label>
-                <select
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm bg-white"
-                  value={statusFilter}
-                  onChange={(e) => {
-                    const value = e.target.value as "all" | "verified" | "pending";
-                    setStatusFilter(value);
-                    setCurrentPage(1);
-                  }}
-                >
-                  <option value="all">All Status</option>
-                  <option value="verified">Verified</option>
-                  <option value="pending">Pending</option>
-                </select>
-              </div>
+                  {tab.label}
+                </button>
+              ))}
             </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+              Payment
+            </span>
+            <select
+              className="border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white min-w-[140px]"
+              value={paymentModeFilter}
+              onChange={(e) => {
+                setPaymentModeFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <option value="all">All Modes</option>
+              {paymentModes.map((mode) => (
+                <option key={mode} value={mode}>
+                  {mode}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
           </div>
         ) : (
           <>
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Student Name
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Class - Section
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Payment Mode
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Sold By
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Amount
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Action
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {(transactionData?.transactions || []).map((transaction: TransactionType) => (
-                      <React.Fragment key={transaction.id}>
-                        <tr 
-                          className="hover:bg-gray-50 cursor-pointer"
-                          onClick={() => toggleTransactionExpansion(transaction.id)}
-                        >
-                          <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-900">
-                            {formatDate(transaction.createdAt)}
-                          </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {transaction.studentName}
-                          </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-500">
-                            {transaction.className} - {transaction.sectionName}
-                          </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-500">
-                            {transaction.modeOfPayment}
-                          </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-600">
-                            {transaction.soldBy}
-                          </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-900 font-medium">
-                            ₹{transaction.totalAmount.toFixed(2)}
-                          </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm">
-                            {renderVerificationStatus(transaction)}
-                          </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm">
-                            {renderVerificationAction(transaction)}
-                          </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-400">
-                            {expandedTransactions.has(transaction.id) ? (
-                              <FaChevronUp />
-                            ) : (
-                              <FaChevronDown />
-                            )}
-                          </td>
-                        </tr>
-                        {expandedTransactions.has(transaction.id) && (
-                          <tr>
-                            <td colSpan={9} className="px-6 py-4 bg-gray-50">
-                              <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                  <h4 className="font-semibold text-gray-800">Products Purchased:</h4>
-                                  <span className="text-sm text-gray-600">
-                                    Transaction ID: #{transaction.id}
-                                  </span>
-                                </div>
-                                <div className="grid gap-2">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+              {(!transactionData?.transactions || transactionData.transactions.length === 0) ? (
+                <div className="text-center py-10 text-gray-400 text-sm">
+                  {paymentModeFilter === "all" && statusFilter === "all"
+                    ? "No transactions found."
+                    : "No transactions match the selected filters."}
+                </div>
+              ) : (
+                <>
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Date</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Student</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Class</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Payment</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Sold By</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Amount</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Action</th>
+                        <th className="py-3 px-5" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {transactionData.transactions.map((transaction: TransactionType) => (
+                        <React.Fragment key={transaction.id}>
+                          <tr
+                            className="hover:bg-gray-50 transition-colors cursor-pointer"
+                            onClick={() => toggleTransactionExpansion(transaction.id)}
+                          >
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
+                              {formatDate(transaction.createdAt)}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {transaction.studentName}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-500">
+                              {transaction.className} – {transaction.sectionName}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-500">
+                              {transaction.modeOfPayment}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
+                              {transaction.soldBy}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm font-semibold text-gray-900">
+                              ₹{transaction.totalAmount.toFixed(2)}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap">
+                              {renderVerificationStatus(transaction)}
+                            </td>
+                            <td
+                              className="py-3.5 px-5 whitespace-nowrap"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {renderVerificationAction(transaction)}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-gray-400 text-sm">
+                              {expandedTransactions.has(transaction.id) ? (
+                                <FaChevronUp />
+                              ) : (
+                                <FaChevronDown />
+                              )}
+                            </td>
+                          </tr>
+                          {expandedTransactions.has(transaction.id) && (
+                            <tr>
+                              <td colSpan={9} className="px-5 py-4 bg-gray-50">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                                  Products Purchased
+                                </p>
+                                <div className="space-y-2">
                                   {transaction.transactionItems.map((item, index) => (
-                                    <div key={index} className="flex justify-between items-center py-2 px-4 bg-white rounded border">
+                                    <div
+                                      key={index}
+                                      className="flex justify-between items-center py-2 px-4 bg-white rounded-lg border border-gray-200"
+                                    >
                                       <span className="text-sm font-medium text-gray-900">
                                         {item.productName}
                                       </span>
-                                      <span className="text-sm text-gray-600">
-                                        Qty: {item.quantity} × ₹{item.unitPrice} = ₹{item.totalPrice.toFixed(2)}
+                                      <span className="text-sm text-gray-500">
+                                        {item.quantity} × ₹{item.unitPrice} ={" "}
+                                        <span className="font-semibold text-gray-900">
+                                          ₹{item.totalPrice.toFixed(2)}
+                                        </span>
                                       </span>
                                     </div>
                                   ))}
                                 </div>
-                                <div className="flex justify-between items-center pt-2 border-t">
-                                  <div className="flex flex-col space-y-1">
-                                    <span className="text-sm font-medium text-gray-800">
-                                      Total Amount: ₹{transaction.totalAmount.toFixed(2)}
+                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+                                  <div>
+                                    <span className="text-sm font-semibold text-gray-900">
+                                      Total: ₹{transaction.totalAmount.toFixed(2)}
                                     </span>
-                                    <span className="text-sm text-gray-600">
-                                      Payment: {transaction.modeOfPayment}
+                                    <span className="text-sm text-gray-400 ml-3">
+                                      via {transaction.modeOfPayment}
                                     </span>
                                   </div>
-                                  <div className="flex flex-col items-end space-y-1">
-                                    <div className="flex items-center space-x-2">
-                                      {renderVerificationStatus(transaction)}
-                                    </div>
+                                  <div className="flex flex-col items-end gap-1">
+                                    {renderVerificationStatus(transaction)}
                                     {transaction.isVerified && transaction.verifiedBy && (
-                                      <span className="text-xs text-gray-500">
-                                        Verified by {transaction.verifiedBy}
-                                        {transaction.verifiedAt && (
-                                          <span className="block">
-                                            on {formatDate(transaction.verifiedAt)}
-                                          </span>
-                                        )}
+                                      <span className="text-xs text-gray-400">
+                                        by {transaction.verifiedBy}
+                                        {transaction.verifiedAt && ` on ${formatDate(transaction.verifiedAt)}`}
                                       </span>
                                     )}
                                   </div>
                                 </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
-                {(!transactionData?.transactions || transactionData.transactions.length === 0) && (
-                  <div className="text-center py-8 text-gray-500">
-                    {paymentModeFilter === "all" && statusFilter === "all"
-                      ? "No transactions found."
-                      : "No transactions found for the selected filters."}
-                  </div>
-                )}
-              </div>
+                                <p className="text-right text-xs text-gray-400 mt-2">
+                                  Transaction #{transaction.id}
+                                </p>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
             </div>
 
             {/* Pagination */}
-            {transactionData?.pagination && (
-              <div className="mt-6 flex justify-between items-center">
-                <div className="text-sm text-gray-700">
-                  Showing page {transactionData.pagination.currentPage} of {transactionData.pagination.totalPages}
-                  {" "}({transactionData.pagination.totalItems} total transactions)
-                </div>
-                <div className="flex gap-2">
+            {transactionData?.pagination && transactionData.pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">
+                  Page {transactionData.pagination.currentPage} of {transactionData.pagination.totalPages}
+                  {" · "}
+                  {transactionData.pagination.totalItems} transactions
+                </p>
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Previous
                   </button>
-                  
-                  {/* Page numbers */}
-                  {Array.from({ length: Math.min(5, transactionData.pagination.totalPages) }, (_, i) => {
-                    const pageNum = Math.max(1, currentPage - 2) + i;
-                    if (pageNum > transactionData.pagination.totalPages) return null;
-                    
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-4 py-2 text-sm border rounded-lg ${
-                          pageNum === currentPage
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "hover:bg-gray-50"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  
+
+                  {Array.from(
+                    { length: Math.min(5, transactionData.pagination.totalPages) },
+                    (_, i) => {
+                      const pageNum = Math.max(1, currentPage - 2) + i;
+                      if (pageNum > transactionData.pagination.totalPages) return null;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                            pageNum === currentPage
+                              ? "bg-blue-600 text-white"
+                              : "border border-gray-200 hover:bg-gray-50 text-gray-700"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    }
+                  )}
+
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === transactionData.pagination.totalPages}
-                    className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Next
                   </button>

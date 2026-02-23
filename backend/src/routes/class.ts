@@ -15,10 +15,12 @@ const router = express.Router();
 
 router.get("/", verifyToken,  async(req: Request, res: Response) => {
     try{
+        const where: Record<string, unknown> = { schoolId: req.schoolId };
+        if (req.query.sessionId) {
+            where.sessionId = Number(req.query.sessionId);
+        }
         const classes = await Class.findAll({
-            where: {
-                schoolId: req.schoolId
-            },
+            where,
             include: [{
                 model: Section,
                 as: 'sections'
@@ -41,18 +43,20 @@ router.post("/", verifyToken,
         return res.status(400).json({success: false, error: {code: 'INVALID_INPUT', message: errors.array() }});
     }
     try {
-        let classRecord = await Class.findOne({
-            where: {
-                name: req.body.name,
-                schoolId: req.schoolId
-            }
-        });
-        
+        const duplicateWhere: Record<string, unknown> = {
+            name: req.body.name,
+            schoolId: req.schoolId,
+        };
+        if (req.body.sessionId) {
+            duplicateWhere.sessionId = req.body.sessionId;
+        }
+        let classRecord = await Class.findOne({ where: duplicateWhere });
+
         if(classRecord){
             return res.status(400).json({success: false, error: {code: 'INVALID_INPUT',  message: "Duplicate class is not allowed"}})
         }
 
-        classRecord = await Class.create({name: req.body.name, schoolId: req.schoolId});
+        classRecord = await Class.create({name: req.body.name, schoolId: req.schoolId, sessionId: req.body.sessionId ?? null});
         res.status(200).json({success: true})
     } catch (error) {
         console.log(error);
