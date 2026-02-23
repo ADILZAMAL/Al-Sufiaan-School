@@ -130,7 +130,6 @@ const StudentList: React.FC<StudentListProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200">
-                          {/* {student..class.name}-{student.section?.name || 'N/A'} */}
                           {student.enrollments?.[0]?.class?.name || 'N/A'}-{student.enrollments?.[0]?.section?.name || 'N/A'}
                         </span>
                       </div>
