@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from 'react-query';
 import { getAllAttendanceStats } from '../api';
 import { useAppContext } from '../../../providers/AppContext';
@@ -31,7 +31,7 @@ export default function AttendanceDashboard() {
     }
   );
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     if (!selectedDate) return;
 
     setLoading(true);
@@ -50,7 +50,11 @@ export default function AttendanceDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate, selectedSessionId, showToast]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   return (
     <div className="p-6">
@@ -72,13 +76,6 @@ export default function AttendanceDashboard() {
             onChange={(e) => setSelectedDate(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
           />
-          <button
-            onClick={fetchStats}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-          >
-            Load Stats
-          </button>
         </div>
       </div>
 
