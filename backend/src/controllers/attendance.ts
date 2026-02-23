@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Attendance, Student, User, Holiday } from '../models';
+import { Attendance, Student, Holiday, AcademicSession, StudentEnrollment } from '../models';
 import { sendSuccess, sendError } from '../utils/response';
 import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
@@ -15,9 +15,8 @@ const isSunday = (date: Date): boolean => {
 const isHolidayCheck = async (schoolId: number, date: Date): Promise<Holiday | null> => {
   // First check if it's a Sunday
   if (isSunday(date)) {
-    // Return a virtual Sunday holiday object
     return {
-      id: -1, // Special ID for Sunday
+      id: -1,
       schoolId,
       startDate: date,
       endDate: date,
@@ -29,7 +28,6 @@ const isHolidayCheck = async (schoolId: number, date: Date): Promise<Holiday | n
     } as Holiday;
   }
 
-  // Check database holidays
   const holiday = await Holiday.findOne({
     where: {
       schoolId,
@@ -59,18 +57,26 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
     return sendError(res, 'Attendances array is required and cannot be empty', 400);
   }
 
-  // Normalize date
+  // Normalize date to today
   const attendanceDate = new Date();
   attendanceDate.setHours(0, 0, 0, 0);
 
   // Holiday check (NO transaction)
   const holiday = await isHolidayCheck(Number(schoolId), attendanceDate);
   if (holiday) {
-    return sendError(
-      res,
-      `Cannot mark attendance on holiday: ${holiday.name}`,
-      400
-    );
+    return sendError(res, `Cannot mark attendance on holiday: ${holiday.name}`, 400);
+  }
+
+  // Derive academic session from the attendance date
+  const session = await AcademicSession.findOne({
+    where: {
+      schoolId,
+      startDate: { [Op.lte]: attendanceDate },
+      endDate: { [Op.gte]: attendanceDate },
+    },
+  });
+  if (!session) {
+    return sendError(res, 'No academic session covers the attendance date', 400);
   }
 
   const studentIds = attendances.map((a: any) => a.studentId);
@@ -90,7 +96,7 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
   const resultAttendances: any[] = [];
   const errors: any[] = [];
 
-  // ✅ Managed transaction (auto commit / rollback)
+  // Managed transaction (auto commit / rollback)
   await sequelize.transaction(async (transaction) => {
     // Fetch existing attendance in bulk
     const existingAttendances = await Attendance.findAll({
@@ -102,9 +108,7 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
       transaction,
     });
 
-    const attendanceMap = new Map(
-      existingAttendances.map(a => [a.studentId, a])
-    );
+    const attendanceMap = new Map(existingAttendances.map(a => [a.studentId, a]));
 
     for (const entry of attendances) {
       const { studentId, status, remarks } = entry;
@@ -145,6 +149,7 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
             markedBy: userId,
             schoolId,
             date: attendanceDate,
+            sessionId: session.id,
           },
           { transaction }
         );
@@ -165,7 +170,7 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
     include: [
       {
         association: 'student',
-        attributes: ['id', 'firstName', 'lastName', 'rollNumber'],
+        attributes: ['id', 'firstName', 'lastName'],
       },
       {
         association: 'markedByUser',
@@ -182,9 +187,7 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
       attendances: attendancesWithDetails,
       errors: errors.length ? errors : undefined,
     },
-    `Attendance marked successfully for ${successCount} student(s)${
-      failedCount ? `. ${failedCount} failed.` : ''
-    }`
+    `Attendance marked successfully for ${successCount} student(s)${failedCount ? `. ${failedCount} failed.` : ''}`
   );
 };
 
@@ -208,40 +211,45 @@ export const getAttendance = async (req: Request, res: Response) => {
       whereClause.studentId = studentId;
     }
 
-    // If classId or sectionId provided, need to join with Student
-    let includeOptions: any[] = [
-      {
-        association: 'student',
-        attributes: ['id', 'firstName', 'lastName', 'rollNumber'],
-        include: [],
-      },
-      {
-        association: 'markedByUser',
-        attributes: ['id', 'firstName', 'lastName'],
-      },
-    ];
-
+    // If classId or sectionId provided, filter via enrollment
     if (classId || sectionId) {
-      includeOptions[0].include.push(
-        {
-          association: 'class',
-          attributes: ['id', 'name'],
-          where: classId ? { id: classId } : undefined,
-          required: !!classId,
-        },
-        {
-          association: 'section',
-          attributes: ['id', 'name'],
-          where: sectionId ? { id: sectionId } : undefined,
-          required: !!sectionId,
-        }
-      );
+      const enrollmentWhere: any = {};
+      if (classId) enrollmentWhere.classId = classId;
+      if (sectionId) enrollmentWhere.sectionId = sectionId;
+
+      // Derive session from date if provided
+      if (date) {
+        const queryDate = new Date(date as string);
+        const session = await AcademicSession.findOne({
+          where: {
+            schoolId,
+            startDate: { [Op.lte]: queryDate },
+            endDate: { [Op.gte]: queryDate },
+          },
+        });
+        if (session) enrollmentWhere.sessionId = session.id;
+      }
+
+      const enrollments = await StudentEnrollment.findAll({
+        where: enrollmentWhere,
+        attributes: ['studentId'],
+      });
+      whereClause.studentId = { [Op.in]: enrollments.map((e: any) => e.studentId) };
     }
 
     const attendances = await Attendance.findAll({
       where: whereClause,
-      include: includeOptions,
-      order: [['date', 'DESC'], [{ model: Student, as: 'student' }, 'rollNumber', 'ASC']],
+      include: [
+        {
+          association: 'student',
+          attributes: ['id', 'firstName', 'lastName'],
+        },
+        {
+          association: 'markedByUser',
+          attributes: ['id', 'firstName', 'lastName'],
+        },
+      ],
+      order: [['date', 'DESC']],
     });
 
     return sendSuccess(res, attendances, 'Attendance records retrieved successfully');
@@ -266,11 +274,7 @@ export const getAttendanceById = async (req: Request, res: Response) => {
       include: [
         {
           association: 'student',
-          attributes: ['id', 'firstName', 'lastName', 'rollNumber'],
-          include: [
-            { association: 'class', attributes: ['id', 'name'] },
-            { association: 'section', attributes: ['id', 'name'] },
-          ],
+          attributes: ['id', 'firstName', 'lastName'],
         },
         {
           association: 'markedByUser',
@@ -328,11 +332,7 @@ export const updateAttendance = async (req: Request, res: Response) => {
     // Check if the date is a holiday
     const holiday = await isHolidayCheck(parseInt(String(schoolId)), attendanceDate);
     if (holiday) {
-      return sendError(
-        res,
-        `Cannot modify attendance on holiday: ${holiday.name}`,
-        400
-      );
+      return sendError(res, `Cannot modify attendance on holiday: ${holiday.name}`, 400);
     }
 
     await attendance.update({
@@ -345,7 +345,7 @@ export const updateAttendance = async (req: Request, res: Response) => {
       include: [
         {
           association: 'student',
-          attributes: ['id', 'firstName', 'lastName', 'rollNumber'],
+          attributes: ['id', 'firstName', 'lastName'],
         },
         {
           association: 'markedByUser',
@@ -375,13 +375,35 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
       return sendError(res, 'Date is required', 400);
     }
 
-    // Get all active students in the school (single query)
-    const students = await Student.findAll({
-      where: { schoolId, active: true },
-      attributes: ['id', 'classId', 'sectionId'],
+    const queryDate = new Date(date as string);
+
+    // Derive session from date
+    const session = await AcademicSession.findOne({
+      where: {
+        schoolId,
+        startDate: { [Op.lte]: queryDate },
+        endDate: { [Op.gte]: queryDate },
+      },
     });
 
-    if (students.length === 0) {
+    if (!session) {
+      return sendSuccess(
+        res,
+        { date, classStats: [] },
+        'All attendance statistics retrieved successfully'
+      );
+    }
+
+    // Get all enrollments for this session (active students only)
+    const enrollments = await StudentEnrollment.findAll({
+      where: { sessionId: session.id },
+      include: [
+        { association: 'student', where: { schoolId, active: true }, attributes: ['id'] },
+      ],
+      attributes: ['studentId', 'classId', 'sectionId'],
+    });
+
+    if (enrollments.length === 0) {
       return sendSuccess(
         res,
         { date, classStats: [] },
@@ -395,16 +417,16 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
     });
 
     // Check if the date is a holiday
-    const holiday = await isHolidayCheck(parseInt(String(schoolId)), new Date(date as string));
+    const holiday = await isHolidayCheck(parseInt(String(schoolId)), queryDate);
 
-    // Group students by class/section
-    const classSectionGroups = new Map<string, Array<typeof students[0]>>();
-    students.forEach((s) => {
-      const key = `${s.classId}-${s.sectionId}`;
+    // Group enrollments by class/section
+    const classSectionGroups = new Map<string, Array<any>>();
+    enrollments.forEach((e: any) => {
+      const key = `${e.classId}-${e.sectionId}`;
       if (!classSectionGroups.has(key)) {
         classSectionGroups.set(key, []);
       }
-      classSectionGroups.get(key)?.push(s);
+      classSectionGroups.get(key)?.push(e);
     });
 
     // Group attendances by student
@@ -418,13 +440,14 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
     const Section = require('../models/Section').default;
 
     const classes = await Class.findAll({
-      where: { schoolId },
-      attributes: ['id', 'name']
+      where: { sessionId: session.id },
+      attributes: ['id', 'name'],
     });
 
+    const classIds = enrollments.map((e: any) => e.classId);
     const sections = await Section.findAll({
-      where: { schoolId },
-      attributes: ['id', 'name']
+      where: { classId: { [Op.in]: classIds } },
+      attributes: ['id', 'name'],
     });
 
     const classMap = new Map(classes.map((c: any) => [c.id, c.name]));
@@ -433,15 +456,15 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
     // Build stats for each class/section combination
     const allStats = [];
 
-    for (const [key, groupStudents] of classSectionGroups) {
+    for (const [key, groupEnrollments] of classSectionGroups) {
       const [classId, sectionId] = key.split('-').map(Number);
-      const totalStudents = groupStudents.length;
+      const totalStudents = groupEnrollments.length;
 
       let presentCount = 0;
       let absentCount = 0;
 
-      groupStudents.forEach((s) => {
-        const attendance = attendanceByStudent.get(s.id);
+      groupEnrollments.forEach((e: any) => {
+        const attendance = attendanceByStudent.get(e.studentId);
         if (attendance) {
           if (attendance.status === 'PRESENT') presentCount++;
           else if (attendance.status === 'ABSENT') absentCount++;
@@ -449,8 +472,8 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
       });
 
       const totalCount = presentCount + absentCount;
-      const workingDays = totalStudents; // Treat not marked as absent
-      const attendancePercentage = totalStudents > 0 ? ((presentCount / totalStudents) * 100).toFixed(2) : '0';
+      const attendancePercentage =
+        totalStudents > 0 ? ((presentCount / totalStudents) * 100).toFixed(2) : '0';
 
       allStats.push({
         classId,
@@ -465,7 +488,7 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
         attendancePercentage: parseFloat(attendancePercentage),
         notMarked: totalStudents - totalCount,
         isHoliday: !!holiday,
-        holidayName: holiday ? holiday.name : null
+        holidayName: holiday ? holiday.name : null,
       });
     }
 
@@ -476,9 +499,7 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
       if (aClassName !== bClassName) {
         return aClassName.localeCompare(bClassName);
       }
-      const aSectionName = String(a.sectionName);
-      const bSectionName = String(b.sectionName);
-      return aSectionName.localeCompare(bSectionName);
+      return String(a.sectionName).localeCompare(String(b.sectionName));
     });
 
     return sendSuccess(
@@ -487,7 +508,7 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
         date,
         classStats: allStats,
         isHoliday: !!holiday,
-        holidayName: holiday ? holiday.name : null
+        holidayName: holiday ? holiday.name : null,
       },
       'All attendance statistics retrieved successfully'
     );
@@ -511,55 +532,61 @@ export const getAttendanceStats = async (req: Request, res: Response) => {
       return sendError(res, 'Date is required', 400);
     }
 
-    // Build student filter conditions
-    const studentWhereClause: any = { schoolId, active: true };
-    if (classId) {
-      studentWhereClause.classId = classId;
-    }
-    if (sectionId) {
-      studentWhereClause.sectionId = sectionId;
-    }
+    const queryDate = new Date(date as string);
 
-    // Get total students in class/section
-    const totalStudents = await Student.count({
-      where: studentWhereClause,
+    // Derive session from date
+    const session = await AcademicSession.findOne({
+      where: {
+        schoolId,
+        startDate: { [Op.lte]: queryDate },
+        endDate: { [Op.gte]: queryDate },
+      },
     });
 
-    // Get students matching the filter
-    const students = await Student.findAll({
-      where: studentWhereClause,
-      attributes: ['id'],
-    });
+    // Get student IDs via enrollments filtered by session/class/section
+    let studentIds: number[] = [];
+    if (session) {
+      const enrollmentWhere: any = { sessionId: session.id };
+      if (classId) enrollmentWhere.classId = classId;
+      if (sectionId) enrollmentWhere.sectionId = sectionId;
 
-    const studentIds = students.map(s => s.id);
+      const enrollments = await StudentEnrollment.findAll({
+        where: enrollmentWhere,
+        include: [
+          { association: 'student', where: { schoolId, active: true }, attributes: ['id'] },
+        ],
+        attributes: ['studentId'],
+      });
+      studentIds = enrollments.map((e: any) => e.studentId);
+    } else {
+      // No session covers this date — count active students in school
+      const students = await Student.findAll({
+        where: { schoolId, active: true },
+        attributes: ['id'],
+      });
+      studentIds = students.map((s) => s.id);
+    }
+
+    const totalStudents = studentIds.length;
 
     // Get attendance for these students on the specified date
-    const whereClause: any = { 
-      schoolId, 
+    const whereClause: any = {
+      schoolId,
       date,
-      studentId: { [Op.in]: studentIds }
+      studentId: { [Op.in]: studentIds },
     };
 
-    const attendances = await Attendance.findAll({
-      where: whereClause,
-      include: [
-        {
-          association: 'student',
-          attributes: ['id', 'classId', 'sectionId'],
-        },
-      ],
-    });
+    const attendances = await Attendance.findAll({ where: whereClause });
 
     const presentCount = attendances.filter((a) => a.status === 'PRESENT').length;
     const absentCount = attendances.filter((a) => a.status === 'ABSENT').length;
     const totalCount = attendances.length;
 
     // Check if the date is a holiday
-    const holiday = await isHolidayCheck(parseInt(String(schoolId)), new Date(date as string));
+    const holiday = await isHolidayCheck(parseInt(String(schoolId)), queryDate);
 
-    // Calculate attendance percentage treating not marked as absent
-    // Formula: (Present / Total Students) * 100
-    const attendancePercentage = totalStudents > 0 ? ((presentCount / totalStudents) * 100).toFixed(2) : '0';
+    const attendancePercentage =
+      totalStudents > 0 ? ((presentCount / totalStudents) * 100).toFixed(2) : '0';
 
     return sendSuccess(
       res,
@@ -600,27 +627,43 @@ export const getStudentsWithAttendance = async (req: Request, res: Response) => 
 
     const attendanceDate = new Date(date as string);
 
-    // Get all active students for the class/section
-    const students = await Student.findAll({
+    // Derive session from date
+    const session = await AcademicSession.findOne({
       where: {
-        classId: parseInt(classId),
-        sectionId: parseInt(sectionId),
         schoolId,
-        active: true, // Only show active students
+        startDate: { [Op.lte]: attendanceDate },
+        endDate: { [Op.gte]: attendanceDate },
       },
+    });
+
+    const enrollmentWhere: any = {
+      classId: parseInt(classId),
+      sectionId: parseInt(sectionId),
+    };
+    if (session) enrollmentWhere.sessionId = session.id;
+
+    // Get active students in this class/section via enrollment
+    const enrollments = await StudentEnrollment.findAll({
+      where: enrollmentWhere,
       include: [
+        {
+          association: 'student',
+          where: { schoolId, active: true },
+        },
         { association: 'class', attributes: ['id', 'name'] },
         { association: 'section', attributes: ['id', 'name'] },
       ],
       order: [['rollNumber', 'ASC']],
     });
 
+    const studentIds = enrollments.map((e: any) => e.studentId);
+
     // Get attendance for the date
     const attendanceRecords = await Attendance.findAll({
       where: {
         schoolId,
         date: attendanceDate,
-        studentId: { [Op.in]: students.map((s) => s.id) },
+        studentId: { [Op.in]: studentIds },
       },
     });
 
@@ -629,25 +672,9 @@ export const getStudentsWithAttendance = async (req: Request, res: Response) => 
       attendanceRecords.map((a) => [a.studentId, { id: a.id, status: a.status, remarks: a.remarks }])
     );
 
-    // Get all student IDs
-    const studentIds = students.map((s) => s.id);
-
     // For each student, find the last present date
     const lastPresentDatesMap = new Map<number, Date>();
     if (studentIds.length > 0) {
-      const lastPresentRecords = await Attendance.findAll({
-        where: {
-          schoolId,
-          studentId: { [Op.in]: studentIds },
-          status: 'PRESENT',
-          date: { [Op.lte]: attendanceDate },
-        },
-        attributes: ['studentId', [sequelize.fn('MAX', sequelize.col('date')), 'lastPresentDate']],
-        group: ['studentId'],
-        raw: true,
-      });
-
-      // Process the results - Sequelize returns different format for grouped queries
       const studentLastPresentPromises = studentIds.map(async (studentId) => {
         const lastPresent = await Attendance.findOne({
           where: {
@@ -668,25 +695,30 @@ export const getStudentsWithAttendance = async (req: Request, res: Response) => 
       await Promise.all(studentLastPresentPromises);
     }
 
-    // Calculate days absent since last present for each student
     const attendanceDateObj = new Date(attendanceDate);
     attendanceDateObj.setHours(0, 0, 0, 0);
 
-    // Combine students with their attendance status and absent days
-    const studentsWithAttendance = students.map((student) => {
-      const attendance = attendanceMap.get(student.id);
-      const lastPresentDate = lastPresentDatesMap.get(student.id);
-      
+    // Combine students with their attendance status
+    const studentsWithAttendance = enrollments.map((enrollment: any) => {
+      const student = enrollment.student;
+      const attendance = attendanceMap.get(enrollment.studentId);
+      const lastPresentDate = lastPresentDatesMap.get(enrollment.studentId);
+
       let daysAbsentSinceLastPresent: number | null = null;
       if (lastPresentDate) {
-        const daysDiff = Math.floor((attendanceDateObj.getTime() - lastPresentDate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysDiff = Math.floor(
+          (attendanceDateObj.getTime() - lastPresentDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
         daysAbsentSinceLastPresent = daysDiff > 0 ? daysDiff : null;
       }
 
       return {
         ...student.toJSON(),
+        rollNumber: enrollment.rollNumber,
+        class: enrollment.class,
+        section: enrollment.section,
         attendance: attendance || null,
-        daysAbsentSinceLastPresent: daysAbsentSinceLastPresent,
+        daysAbsentSinceLastPresent,
       };
     });
 
@@ -710,15 +742,21 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
     // Get student details
     const student = await Student.findOne({
       where: { id: parseInt(studentId), schoolId },
-      include: [
-        { association: 'class', attributes: ['id', 'name'] },
-        { association: 'section', attributes: ['id', 'name'] },
-      ],
     });
 
     if (!student) {
       return sendError(res, 'Student not found', 404);
     }
+
+    // Get most recent enrollment for class/section info
+    const currentEnrollment = await StudentEnrollment.findOne({
+      where: { studentId: student.id },
+      include: [
+        { association: 'class', attributes: ['id', 'name'] },
+        { association: 'section', attributes: ['id', 'name'] },
+      ],
+      order: [['promotedAt', 'DESC']],
+    });
 
     // Get all attendance records for the student
     const attendances = await Attendance.findAll({
@@ -752,7 +790,7 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       const start = new Date(h.startDate);
       const end = new Date(h.endDate);
       const current = new Date(start);
-      
+
       while (current <= end) {
         const dateStr = current.toISOString().split('T')[0];
         holidayMap.set(dateStr, {
@@ -765,8 +803,7 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       }
     });
 
-    // Add all Sundays as holidays (if not already in holiday map or attendance)
-    // Determine date range: from student admission date (or 2 years ago) to today
+    // Add all Sundays as holidays
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     let startDate: Date;
@@ -774,23 +811,18 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       startDate = new Date(student.admissionDate);
       startDate.setHours(0, 0, 0, 0);
     } else {
-      // If no admission date, go back 2 years
       startDate = new Date(today);
       startDate.setFullYear(today.getFullYear() - 2);
     }
-    
-    // Find the first Sunday on or before the start date
+
     const firstSunday = new Date(startDate);
     const dayOfWeek = firstSunday.getDay();
     const daysToSubtract = dayOfWeek === 0 ? 0 : dayOfWeek;
     firstSunday.setDate(firstSunday.getDate() - daysToSubtract);
-    
-    // Add all Sundays from start date to today
+
     const currentSunday = new Date(firstSunday);
     while (currentSunday <= today) {
       const dateStr = currentSunday.toISOString().split('T')[0];
-      // Only add if not already in holiday map (from database holidays)
-      // Note: We add Sundays even if there's attendance, but attendance will take precedence in merge
       if (!holidayMap.has(dateStr)) {
         holidayMap.set(dateStr, {
           date: dateStr,
@@ -799,26 +831,22 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
           reason: 'Weekly holiday',
         });
       }
-      // Move to next Sunday
       currentSunday.setDate(currentSunday.getDate() + 7);
     }
 
     // Merge attendance and holidays into a single array
     const combinedRecords = new Map<string, any>();
 
-    // Add attendance records
     attendanceMap.forEach((value, key) => {
       combinedRecords.set(key, value);
     });
 
-    // Add holidays (only if not already present in attendance)
     holidayMap.forEach((value, key) => {
       if (!combinedRecords.has(key)) {
         combinedRecords.set(key, value);
       }
     });
 
-    // Convert to array and sort by date
     const allRecords = Array.from(combinedRecords.values()).sort((a, b) =>
       a.date.localeCompare(b.date)
     );
@@ -830,7 +858,6 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
     const attendancePercentage =
       workingDays > 0 ? ((presentCount / workingDays) * 100).toFixed(2) : '0';
 
-    // Count total holidays (including Sundays)
     let totalHolidayDays = 0;
     holidays.forEach((h) => {
       const start = new Date(h.startDate);
@@ -838,10 +865,9 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       const diffTime = Math.abs(end.getTime() - start.getTime());
       totalHolidayDays += Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     });
-    
-    // Count Sundays that are in the date range and not already counted in holidays
-    const sundayCount = Array.from(holidayMap.values()).filter((h: any) => 
-      h.name === 'Sunday' && !attendanceMap.has(h.date)
+
+    const sundayCount = Array.from(holidayMap.values()).filter(
+      (h: any) => h.name === 'Sunday' && !attendanceMap.has(h.date)
     ).length;
     totalHolidayDays += sundayCount;
 
@@ -850,8 +876,8 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       {
         studentId: student.id,
         studentName: `${student.firstName} ${student.lastName}`,
-        class: (student as any).class?.name,
-        section: (student as any).section?.name,
+        class: (currentEnrollment as any)?.class?.name || null,
+        section: (currentEnrollment as any)?.section?.name || null,
         attendanceRecords: allRecords,
         summary: {
           totalPresent: presentCount,

@@ -129,16 +129,8 @@ TransportationAreaPricing.belongsTo(School, { foreignKey: 'schoolId', as: 'schoo
 
 // Student associations
 Student.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
-Student.belongsTo(Class, { foreignKey: 'classId', as: 'class' });
-Student.belongsTo(Section, { foreignKey: 'sectionId', as: 'section' });
 Student.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 Student.belongsTo(User, { foreignKey: 'updatedBy', as: 'updater' });
-
-// Additional Class associations for students
-Class.hasMany(Student, { foreignKey: 'classId', as: 'students' });
-
-// Section associations for students
-Section.hasMany(Student, { foreignKey: 'sectionId', as: 'students' });
 
 // StudentMonthlyFee associations
 StudentMonthlyFee.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });

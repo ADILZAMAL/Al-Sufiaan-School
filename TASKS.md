@@ -29,11 +29,6 @@ Each task is independent enough to implement and test on its own. Complete them 
 - Use string reference `model: 'academic_sessions'` (avoids circular dep since Class is defined at module-load time)
 - `onUpdate: CASCADE`, `onDelete: RESTRICT`
 
-### Task 1.4 — ~~Add `sessionId` to `Section` model~~ (skipped)
-- Not needed — Section already has `classId`, and Class has `sessionId`.
-  Session is always derivable via the join `Section → Class → AcademicSession`.
-  Adding it directly would create redundancy and risk data inconsistency.
-
 ### Task 1.5 — Add `sessionId` to `Attendance` model
 - File: `backend/src/models/Attendance.ts`
 - Add `sessionId INTEGER allowNull:false` FK → `academic_sessions` (`RESTRICT` delete)
@@ -321,9 +316,9 @@ PHASE 4 — Enrollment API
   [ ] 4.2  Create enrollment routes + mount
 
 PHASE 5 — Update Existing Backend
-  [ ] 5.1  Update student controller
-  [ ] 5.2  Update attendance controller
-  [ ] 5.3  Update monthlyFee controller
+  [x] 5.1  Update student controller
+  [x] 5.2  Update attendance controller
+  [x] 5.3  Update monthlyFee controller
 
 PHASE 6 — New Frontend Feature
   [ ] 6.1  API client + types
