@@ -44,32 +44,52 @@ export interface User {
   lastName: string;
 }
 
-// Main Student interface - matches backend model structure exactly
+export interface AcademicSessionRef {
+  id: number;
+  name: string;
+  isActive: boolean;
+}
+
+export interface StudentEnrollmentData {
+  id: number;
+  studentId: number;
+  sessionId: number;
+  classId: number;
+  sectionId: number;
+  rollNumber?: string;
+  promotedAt?: string;
+  session?: AcademicSessionRef;
+  class?: Class;
+  section?: Section;
+}
+
+// Main Student interface - matches backend model structure
 export interface Student {
   id: number;
   schoolId: number;
   admissionNumber: string;
   admissionDate: string;
-  lastName: string; // Swapped order to match backend
-  firstName: string; // Swapped order to match backend
+  lastName: string;
+  firstName: string;
   email?: string;
-  phone: string; // Required in backend
-  dateOfBirth: string; // Required in backend
-  gender: Gender; // Required in backend
-  bloodGroup: BloodGroup; // Required in backend
-  religion: Religion; // Required in backend
-  aadhaarNumber: string; // Required in backend
-  classId: number; // Required in backend
-  sectionId: number; // Required in backend
-  rollNumber?: string; // Optional in backend (string in backend, was string here)
-  address: string; // Required in backend
-  city: string; // Required in backend
-  state: string; // Required in backend
-  pincode: string; // Required in backend
-  fatherName: string; // Required in backend
+  phone: string;
+  dateOfBirth: string;
+  gender: Gender;
+  bloodGroup: BloodGroup;
+  religion: Religion;
+  aadhaarNumber: string;
+  // classId/sectionId/rollNumber removed from students table post-migration; kept optional for compat
+  classId?: number;
+  sectionId?: number;
+  rollNumber?: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  fatherName: string;
   fatherPhone?: string;
   fatherOccupation?: string;
-  motherName: string; // Required in backend
+  motherName: string;
   motherPhone?: string;
   motherOccupation?: string;
   guardianName?: string;
@@ -83,30 +103,31 @@ export interface Student {
   dayboarding: boolean;
   hostel: boolean;
   areaTransportationId?: number;
-  createdBy: number; // Required in backend
+  createdBy: number;
 
   // Timestamps (matching backend)
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly deletedAt?: string;
-  
-  // Optional: Include associated data from frontend queries
-  class: Class; // Including class details for frontend use
-  section: Section; // Including section details for frontend use
-  creator: User; // Including creator details for frontend use
+
+  // Associated data
+  class: Class;
+  section: Section;
+  creator: User;
+  enrollments?: StudentEnrollmentData[];
 
   // Virtual field for full name (computed in backend)
-  fullName: string; // Available from backend getter
-  
+  fullName: string;
+
   // Fee information
-  totalDue?: number; // Total outstanding fee amount
-  
+  totalDue?: number;
+
   // Payment reminder fields
-  paymentReminderDate?: string; // Payment reminder date
-  paymentRemainderRemarks?: string; // Payment reminder remarks
-  
+  paymentReminderDate?: string;
+  paymentRemainderRemarks?: string;
+
   // Active status
-  active?: boolean; // Whether student is active (has not left school)
+  active?: boolean;
 }
 
 // Create Student Request - matches what backend expects
@@ -250,6 +271,7 @@ export interface StudentFilters {
   search?: string;
   classId?: number;
   sectionId?: number;
+  sessionId?: number;
   gender?: Gender;
   active?: boolean;
   page?: number;

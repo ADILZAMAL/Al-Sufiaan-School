@@ -5,6 +5,9 @@ import * as apiClient from "../api";
 import { ClassType, SectionType } from "../api";
 import { useAppContext } from "../../../providers/AppContext";
 import { FaPlus } from "react-icons/fa";
+import SessionSelector from "../../sessions/components/SessionSelector";
+import { academicSessionApi } from "../../sessions/api";
+import { AcademicSession } from "../../sessions/types";
 
 type AddClassFormData = {
   name: string;
@@ -20,8 +23,27 @@ const Class: React.FC = () => {
   const [activeClass, setActiveClass] = useState<ClassType | null>(null);
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
 
-  const { data: classes, isLoading } = useQuery("fetchClasses", apiClient.fetchClasses);
+  // Fetch active session to set default
+  useQuery<AcademicSession | null>(
+    "activeSession",
+    academicSessionApi.getActiveSession,
+    {
+      staleTime: 5 * 60 * 1000,
+      onSuccess: (session) => {
+        if (session && selectedSessionId === null) {
+          setSelectedSessionId(session.id);
+        }
+      },
+    }
+  );
+
+  const { data: classes, isLoading } = useQuery(
+    ["fetchClasses", selectedSessionId],
+    () => apiClient.fetchClasses(selectedSessionId ?? undefined),
+    { enabled: selectedSessionId !== null }
+  );
 
   const {
     register: registerClass,
@@ -37,24 +59,28 @@ const Class: React.FC = () => {
     reset: resetSection,
   } = useForm<AddSectionFormData>();
 
-  const classMutation = useMutation(apiClient.addClass, {
-    onSuccess: () => {
-      showToast({ message: "Class Added Successfully!", type: "SUCCESS" });
-      resetClass();
-      setIsClassModalOpen(false);
-      queryClient.invalidateQueries("fetchClasses");
-    },
-    onError: (error: Error) => {
-      showToast({ message: error.message, type: "ERROR" });
-    },
-  });
+  const classMutation = useMutation(
+    (data: AddClassFormData) =>
+      apiClient.addClass({ ...data, sessionId: selectedSessionId ?? undefined }),
+    {
+      onSuccess: () => {
+        showToast({ message: "Class Added Successfully!", type: "SUCCESS" });
+        resetClass();
+        setIsClassModalOpen(false);
+        queryClient.invalidateQueries(["fetchClasses", selectedSessionId]);
+      },
+      onError: (error: Error) => {
+        showToast({ message: error.message, type: "ERROR" });
+      },
+    }
+  );
 
   const sectionMutation = useMutation(apiClient.addSection, {
     onSuccess: () => {
       showToast({ message: "Section Added Successfully!", type: "SUCCESS" });
       resetSection();
       setIsSectionModalOpen(false);
-      queryClient.invalidateQueries("fetchClasses");
+      queryClient.invalidateQueries(["fetchClasses", selectedSessionId]);
     },
     onError: (error: Error) => {
       showToast({ message: error.message, type: "ERROR" });
@@ -74,76 +100,97 @@ const Class: React.FC = () => {
   useEffect(() => {
     if (classes && classes.length > 0) {
       setActiveClass(classes[0]);
+    } else {
+      setActiveClass(null);
     }
   }, [classes]);
+
+  const handleSessionChange = (sessionId: number) => {
+    setSelectedSessionId(sessionId);
+    setActiveClass(null);
+  };
 
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">
-            Class Management
-          </h2>
-          <button
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200"
-            onClick={() => setIsClassModalOpen(true)}
-          >
-            <FaPlus />
-            Add Class
-          </button>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <h2 className="text-3xl font-bold text-gray-800">Class Management</h2>
+          <div className="flex items-center gap-4">
+            <SessionSelector
+              value={selectedSessionId}
+              onChange={handleSessionChange}
+            />
+            <button
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setIsClassModalOpen(true)}
+              disabled={selectedSessionId === null}
+            >
+              <FaPlus />
+              Add Class
+            </button>
+          </div>
         </div>
 
-        {isLoading ? (
+        {selectedSessionId === null ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center text-amber-700 text-sm font-medium">
+            No active session found. Please create and activate a session first.
+          </div>
+        ) : isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : (
-          <div className="flex gap-4 mb-6">
-            {classes?.map((classItem: ClassType) => (
-              <button
-                key={classItem.id}
-                onClick={() => setActiveClass(classItem)}
-                type="button"
-                className={`px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  activeClass?.id === classItem.id
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
-                }`}
-              >
-                {classItem.name}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Render sections for the active class here */}
-        {activeClass && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">
-                Sections for {activeClass.name}
-              </h3>
-              <button
-                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-all duration-200"
-                onClick={() => setIsSectionModalOpen(true)}
-              >
-                <FaPlus />
-                Add Section
-              </button>
-            </div>
-            
-            {activeClass.sections && activeClass.sections.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activeClass.sections.map((section: SectionType) => (
-                  <div key={section.id} className="bg-gray-50 p-4 rounded-lg border">
-                    <h4 className="font-semibold text-gray-800">{section.name}</h4>
-                  </div>
+          <>
+            {classes && classes.length > 0 ? (
+              <div className="flex flex-wrap gap-4 mb-6">
+                {classes.map((classItem: ClassType) => (
+                  <button
+                    key={classItem.id}
+                    onClick={() => setActiveClass(classItem)}
+                    type="button"
+                    className={`px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                      activeClass?.id === classItem.id
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
+                    }`}
+                  >
+                    {classItem.name}
+                  </button>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-600">No sections found for this class.</p>
+              <p className="text-gray-500 mb-6 text-sm">No classes yet for this session. Add one to get started.</p>
             )}
-          </div>
+
+            {activeClass && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-gray-800">
+                    Sections for {activeClass.name}
+                  </h3>
+                  <button
+                    className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-all duration-200"
+                    onClick={() => setIsSectionModalOpen(true)}
+                  >
+                    <FaPlus />
+                    Add Section
+                  </button>
+                </div>
+
+                {activeClass.sections && activeClass.sections.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {activeClass.sections.map((section: SectionType) => (
+                      <div key={section.id} className="bg-gray-50 p-4 rounded-lg border">
+                        <h4 className="font-semibold text-gray-800">{section.name}</h4>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-600">No sections found for this class.</p>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -151,9 +198,7 @@ const Class: React.FC = () => {
       {isClassModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all duration-300">
-            <h3 className="text-xl font-semibold mb-6 text-gray-800">
-              Add New Class
-            </h3>
+            <h3 className="text-xl font-semibold mb-6 text-gray-800">Add New Class</h3>
             <form onSubmit={onSubmitClass}>
               <div className="space-y-4">
                 <input

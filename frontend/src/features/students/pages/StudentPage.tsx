@@ -9,14 +9,27 @@ import EditStudentModal from '../components/EditStudentModal';
 import DeleteStudentModal from '../components/DeleteStudentModal';
 import { Student, Gender } from '../types';
 import { studentApi } from '../api';
-import { fetchClasses, ClassType, SectionType } from '../../class/api';
+import SessionSelector from '../../sessions/components/SessionSelector';
+import { academicSessionApi } from '../../sessions/api';
+import { AcademicSession } from '../../sessions/types';
+import { ClassType, SectionType } from '../../class/api';
+
+const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || '';
+
+const fetchClassesBySession = async (sessionId: number): Promise<ClassType[]> => {
+  const response = await fetch(`${API_BASE_URL}/api/classes?sessionId=${sessionId}`, {
+    credentials: 'include',
+  });
+  const body = await response.json();
+  if (!body.success) throw new Error(body.message || 'Failed to fetch classes');
+  return body.data;
+};
 
 const StudentPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const isInitialMount = useRef(true);
-  
-  // Initialize state from URL params
+
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -34,25 +47,45 @@ const StudentPage: React.FC = () => {
     const active = searchParams.get('active');
     return active === null ? true : active === 'true';
   });
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
 
-  // Load all students on initial load - no filtering on backend
-  const { data: students = [], isLoading: loading } = useQuery<Student[]>(
-    'fetchStudents',
-    () => studentApi.getStudents({}),
+  // Fetch active session on mount to set default
+  useQuery<AcademicSession | null>(
+    'activeSession',
+    academicSessionApi.getActiveSession,
     {
+      staleTime: 5 * 60 * 1000,
+      onSuccess: (session) => {
+        if (session && selectedSessionId === null) {
+          setSelectedSessionId(session.id);
+        }
+      },
+    }
+  );
+
+  // Fetch classes for selected session
+  const { data: classes = [] } = useQuery<ClassType[]>(
+    ['fetchClasses', selectedSessionId],
+    () => fetchClassesBySession(selectedSessionId!),
+    {
+      enabled: selectedSessionId !== null,
+      staleTime: 5 * 60 * 1000,
+    }
+  );
+
+  // Fetch students filtered by session
+  const { data: students = [], isLoading: loading } = useQuery<Student[]>(
+    ['fetchStudents', selectedSessionId],
+    () => studentApi.getStudents(selectedSessionId ? { sessionId: selectedSessionId } : {}),
+    {
+      enabled: selectedSessionId !== null,
       staleTime: 5 * 60 * 1000,
       keepPreviousData: true,
     }
   );
 
-  const { data: classes = [] } = useQuery<ClassType[]>(
-    'fetchClasses',
-    fetchClasses
-  );
-
   // Update URL params when filters change
   useEffect(() => {
-    // Skip on initial mount since we already initialized from URL params
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
@@ -63,8 +96,7 @@ const StudentPage: React.FC = () => {
     if (selectedClassId !== null) params.set('classId', selectedClassId.toString());
     if (selectedSectionId !== null) params.set('sectionId', selectedSectionId.toString());
     if (activeFilter !== true) params.set('active', activeFilter.toString());
-    
-    // Only update if params actually changed to avoid unnecessary updates
+
     const newParams = params.toString();
     const currentParams = searchParams.toString();
     if (currentParams !== newParams) {
@@ -73,19 +105,15 @@ const StudentPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, selectedClassId, selectedSectionId, activeFilter]);
 
+  const handleSessionChange = (sessionId: number) => {
+    setSelectedSessionId(sessionId);
+    setSelectedClassId(null);
+    setSelectedSectionId(null);
+  };
+
   const handleAddStudent = () => {
     setShowAddModal(true);
   };
-
-  // const handleEditStudent = (student: Student) => {
-  //   setSelectedStudent(student);
-  //   setShowEditModal(true);
-  // };
-
-  // const handleDeleteStudent = (student: Student) => {
-  //   setSelectedStudent(student);
-  //   setShowDeleteModal(true);
-  // };
 
   const handleModalClose = () => {
     setShowAddModal(false);
@@ -96,42 +124,44 @@ const StudentPage: React.FC = () => {
 
   const handleSuccess = () => {
     handleModalClose();
-    queryClient.invalidateQueries(['fetchStudents']);
+    queryClient.invalidateQueries(['fetchStudents', selectedSessionId]);
+  };
+
+  // Helper to get enrollment for a student in the current session
+  const getEnrollment = (student: Student) => {
+    if (!student.enrollments || student.enrollments.length === 0) return null;
+    if (selectedSessionId) {
+      return student.enrollments.find(e => e.sessionId === selectedSessionId) || student.enrollments[0];
+    }
+    return student.enrollments[0];
   };
 
   const filteredStudents = students.filter(student => {
-    // Search filter
-    const matchesSearch = 
+    const matchesSearch =
       !searchTerm ||
       student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Class filter
-    const matchesClass = selectedClassId === null || student.classId === selectedClassId;
-    
-    // Section filter
-    const matchesSection = selectedSectionId === null || student.sectionId === selectedSectionId;
-    
-    // Active filter
+
+    const enrollment = getEnrollment(student);
+    const matchesClass = selectedClassId === null || enrollment?.classId === selectedClassId;
+    const matchesSection = selectedSectionId === null || enrollment?.sectionId === selectedSectionId;
     const matchesActive = student.active === activeFilter;
-    
+
     return matchesSearch && matchesClass && matchesSection && matchesActive;
   });
 
   // Get sections for selected class
-  const availableSections: SectionType[] = selectedClassId 
+  const availableSections: SectionType[] = selectedClassId
     ? classes.find(c => c.id === selectedClassId)?.sections || []
     : [];
 
-  // Handle class change - reset section filter
   const handleClassChange = (classId: string) => {
     const id = classId === 'all' ? null : parseInt(classId);
     setSelectedClassId(id);
-    setSelectedSectionId(null); // Reset section when class changes
+    setSelectedSectionId(null);
   };
 
-  // Handle clear filters
   const handleClearFilters = () => {
     setSelectedClassId(null);
     setSelectedSectionId(null);
@@ -139,7 +169,6 @@ const StudentPage: React.FC = () => {
     setActiveFilter(true);
   };
 
-  // Statistics cards data - based on filtered students
   const stats = {
     total: filteredStudents.length,
     active: filteredStudents.filter(s => s.active).length,
@@ -162,6 +191,11 @@ const StudentPage: React.FC = () => {
                 </h1>
                 <p className="text-blue-100 mt-2">Manage student records, enrollment, and academic information</p>
               </div>
+              <SessionSelector
+                value={selectedSessionId}
+                onChange={handleSessionChange}
+                className="bg-white bg-opacity-10 rounded-lg px-3 py-2"
+              />
             </div>
           </div>
         </div>
@@ -244,13 +278,14 @@ const StudentPage: React.FC = () => {
                 className="w-full pl-12 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
-            
+
             <div className="flex items-center gap-3">
               <div className="flex flex-col">
                 <select
                   value={selectedClassId === null ? 'all' : selectedClassId.toString()}
                   onChange={(e) => handleClassChange(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm"
+                  disabled={selectedSessionId === null}
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="all">All Classes</option>
                   {classes.map((classItem) => (
@@ -260,7 +295,7 @@ const StudentPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div className="flex flex-col">
                 <select
                   value={selectedSectionId === null ? 'all' : selectedSectionId.toString()}
@@ -276,7 +311,7 @@ const StudentPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div className="flex flex-col">
                 <select
                   value={activeFilter ? 'active' : 'inactive'}
@@ -287,7 +322,7 @@ const StudentPage: React.FC = () => {
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
-              
+
               {(selectedClassId !== null || selectedSectionId !== null || activeFilter !== true) && (
                 <button
                   type="button"
@@ -297,10 +332,11 @@ const StudentPage: React.FC = () => {
                   Clear
                 </button>
               )}
-              
+
               <button
                 onClick={handleAddStudent}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 shadow-md text-sm font-medium h-[42px]"
+                disabled={selectedSessionId === null}
+                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 shadow-md text-sm font-medium h-[42px] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 <FaPlus className="w-4 h-4" />
                 <span>Add Student</span>
@@ -308,6 +344,13 @@ const StudentPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* No session warning */}
+        {selectedSessionId === null && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-center">
+            <p className="text-amber-700 text-sm font-medium">No active academic session found. Please create and activate a session first.</p>
+          </div>
+        )}
 
         {/* Student List */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -323,6 +366,7 @@ const StudentPage: React.FC = () => {
         isOpen={showAddModal}
         onClose={handleModalClose}
         onSuccess={handleSuccess}
+        sessionId={selectedSessionId}
       />
 
       {selectedStudent && (

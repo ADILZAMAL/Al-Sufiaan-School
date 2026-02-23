@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { studentApi } from '../api';
-import { useAppContext } from '../../../providers/AppContext'; 
+import { useAppContext } from '../../../providers/AppContext';
 import { Student, UpdateStudentRequest, Gender, Religion, BloodGroup, StudentFormData } from '../types';
 import PhotoUpload from '../../../components/common/PhotoUpload';
+import { enrollmentApi } from '../../sessions/api';
+import { UpdateEnrollmentRequest } from '../../sessions/types';
 
 interface PhotoFile {
   file: File;
@@ -25,6 +27,9 @@ interface ClassData {
 
 const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess }) => {
   const { showToast } = useAppContext();
+  const [showEnrollmentEditor, setShowEnrollmentEditor] = useState(false);
+  const [enrollmentEdit, setEnrollmentEdit] = useState<{ classId: number | null; sectionId: number | null; rollNumber: string }>({ classId: null, sectionId: null, rollNumber: '' });
+  const [savingEnrollment, setSavingEnrollment] = useState(false);
   const [formData, setFormData] = useState<StudentFormData>({
     admissionNumber: '',
     firstName: '',
@@ -99,8 +104,8 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         bloodGroup: student.bloodGroup,
         religion: student.religion,
         aadhaarNumber: student.aadhaarNumber || '',
-        classId: student.classId,
-        sectionId: student.sectionId,
+        classId: student.classId ?? null,
+        sectionId: student.sectionId ?? null,
         rollNumber: student.rollNumber || '',
         address: student.address,
         city: student.city,
@@ -391,55 +396,126 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Academic Information (Read-only) */}
           <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Academic Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Admission No.
-                </label>
-                <input
-                  type="text"
-                  name="admissionNumber"
-                  value={formData.admissionNumber}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
-                  disabled
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Class
-                </label>
-                <input
-                  type="text"
-                  value={classes.find(c => c.id === formData.classId)?.name || ''}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
-                  disabled
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Section
-                </label>
-                <input
-                  type="text"
-                  value={classes.find(c => c.id === formData.classId)?.sections.find(s => s.id === formData.sectionId)?.name || ''}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
-                  disabled
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Roll Number
-                </label>
-                <input
-                  type="text"
-                  name="rollNumber"
-                  value={formData.rollNumber}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
-                  disabled
-                />
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Academic Information</h3>
+              {!showEnrollmentEditor && student.enrollments && student.enrollments.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const e = student.enrollments![0];
+                    setEnrollmentEdit({ classId: e.classId, sectionId: e.sectionId, rollNumber: e.rollNumber || '' });
+                    setShowEnrollmentEditor(true);
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium underline"
+                >
+                  Change Class/Section
+                </button>
+              )}
             </div>
+            {(() => {
+              const enrollment = student.enrollments?.[0];
+              const enrollClass = enrollment?.class;
+              const enrollSection = enrollment?.section;
+              const enrollRoll = enrollment?.rollNumber;
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Admission No.</label>
+                    <input type="text" value={formData.admissionNumber} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" disabled />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                    <input type="text" value={enrollClass?.name || ''} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" disabled />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                    <input type="text" value={enrollSection?.name || ''} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" disabled />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
+                    <input type="text" value={enrollRoll || ''} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" disabled />
+                  </div>
+                </div>
+              );
+            })()}
+            {showEnrollmentEditor && (
+              <div className="mt-4 p-4 border border-blue-200 bg-blue-50 rounded-lg">
+                <h4 className="text-sm font-semibold text-blue-800 mb-3">Update Class / Section / Roll</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Class</label>
+                    <select
+                      value={enrollmentEdit.classId ?? ''}
+                      onChange={(e) => setEnrollmentEdit(prev => ({ ...prev, classId: parseInt(e.target.value) || null, sectionId: null }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Class</option>
+                      {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Section</label>
+                    <select
+                      value={enrollmentEdit.sectionId ?? ''}
+                      onChange={(e) => setEnrollmentEdit(prev => ({ ...prev, sectionId: parseInt(e.target.value) || null }))}
+                      disabled={!enrollmentEdit.classId}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                    >
+                      <option value="">Select Section</option>
+                      {(classes.find(c => c.id === enrollmentEdit.classId)?.sections || []).map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Roll Number</label>
+                    <input
+                      type="text"
+                      value={enrollmentEdit.rollNumber}
+                      onChange={(e) => setEnrollmentEdit(prev => ({ ...prev, rollNumber: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                      placeholder="Optional"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    type="button"
+                    disabled={savingEnrollment || !enrollmentEdit.classId || !enrollmentEdit.sectionId}
+                    onClick={async () => {
+                      const enrollment = student.enrollments?.[0];
+                      if (!enrollment) return;
+                      setSavingEnrollment(true);
+                      try {
+                        const update: UpdateEnrollmentRequest = {
+                          classId: enrollmentEdit.classId ?? undefined,
+                          sectionId: enrollmentEdit.sectionId ?? undefined,
+                          rollNumber: enrollmentEdit.rollNumber || undefined,
+                        };
+                        await enrollmentApi.updateEnrollment(enrollment.id, update);
+                        showToast({ message: 'Class/Section updated successfully', type: 'SUCCESS' });
+                        setShowEnrollmentEditor(false);
+                        onSuccess();
+                      } catch (err: any) {
+                        showToast({ message: err.message || 'Failed to update enrollment', type: 'ERROR' });
+                      } finally {
+                        setSavingEnrollment(false);
+                      }
+                    }}
+                    className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {savingEnrollment ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowEnrollmentEditor(false)}
+                    className="px-4 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Services Section */}

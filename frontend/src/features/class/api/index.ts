@@ -4,6 +4,7 @@ export type ClassType = {
     id: number;
     name: string;
     schoolId: number;
+    sessionId?: number;
     sections?: SectionType[];
 }
 
@@ -14,18 +15,19 @@ export type SectionType = {
     schoolId: number;
 }
 
-export const fetchClasses = async (): Promise<ClassType[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes`, {
-        credentials: "include"
-    })
+export const fetchClasses = async (sessionId?: number): Promise<ClassType[]> => {
+    const url = sessionId
+        ? `${API_BASE_URL}/api/classes?sessionId=${sessionId}`
+        : `${API_BASE_URL}/api/classes`;
+    const response = await fetch(url, { credentials: "include" });
     const body = await response.json();
     if (!body.success) {
-        throw new Error(body.error.message)
+        throw new Error(body.error?.message || body.message || 'Failed to fetch classes');
     }
     return body.data;
 }
 
-export const addClass = async (formData: { name: string }) => {
+export const addClass = async (formData: { name: string; sessionId?: number }) => {
     const response = await fetch(`${API_BASE_URL}/api/classes`, {
         method: 'POST',
         credentials: 'include',
@@ -37,7 +39,7 @@ export const addClass = async (formData: { name: string }) => {
 
     const body = await response.json()
     if(!body.success) {
-        throw new Error(body.error.message)
+        throw new Error(body.error?.message || body.message || 'Failed to add class')
     }
     return body
 }

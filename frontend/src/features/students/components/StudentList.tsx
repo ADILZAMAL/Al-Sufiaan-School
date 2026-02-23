@@ -98,7 +98,7 @@ const StudentList: React.FC<StudentListProps> = ({
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        {student.studentPhoto ? (
+                         {student.studentPhoto ? (
                           <img
                             src={student.studentPhoto}
                             alt={getFullName(student)}

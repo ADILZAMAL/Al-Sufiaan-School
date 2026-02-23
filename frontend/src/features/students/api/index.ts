@@ -39,6 +39,7 @@ export const studentApi = {
     if (filters.search) params.append('search', filters.search);
     if (filters.classId) params.append('classId', filters.classId.toString());
     if (filters.sectionId) params.append('sectionId', filters.sectionId.toString());
+    if (filters.sessionId) params.append('sessionId', filters.sessionId.toString());
     if (filters.gender) params.append('gender', filters.gender);
     if (filters.active !== undefined) params.append('active', filters.active.toString());
     if (filters.page) params.append('page', filters.page.toString());

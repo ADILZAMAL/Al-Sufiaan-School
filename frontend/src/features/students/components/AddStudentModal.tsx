@@ -12,6 +12,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (newStudent?: Student) => void;
+  sessionId?: number | null;
 }
 
 interface ClassData {
@@ -20,7 +21,7 @@ interface ClassData {
   sections: Array<{ id: number; name: string }>;
 }
 
-const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
+const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionId }) => {
   const { showToast } = useAppContext();
   const [showAdmissionForm, setShowAdmissionForm] = useState(false);
   const [newlyCreatedStudent, setNewlyCreatedStudent] = useState<Student | null>(null);
@@ -84,9 +85,10 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
 
   const fetchClasses = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/classes`, {
-        credentials: 'include',
-      });
+      const url = sessionId
+        ? `${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/classes?sessionId=${sessionId}`
+        : `${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/classes`;
+      const response = await fetch(url, { credentials: 'include' });
       const data = await response.json();
       if (data.success) {
         setClasses(data.data);

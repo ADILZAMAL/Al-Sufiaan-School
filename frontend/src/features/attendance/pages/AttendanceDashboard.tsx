@@ -1,6 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from 'react-query';
 import { getAllAttendanceStats } from '../api';
 import { useAppContext } from '../../../providers/AppContext';
+import SessionSelector from '../../sessions/components/SessionSelector';
+import { academicSessionApi } from '../../sessions/api';
+import { AcademicSession } from '../../sessions/types';
 
 export default function AttendanceDashboard() {
   const { showToast } = useAppContext();
@@ -11,20 +15,34 @@ export default function AttendanceDashboard() {
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+
+  // Fetch active session on mount to set default
+  useQuery<AcademicSession | null>(
+    'activeSession',
+    academicSessionApi.getActiveSession,
+    {
+      staleTime: 5 * 60 * 1000,
+      onSuccess: (session) => {
+        if (session && selectedSessionId === null) {
+          setSelectedSessionId(session.id);
+        }
+      },
+    }
+  );
 
   const fetchStats = async () => {
     if (!selectedDate) return;
-    
+
     setLoading(true);
     try {
-      // Get all class stats in a single API call
-      const data = await getAllAttendanceStats({ date: selectedDate });
-      
-      // Set holiday info
+      const params: { date: string; sessionId?: number } = { date: selectedDate };
+      if (selectedSessionId) params.sessionId = selectedSessionId;
+
+      const data = await getAllAttendanceStats(params);
+
       setIsHoliday(data.isHoliday);
       setHolidayName(data.holidayName);
-      
-      // Set class stats list
       setClassStatsList(data.classStats);
     } catch (error: any) {
       console.error('Error fetching stats:', error);
@@ -34,14 +52,16 @@ export default function AttendanceDashboard() {
     }
   };
 
-  useEffect(() => {
-    fetchStats();
-  }, [selectedDate]);
-
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Attendance Dashboard</h1>
-      
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Attendance Dashboard</h1>
+        <SessionSelector
+          value={selectedSessionId}
+          onChange={(id) => setSelectedSessionId(id)}
+        />
+      </div>
+
       {/* Date Selector */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex items-center space-x-4">
@@ -160,14 +180,10 @@ export default function AttendanceDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {classStatsList.map((item, _) => (
+                {classStatsList.map((item) => (
                   <tr key={`${item.classId}-${item.sectionId}`} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {item.className}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {item.sectionName}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.className}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.sectionName}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full font-medium">{item.presentCount}</span>
                     </td>
@@ -177,9 +193,7 @@ export default function AttendanceDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full font-medium">{item.notMarked}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {item.totalStudents}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.totalStudents}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center">
                         <span className="mr-2">{item.attendancePercentage ? item.attendancePercentage.toFixed(1) : '0'}%</span>

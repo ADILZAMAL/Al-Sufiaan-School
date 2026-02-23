@@ -109,6 +109,7 @@ export const attendanceApi = {
   // Get all attendance statistics for all classes/sections at once
   getAllAttendanceStats: async (params: {
     date: string;
+    sessionId?: number;
   }): Promise<{
     date: string;
     classStats: Array<{
@@ -131,6 +132,7 @@ export const attendanceApi = {
   }> => {
     const queryParams = new URLSearchParams();
     queryParams.append('date', params.date);
+    if (params.sessionId) queryParams.append('sessionId', params.sessionId.toString());
 
     const response = await apiRequest(`/attendance/stats/all?${queryParams.toString()}`);
     return response.data;
