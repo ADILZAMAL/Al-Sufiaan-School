@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiPlus, HiSearch } from 'react-icons/hi';
+import { HiPlus } from 'react-icons/hi';
 import { FaBuilding, FaPhone, FaTag } from 'react-icons/fa';
 import { fetchVendors } from '../api';
 import { Vendor } from '../types';
@@ -21,7 +21,6 @@ const getAvatarColor = (name: string) =>
 const VendorDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -45,15 +44,6 @@ const VendorDashboard: React.FC = () => {
     loadVendors();
   };
 
-  const filteredVendors = vendors.filter(
-    (vendor) =>
-      vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vendor.mobile.includes(searchTerm)
-  );
-
-  const activeCount = vendors.filter((v) => v.isActive).length;
-  const inactiveCount = vendors.length - activeCount;
-
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -73,49 +63,17 @@ const VendorDashboard: React.FC = () => {
           </button>
         </div>
 
-        {/* Stats */}
-        {!isLoading && vendors.length > 0 && (
-          <div className="grid grid-cols-3 gap-4 max-w-xs">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">{vendors.length}</p>
-              <p className="text-xs text-gray-500 font-medium mt-0.5">Total</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-emerald-600">{activeCount}</p>
-              <p className="text-xs text-gray-500 font-medium mt-0.5">Active</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <p className="text-2xl font-bold text-red-500">{inactiveCount}</p>
-              <p className="text-xs text-gray-500 font-medium mt-0.5">Inactive</p>
-            </div>
-          </div>
-        )}
-
-        {/* Search */}
-        <div className="relative max-w-sm">
-          <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search by name or mobile..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-
         {/* Content */}
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
           </div>
-        ) : filteredVendors.length === 0 ? (
+        ) : vendors.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 py-20 text-center">
             <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
               <FaBuilding className="text-blue-300" size={22} />
             </div>
-            <p className="text-gray-700 font-semibold">
-              {vendors.length === 0 ? 'No vendors yet' : 'No vendors match your search'}
-            </p>
+            <p className="text-gray-700 font-semibold">No vendors yet</p>
             {vendors.length === 0 && (
               <>
                 <p className="text-gray-400 text-sm mt-1">Add your first vendor to get started</p>
@@ -131,7 +89,7 @@ const VendorDashboard: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredVendors.map((vendor) => (
+            {vendors.map((vendor) => (
               <div
                 key={vendor.id}
                 onClick={() => navigate(`/dashboard/expense/vendors/${vendor.id}`)}
