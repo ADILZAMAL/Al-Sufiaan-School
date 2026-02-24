@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { useSearchParams } from 'react-router-dom';
-import { FaPlus, FaSearch, FaUserGraduate } from "react-icons/fa";
-import { FiUsers, FiTrendingUp } from 'react-icons/fi';
+import { FaPlus, FaSearch, FaUserGraduate, FaMale, FaFemale } from 'react-icons/fa';
+import { FiUsers, FiXCircle } from 'react-icons/fi';
+import { HiCurrencyRupee } from 'react-icons/hi';
 import StudentList from '../components/StudentList';
 import AddStudentModal from '../components/AddStudentModal';
 import EditStudentModal from '../components/EditStudentModal';
@@ -49,8 +50,6 @@ const StudentPage: React.FC = () => {
   });
   const [manualSessionId, setManualSessionId] = useState<number | null>(null);
 
-  // Fetch active session — derive selectedSessionId directly from query data
-  // (avoids onSuccess which is skipped when data is served from cache)
   const { data: activeSession, isLoading: sessionLoading } = useQuery<AcademicSession | null>(
     'activeSession',
     academicSessionApi.getActiveSession,
@@ -59,7 +58,6 @@ const StudentPage: React.FC = () => {
 
   const selectedSessionId = manualSessionId ?? activeSession?.id ?? null;
 
-  // Fetch classes for selected session
   const { data: classes = [] } = useQuery<ClassType[]>(
     ['fetchClasses', selectedSessionId],
     () => fetchClassesBySession(selectedSessionId!),
@@ -69,7 +67,6 @@ const StudentPage: React.FC = () => {
     }
   );
 
-  // Fetch students filtered by session
   const { data: students = [], isLoading: loading } = useQuery<Student[]>(
     ['fetchStudents', selectedSessionId],
     () => studentApi.getStudents(selectedSessionId ? { sessionId: selectedSessionId } : {}),
@@ -80,7 +77,6 @@ const StudentPage: React.FC = () => {
     }
   );
 
-  // Update URL params when filters change
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -107,10 +103,6 @@ const StudentPage: React.FC = () => {
     setSelectedSectionId(null);
   };
 
-  const handleAddStudent = () => {
-    setShowAddModal(true);
-  };
-
   const handleModalClose = () => {
     setShowAddModal(false);
     setShowEditModal(false);
@@ -123,7 +115,6 @@ const StudentPage: React.FC = () => {
     queryClient.invalidateQueries(['fetchStudents', selectedSessionId]);
   };
 
-  // Helper to get enrollment for a student in the current session
   const getEnrollment = (student: Student) => {
     if (!student.enrollments || student.enrollments.length === 0) return null;
     if (selectedSessionId) {
@@ -147,7 +138,6 @@ const StudentPage: React.FC = () => {
     return matchesSearch && matchesClass && matchesSection && matchesActive;
   });
 
-  // Get sections for selected class
   const availableSections: SectionType[] = selectedClassId
     ? classes.find(c => c.id === selectedClassId)?.sections || []
     : [];
@@ -158,201 +148,201 @@ const StudentPage: React.FC = () => {
     setSelectedSectionId(null);
   };
 
+  const hasActiveFilters = selectedClassId !== null || selectedSectionId !== null || searchTerm !== '';
+
   const handleClearFilters = () => {
     setSelectedClassId(null);
     setSelectedSectionId(null);
     setSearchTerm('');
-    setActiveFilter(true);
   };
 
   const stats = {
     total: filteredStudents.length,
-    active: filteredStudents.filter(s => s.active).length,
     male: filteredStudents.filter(s => s.gender === Gender.MALE).length,
     female: filteredStudents.filter(s => s.gender === Gender.FEMALE).length,
     totalDue: filteredStudents.reduce((sum, student) => sum + (student.totalDue || 0), 0),
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg">
-        <div className="px-6 py-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                  <FaUserGraduate className="text-blue-200" />
-                  Student Management
-                </h1>
-                <p className="text-blue-100 mt-2">Manage student records, enrollment, and academic information</p>
-              </div>
-              <SessionSelector
-                value={selectedSessionId}
-                onChange={handleSessionChange}
-                className="bg-white bg-opacity-10 rounded-lg px-3 py-2"
-              />
-            </div>
+    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto space-y-6">
+
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <FaUserGraduate className="text-blue-600" />
+              Student Management
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">Manage student records, enrollment, and academic information</p>
           </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Students</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
-                <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                  <FiTrendingUp className="w-4 h-4" />
-                  <span>+12% from last month</span>
-                </p>
-              </div>
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <FiUsers className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Male Students</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.male}</p>
-                <p className="text-sm text-gray-600 mt-2">
-                  {stats.total > 0 ? ((stats.male / stats.total) * 100).toFixed(1) : 0}% of total
-                </p>
-              </div>
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <div className="w-6 h-6 bg-blue-600 rounded-full"></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Female Students</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.female}</p>
-                <p className="text-sm text-pink-600 mt-2">
-                  {stats.total > 0 ? ((stats.female / stats.total) * 100).toFixed(1) : 0}% of total
-                </p>
-              </div>
-              <div className="bg-pink-100 p-3 rounded-lg">
-                <div className="w-6 h-6 bg-pink-600 rounded-full"></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Due</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  ₹{stats.totalDue.toLocaleString('en-IN')}
-                </p>
-                <p className="text-sm text-orange-600 mt-2">
-                  Outstanding fees
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Search and Actions Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4 items-center">
-            <div className="relative flex-1 max-w-lg">
-              <FaSearch className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search by name, admission number..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col">
-                <select
-                  value={selectedClassId === null ? 'all' : selectedClassId.toString()}
-                  onChange={(e) => handleClassChange(e.target.value)}
-                  disabled={selectedSessionId === null}
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="all">All Classes</option>
-                  {classes.map((classItem) => (
-                    <option key={classItem.id} value={classItem.id.toString()}>
-                      {classItem.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex flex-col">
-                <select
-                  value={selectedSectionId === null ? 'all' : selectedSectionId.toString()}
-                  onChange={(e) => setSelectedSectionId(e.target.value === 'all' ? null : parseInt(e.target.value))}
-                  disabled={selectedClassId === null}
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="all">All Sections</option>
-                  {availableSections.map((section) => (
-                    <option key={section.id} value={section.id.toString()}>
-                      {section.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex flex-col">
-                <select
-                  value={activeFilter ? 'active' : 'inactive'}
-                  onChange={(e) => setActiveFilter(e.target.value === 'active')}
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px] text-sm"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-
-              {(selectedClassId !== null || selectedSectionId !== null || activeFilter !== true) && (
-                <button
-                  type="button"
-                  onClick={handleClearFilters}
-                  className="px-3 py-2.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors h-[42px]"
-                >
-                  Clear
-                </button>
-              )}
-
-              <button
-                onClick={handleAddStudent}
-                disabled={selectedSessionId === null}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 shadow-md text-sm font-medium h-[42px] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                <FaPlus className="w-4 h-4" />
-                <span>Add Student</span>
-              </button>
-            </div>
+          <div className="flex items-center gap-3">
+            <SessionSelector
+              value={selectedSessionId}
+              onChange={handleSessionChange}
+              className=""
+            />
+            <button
+              onClick={() => setShowAddModal(true)}
+              disabled={selectedSessionId === null}
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaPlus className="w-3.5 h-3.5" />
+              Add Student
+            </button>
           </div>
         </div>
 
         {/* No session warning */}
         {!sessionLoading && selectedSessionId === null && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-center">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
             <p className="text-amber-700 text-sm font-medium">No active academic session found. Please create and activate a session first.</p>
           </div>
         )}
 
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Total Students */}
+          <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <FiUsers className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+            </div>
+          </div>
+
+          {/* Male */}
+          <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <FaMale className="w-4 h-4 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Male</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.male}</p>
+              <p className="text-xs text-gray-400">
+                {stats.total > 0 ? ((stats.male / stats.total) * 100).toFixed(0) : 0}%
+              </p>
+            </div>
+          </div>
+
+          {/* Female */}
+          <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-pink-50 flex items-center justify-center flex-shrink-0">
+              <FaFemale className="w-4 h-4 text-pink-500" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Female</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.female}</p>
+              <p className="text-xs text-gray-400">
+                {stats.total > 0 ? ((stats.female / stats.total) * 100).toFixed(0) : 0}%
+              </p>
+            </div>
+          </div>
+
+          {/* Total Due */}
+          <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+              <HiCurrencyRupee className="w-5 h-5 text-red-500" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Due</p>
+              <p className="text-xl font-bold text-gray-900">₹{stats.totalDue.toLocaleString('en-IN')}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters Bar */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center">
+            {/* Search */}
+            <div className="relative flex-1 min-w-0">
+              <FaSearch className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search by name or admission number..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Class Filter */}
+              <select
+                value={selectedClassId === null ? 'all' : selectedClassId.toString()}
+                onChange={(e) => handleClassChange(e.target.value)}
+                disabled={selectedSessionId === null}
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[130px] disabled:bg-gray-50 disabled:cursor-not-allowed text-gray-700"
+              >
+                <option value="all">All Classes</option>
+                {classes.map((classItem) => (
+                  <option key={classItem.id} value={classItem.id.toString()}>
+                    {classItem.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Section Filter */}
+              <select
+                value={selectedSectionId === null ? 'all' : selectedSectionId.toString()}
+                onChange={(e) => setSelectedSectionId(e.target.value === 'all' ? null : parseInt(e.target.value))}
+                disabled={selectedClassId === null}
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[130px] disabled:bg-gray-50 disabled:cursor-not-allowed text-gray-700"
+              >
+                <option value="all">All Sections</option>
+                {availableSections.map((section) => (
+                  <option key={section.id} value={section.id.toString()}>
+                    {section.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Active / Inactive Pill Tabs */}
+              <div className="bg-gray-100 p-1 rounded-xl flex items-center gap-1">
+                <button
+                  onClick={() => setActiveFilter(true)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                    activeFilter
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Active
+                </button>
+                <button
+                  onClick={() => setActiveFilter(false)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                    !activeFilter
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Inactive
+                </button>
+              </div>
+
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <button
+                  onClick={handleClearFilters}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <FiXCircle className="w-3.5 h-3.5" />
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Student List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <StudentList
             students={filteredStudents}
             loading={loading}
+            selectedSessionId={selectedSessionId}
           />
         </div>
       </div>
