@@ -169,7 +169,7 @@ const PayslipView: React.FC<PayslipViewProps> = ({
             </div>
             <div className="text-right">
               <p><strong>Generated Date:</strong> {formatDate(payslip.generatedDate)}</p>
-              <p><strong>Employee Type:</strong> {payslip.staffType === 'teaching' ? 'Teaching' : 'Non-Teaching'}</p>
+              <p><strong>Role:</strong> {payslip.staffRole}</p>
             </div>
           </div>
 

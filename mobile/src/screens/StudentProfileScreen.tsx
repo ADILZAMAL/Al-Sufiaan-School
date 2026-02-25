@@ -236,8 +236,13 @@ const StudentProfileScreen: React.FC = () => {
         }
       }
 
-      // 2. Update student fields
-      await studentApi.update(student.id, { ...form, studentPhoto: photoUrl });
+      // 2. Update student fields — convert empty strings to null for optional fields
+      const OPTIONAL_NULLABLE = ['email', 'fatherPhone', 'motherPhone', 'guardianName', 'guardianRelation', 'guardianPhone'] as const;
+      const payload = { ...form, studentPhoto: photoUrl };
+      for (const field of OPTIONAL_NULLABLE) {
+        if (payload[field] === '') payload[field] = null;
+      }
+      await studentApi.update(student.id, payload);
 
       // 3. Update roll number only if changed
       const originalRoll = activeEnrollment.rollNumber ?? '';

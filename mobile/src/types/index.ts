@@ -63,7 +63,9 @@ export interface User {
 export interface LoginResponse {
   userId: number;
   schoolId: number;
-  role: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER';
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
+  staffId?: number | null;
+  staffName?: string | null;
   token?: string;
 }
 
@@ -169,4 +171,51 @@ export interface Holiday {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Payslip {
+  id: number;
+  payslipNumber: string;
+  staffId: number;
+  month: number;
+  year: number;
+  monthName: string;
+  staffName: string;
+  staffRole: string;
+  schoolName: string;
+  baseSalary: number;
+  workingDays: number;
+  presentDays: number;
+  absentDays: number;
+  casualLeave: number;
+  halfDays: number;
+  grossSalary: number;
+  deductions: number;
+  netSalary: number;
+  totalPaidAmount: number;
+  remainingAmount: number;
+  paymentStatus: 'UNPAID' | 'PARTIAL' | 'PAID';
+  lastPaymentDate: string | null;
+}
+
+export interface PayslipPayment {
+  id: number;
+  paymentAmount: number;
+  paymentDate: string;
+  paymentMethod: 'Cash' | 'UPI' | 'Bank Transfer';
+  notes: string | null;
+}
+
+export interface PayslipWithPayments extends Payslip {
+  payments: PayslipPayment[];
+}
+
+export interface PayslipListResponse {
+  payslips: Payslip[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

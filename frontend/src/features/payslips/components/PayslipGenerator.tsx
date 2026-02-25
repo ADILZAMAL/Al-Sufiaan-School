@@ -7,7 +7,6 @@ import Toast from '../../../components/common/Toast';
 
 interface PayslipGeneratorProps {
   staff: Staff;
-  staffType: 'teaching' | 'non-teaching';
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (payslip: any) => void;
@@ -15,14 +14,12 @@ interface PayslipGeneratorProps {
 
 const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
   staff,
-  staffType,
   isOpen,
   onClose,
   onSuccess
 }) => {
   const [formData, setFormData] = useState<PayslipFormData>({
     staffId: staff.id!,
-    staffType,
     month: 0, // Will be set by next available month
     year: 0, // Will be set by next available month
     workingDays: 26,
@@ -61,7 +58,7 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
     if (isOpen && staff.id) {
       fetchNextAvailableMonth();
     }
-  }, [isOpen, staff.id, staffType]);
+  }, [isOpen, staff.id]);
 
   // Check existing payslip when month/year changes
   useEffect(() => {
@@ -73,7 +70,7 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
   const fetchNextAvailableMonth = async () => {
     setIsLoadingNextMonth(true);
     try {
-      const result = await payslipApi.getNextAvailableMonth(staffType, staff.id!);
+      const result = await payslipApi.getNextAvailableMonth(staff.id!);
       setNextAvailableMonth(result);
       
       // Set the form data to the next available month
@@ -96,7 +93,6 @@ const PayslipGenerator: React.FC<PayslipGeneratorProps> = ({
     setIsChecking(true);
     try {
       const result = await payslipApi.checkExists(
-        staffType,
         staff.id!,
         formData.month,
         formData.year

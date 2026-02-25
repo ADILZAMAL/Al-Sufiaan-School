@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { HiArrowLeft, HiPencil, HiTrash, HiCurrencyRupee, HiPlus } from 'react-icons/hi';
+import { HiArrowLeft, HiPencil, HiTrash, HiCurrencyRupee, HiPlus, HiLockClosed, HiLockOpen } from 'react-icons/hi';
 import { staffApi } from '../api/staff';
 import { Staff } from '../types';
 import { payslipApi } from '../../payslips/api/payslips';
@@ -8,6 +8,7 @@ import { Payslip } from '../../payslips/types';
 import PayslipGenerator from '../../payslips/components/PayslipGenerator';
 import PayslipList from '../../payslips/components/PayslipList';
 import PayslipView from '../../payslips/components/PayslipView';
+import EnableLoginModal from '../components/EnableLoginModal';
 import Toast from '../../../components/common/Toast';
 
 const ViewStaffDetails: React.FC = () => {
@@ -22,6 +23,10 @@ const ViewStaffDetails: React.FC = () => {
   const [isLoadingPayslips, setIsLoadingPayslips] = useState(false);
   const [showPayslipGenerator, setShowPayslipGenerator] = useState(false);
   const [selectedPayslip, setSelectedPayslip] = useState<Payslip | null>(null);
+
+  // Login access state
+  const [showEnableLoginModal, setShowEnableLoginModal] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
 
   useEffect(() => {
     fetchStaffDetails();
@@ -38,7 +43,7 @@ const ViewStaffDetails: React.FC = () => {
 
     setIsLoadingPayslips(true);
     try {
-      const response = await payslipApi.getByStaff(staff.staffType, staff.id, 1, 5);
+      const response = await payslipApi.getByStaff(staff.id, 1, 5);
       setPayslips(response.payslips);
     } catch (error: any) {
       console.error('Error fetching payslips:', error);
@@ -70,6 +75,19 @@ const ViewStaffDetails: React.FC = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDisableLogin = async () => {
+    if (!staff?.id) return;
+    if (!window.confirm('Are you sure you want to disable login for this staff member? They will no longer be able to access the mobile app.')) return;
+
+    try {
+      await staffApi.disableLogin(staff.id);
+      setToast({ message: 'Login disabled successfully', type: 'SUCCESS' });
+      fetchStaffDetails();
+    } catch (error: any) {
+      setToast({ message: error.message || 'Failed to disable login', type: 'ERROR' });
     }
   };
 
@@ -341,6 +359,73 @@ const ViewStaffDetails: React.FC = () => {
               </div>
             </div>
 
+            {/* Login Access */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                  {staff.loginStatus?.enabled
+                    ? <HiLockOpen className="h-5 w-5 mr-2 text-green-600" />
+                    : <HiLockClosed className="h-5 w-5 mr-2 text-gray-400" />
+                  }
+                  Mobile App Login
+                </h3>
+                <div className="flex items-center gap-2">
+                  {staff.loginStatus?.enabled ? (
+                    <>
+                      <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                        Login Enabled
+                      </span>
+                      <button
+                        onClick={() => setShowResetPasswordModal(true)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm rounded-md text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        Reset Password
+                      </button>
+                      <button
+                        onClick={handleDisableLogin}
+                        className="inline-flex items-center px-3 py-1.5 border border-red-300 text-sm rounded-md text-red-600 hover:bg-red-50 transition"
+                      >
+                        Disable Login
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500 font-medium">
+                        No Login
+                      </span>
+                      <button
+                        onClick={() => setShowEnableLoginModal(true)}
+                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition"
+                      >
+                        Enable Login
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {staff.loginStatus?.enabled ? (
+                <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
+                  <p>
+                    Mobile Number:{' '}
+                    <span className="font-medium text-gray-900">{staff.loginStatus.mobileNumber}</span>
+                  </p>
+                  <p className="mt-1">
+                    Last Login:{' '}
+                    <span className="font-medium text-gray-900">
+                      {staff.loginStatus.lastLogin
+                        ? new Date(staff.loginStatus.lastLogin).toLocaleString('en-IN')
+                        : 'Never logged in'}
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-700">
+                  This staff member does not have mobile app access. Click "Enable Login" to create an account.
+                </div>
+              )}
+            </div>
+
             {/* Payslip History */}
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -404,7 +489,6 @@ const ViewStaffDetails: React.FC = () => {
       {showPayslipGenerator && staff && (
         <PayslipGenerator
           staff={staff}
-          staffType={staff.staffType}
           isOpen={showPayslipGenerator}
           onClose={() => setShowPayslipGenerator(false)}
           onSuccess={handlePayslipGenerated}
@@ -418,6 +502,35 @@ const ViewStaffDetails: React.FC = () => {
           isOpen={!!selectedPayslip}
           onClose={() => setSelectedPayslip(null)}
           onPayslipUpdated={fetchPayslips}
+        />
+      )}
+
+      {/* Enable Login Modal */}
+      {showEnableLoginModal && staff && (
+        <EnableLoginModal
+          staff={staff}
+          mode="enable"
+          isOpen={showEnableLoginModal}
+          onClose={() => setShowEnableLoginModal(false)}
+          onSuccess={() => {
+            setShowEnableLoginModal(false);
+            setToast({ message: 'Login enabled successfully!', type: 'SUCCESS' });
+            fetchStaffDetails();
+          }}
+        />
+      )}
+
+      {/* Reset Password Modal */}
+      {showResetPasswordModal && staff && (
+        <EnableLoginModal
+          staff={staff}
+          mode="reset"
+          isOpen={showResetPasswordModal}
+          onClose={() => setShowResetPasswordModal(false)}
+          onSuccess={() => {
+            setShowResetPasswordModal(false);
+            setToast({ message: 'Password reset successfully!', type: 'SUCCESS' });
+          }}
         />
       )}
     </div>

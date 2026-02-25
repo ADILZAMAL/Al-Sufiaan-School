@@ -15,7 +15,7 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -34,7 +34,7 @@ const HomeScreen: React.FC = () => {
         </View>
 
         {/* Greeting */}
-        <Text style={styles.greeting}>Welcome back, Teacher!</Text>
+        <Text style={styles.greeting}>Welcome back, {user?.staffName ?? 'Teacher'}!</Text>
 
         {/* Feature Cards */}
         <View style={styles.cardsContainer}>
@@ -60,6 +60,32 @@ const HomeScreen: React.FC = () => {
             <View style={styles.cardText}>
               <Text style={styles.cardTitle}>Student Profiles</Text>
               <Text style={styles.cardSubtitle}>View & update student information</Text>
+            </View>
+            <Text style={styles.cardArrow}>→</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('ChangePassword')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.cardIcon}>🔑</Text>
+            <View style={styles.cardText}>
+              <Text style={styles.cardTitle}>Change Password</Text>
+              <Text style={styles.cardSubtitle}>Update your login password</Text>
+            </View>
+            <Text style={styles.cardArrow}>→</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('PayslipList')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.cardIcon}>💰</Text>
+            <View style={styles.cardText}>
+              <Text style={styles.cardTitle}>My Payslips</Text>
+              <Text style={styles.cardSubtitle}>View salary slips & payment history</Text>
             </View>
             <Text style={styles.cardArrow}>→</Text>
           </TouchableOpacity>

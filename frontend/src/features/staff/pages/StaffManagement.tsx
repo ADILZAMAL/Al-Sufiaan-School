@@ -273,6 +273,11 @@ const StaffManagement: React.FC = () => {
                       {staff.role && (
                         <span className="text-xs text-gray-500 truncate">{staff.role}</span>
                       )}
+                      {staff.loginEnabled && (
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                          Login
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

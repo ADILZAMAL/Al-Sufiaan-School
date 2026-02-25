@@ -9,6 +9,9 @@ import SectionSelectionScreen from '../screens/SectionSelectionScreen';
 import AttendanceScreen from '../screens/AttendanceScreen';
 import StudentListScreen from '../screens/StudentListScreen';
 import StudentProfileScreen from '../screens/StudentProfileScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import PayslipListScreen from '../screens/PayslipListScreen';
+import PayslipDetailScreen from '../screens/PayslipDetailScreen';
 import LoadingScreen from '../screens/LoadingScreen';
 import SchoolLogo from '../../assets/school-logo.svg';
 
@@ -21,6 +24,9 @@ export type RootStackParamList = {
   Attendance: { classId: number; sectionId: number; className: string; sectionName: string };
   StudentList: { classId: number; sectionId: number; className: string; sectionName: string };
   StudentProfile: { studentId: number; studentName: string };
+  ChangePassword: undefined;
+  PayslipList: undefined;
+  PayslipDetail: { payslipId: number; monthName: string; year: number };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -105,6 +111,23 @@ const AppNavigator: React.FC = () => {
             component={StudentProfileScreen}
             options={({ route }) => ({
               title: route.params.studentName,
+            })}
+          />
+          <Stack.Screen
+            name="ChangePassword"
+            component={ChangePasswordScreen}
+            options={{ title: 'Change Password' }}
+          />
+          <Stack.Screen
+            name="PayslipList"
+            component={PayslipListScreen}
+            options={{ title: 'My Payslips' }}
+          />
+          <Stack.Screen
+            name="PayslipDetail"
+            component={PayslipDetailScreen}
+            options={({ route }) => ({
+              title: `${route.params.monthName} ${route.params.year}`,
             })}
           />
         </>

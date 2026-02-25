@@ -2,11 +2,15 @@ import apiClient from './client';
 import { LoginResponse } from '../types';
 
 export const authApi = {
-  login: async (email: string, password: string): Promise<LoginResponse & { token?: string }> => {
+  login: async (mobileNumber: string, password: string): Promise<LoginResponse & { token?: string }> => {
     const response = await apiClient.post<{ success: boolean; data: LoginResponse & { token?: string } }>(
       '/auth/login',
-      { email, password }
+      { mobileNumber, password }
     );
     return response.data.data;
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await apiClient.put('/auth/change-password', { currentPassword, newPassword });
   },
 };

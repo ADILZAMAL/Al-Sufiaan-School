@@ -1,5 +1,12 @@
 export type StaffType = 'teaching' | 'non-teaching';
 
+export interface StaffLoginStatus {
+  enabled: boolean;
+  userId: number | null;
+  mobileNumber: string | null;
+  lastLogin: string | null;
+}
+
 export interface Staff {
   id?: number;
   staffType: StaffType;
@@ -34,6 +41,8 @@ export interface Staff {
   schoolId: number;
   createdAt?: string;
   updatedAt?: string;
+  loginEnabled?: boolean;
+  loginStatus?: StaffLoginStatus;
 }
 
 export interface TeachingStaff {
