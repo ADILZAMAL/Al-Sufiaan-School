@@ -7,107 +7,45 @@ interface SubjectLevelSelectorProps {
   onChange: (field: keyof StaffFormData, value: string) => void;
 }
 
-const SubjectLevelSelector: React.FC<SubjectLevelSelectorProps> = ({
-  formData,
-  onChange
-}) => {
+const inputCls =
+  'w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition';
+
+const subjects: { field: keyof StaffFormData; label: string; colSpan?: boolean }[] = [
+  { field: 'mathematicsLevel', label: 'Mathematics' },
+  { field: 'scienceLevel', label: 'Science' },
+  { field: 'englishLevel', label: 'English' },
+  { field: 'socialScienceLevel', label: 'Social Science' },
+  { field: 'scheduleVIIILanguageLevel', label: 'Language (Schedule VIII)', colSpan: true },
+];
+
+const SubjectLevelSelector: React.FC<SubjectLevelSelectorProps> = ({ formData, onChange }) => {
   return (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Subject Competencies</h3>
-      <p className="text-sm text-gray-600 mb-4">
-        Please mention the level up to which the following subjects are studied:
-      </p>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Mathematics
-          </label>
-          <select
-            value={formData.mathematicsLevel || ''}
-            onChange={(e) => onChange('mathematicsLevel', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select Level</option>
-            {SUBJECT_LEVEL_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+    <div className="space-y-5">
+      <div>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          Subject Competencies
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Indicate the highest level studied for each subject
+        </p>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Science
-          </label>
-          <select
-            value={formData.scienceLevel || ''}
-            onChange={(e) => onChange('scienceLevel', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select Level</option>
-            {SUBJECT_LEVEL_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            English
-          </label>
-          <select
-            value={formData.englishLevel || ''}
-            onChange={(e) => onChange('englishLevel', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select Level</option>
-            {SUBJECT_LEVEL_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Social Science
-          </label>
-          <select
-            value={formData.socialScienceLevel || ''}
-            onChange={(e) => onChange('socialScienceLevel', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select Level</option>
-            {SUBJECT_LEVEL_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Language (as per Schedule VIII)
-          </label>
-          <select
-            value={formData.scheduleVIIILanguageLevel || ''}
-            onChange={(e) => onChange('scheduleVIIILanguageLevel', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select Level</option>
-            {SUBJECT_LEVEL_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {subjects.map(({ field, label, colSpan }) => (
+          <div key={field} className={colSpan ? 'sm:col-span-2' : ''}>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+            <select
+              value={(formData[field] as string) || ''}
+              onChange={(e) => onChange(field, e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Select Level</option>
+              {SUBJECT_LEVEL_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        ))}
       </div>
     </div>
   );

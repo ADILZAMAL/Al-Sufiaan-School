@@ -1,6 +1,7 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import School from './School';
 import Section from './Section';
+import AcademicSession from './AcademicSession';
 import sequelize from '../config/database';
 
 // class Class extends Model {
@@ -29,6 +30,16 @@ const Class = sequelize.define('class', {
             model: School,
             key: 'id'
         }
+    },
+    sessionId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: AcademicSession,
+            key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'RESTRICT',
     },
     createdAt: {
         type: DataTypes.DATE,

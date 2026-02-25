@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "react-query";
+import { FaTimes } from "react-icons/fa";
 import * as apiClient from "../../../api";
 import { ExpenseType } from "../../../api";
 
@@ -9,6 +10,10 @@ type EditExpenseModalProps = {
   onExpenseUpdated: () => void;
   expense: ExpenseType | null;
 };
+
+const labelClass = "block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1";
+const inputClass =
+  "w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
 
 const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   isOpen,
@@ -25,15 +30,13 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
     amount: "",
     categoryId: null,
   });
-  const [amountError, setAmountError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch expense categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery(
-    'expenseCategories',
+    "expenseCategories",
     () => apiClient.fetchExpenseCategories(),
-    {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    }
+    { staleTime: 5 * 60 * 1000 }
   );
 
   useEffect(() => {
@@ -43,112 +46,161 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
         amount: expense.amount.toString(),
         categoryId: expense.categoryId || null,
       });
+      setFormError(null);
     }
   }, [expense]);
 
-  const handleUpdateExpense = () => {
-    if (!expense) return;
+  const handleClose = () => {
+    setFormError(null);
+    onClose();
+  };
+
+  const handleUpdateExpense = async () => {
+    if (!expense || isSubmitting) return;
+
+    if (!updatedExpense.name.trim()) {
+      setFormError("Please enter an expense name");
+      return;
+    }
 
     const amount = parseFloat(updatedExpense.amount);
     if (isNaN(amount) || amount <= 0) {
-      setAmountError("Please enter a valid amount");
+      setFormError("Please enter a valid amount");
       return;
     }
 
     if (!updatedExpense.categoryId) {
-      setAmountError("Please select a category");
+      setFormError("Please select a category");
       return;
     }
 
-    apiClient
-      .updateExpense(expense.id, {
-        name: updatedExpense.name,
+    setIsSubmitting(true);
+    setFormError(null);
+
+    try {
+      await apiClient.updateExpense(expense.id, {
+        name: updatedExpense.name.trim(),
         amount: updatedExpense.amount,
-        categoryId: updatedExpense.categoryId
-      })
-      .then(() => {
-        onExpenseUpdated();
-        onClose();
-      })
-      .catch((error) => {
-        console.error("Error updating expense:", error);
-        setAmountError(error.message || "Failed to update expense");
+        categoryId: updatedExpense.categoryId,
       });
+      onExpenseUpdated();
+      handleClose();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Failed to update expense");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all duration-300">
-        <h3 className="text-xl font-semibold mb-6 text-gray-800">
-          Edit Expense
-        </h3>
-        <div className="space-y-4">
-          <input
-            className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Expense Name"
-            value={updatedExpense.name}
-            onChange={(e) =>
-              setUpdatedExpense({ ...updatedExpense, name: e.target.value })
-            }
-          />
-          <input
-            className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Amount (e.g., 100.00)"
-            type="text"
-            value={updatedExpense.amount}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (/^\d*\.?\d{0,2}$/.test(value)) {
-                setUpdatedExpense({ ...updatedExpense, amount: value });
-                setAmountError(null);
-              }
-            }}
-            inputMode="decimal"
-          />
-          {amountError && (
-            <p className="text-red-500 text-xs mt-1">{amountError}</p>
-          )}
-          <select
-            className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={updatedExpense.categoryId || ""}
-            onChange={(e) =>
-              setUpdatedExpense({
-                ...updatedExpense,
-                categoryId: e.target.value ? parseInt(e.target.value) : null,
-              })
-            }
-            disabled={categoriesLoading}
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-800">Edit Expense</h3>
+          <button
+            onClick={handleClose}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <option value="">
-              {categoriesLoading ? "Loading categories..." : "Select a category"}
-            </option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
+            <FaTimes />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Name */}
+          <div>
+            <label className={labelClass}>Expense Name</label>
+            <input
+              className={inputClass}
+              placeholder="e.g. Electricity Bill"
+              value={updatedExpense.name}
+              onChange={(e) => setUpdatedExpense({ ...updatedExpense, name: e.target.value })}
+            />
+          </div>
+
+          {/* Amount */}
+          <div>
+            <label className={labelClass}>Amount (₹)</label>
+            <input
+              className={inputClass}
+              placeholder="e.g. 1500.00"
+              type="text"
+              inputMode="decimal"
+              value={updatedExpense.amount}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^\d*\.?\d{0,2}$/.test(value)) {
+                  setUpdatedExpense({ ...updatedExpense, amount: value });
+                  setFormError(null);
+                }
+              }}
+            />
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className={labelClass}>Category</label>
+            <select
+              className={inputClass}
+              value={updatedExpense.categoryId || ""}
+              onChange={(e) =>
+                setUpdatedExpense({
+                  ...updatedExpense,
+                  categoryId: e.target.value ? parseInt(e.target.value) : null,
+                })
+              }
+              disabled={categoriesLoading}
+            >
+              <option value="">
+                {categoriesLoading ? "Loading categories..." : "Select a category"}
               </option>
-            ))}
-          </select>
-          {categories.length === 0 && !categoriesLoading && (
-            <p className="text-sm text-orange-600 mt-1">
-              No categories available. Please create categories in Settings first.
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            {categories.length === 0 && !categoriesLoading && (
+              <p className="text-xs text-orange-600 mt-1.5">
+                No categories available. Please create categories in Settings first.
+              </p>
+            )}
+          </div>
+
+          {formError && (
+            <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {formError}
             </p>
           )}
         </div>
-        <div className="flex justify-end space-x-4 mt-6">
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 mt-6">
           <button
-            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 transition"
-            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors disabled:opacity-50"
+            onClick={handleClose}
+            disabled={isSubmitting}
           >
             Cancel
           </button>
           <button
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
             onClick={handleUpdateExpense}
-            disabled={categoriesLoading || categories.length === 0}
+            disabled={categoriesLoading || categories.length === 0 || isSubmitting || !updatedExpense.name.trim()}
           >
-            Save Changes
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
           </button>
         </div>
       </div>

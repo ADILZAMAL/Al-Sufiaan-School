@@ -1,8 +1,5 @@
-import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
+import { DataTypes, Model, Sequelize } from 'sequelize';
 import School from './School';
-import sequelize from '../config/database';
-import Class from './Class';
-import Section from './Section';
 import User from './User';
 
 
@@ -53,9 +50,6 @@ class Student extends Model {
   public bloodGroup!: BloodGroup;
   public religion!: Religion;
   public aadhaarNumber!: string;
-  public classId!: number; //Foreign Key
-  public sectionId!: number; //Foreign Key
-  public rollNumber!: number;
   public address!: string;
   public city!: string;
   public state!: string;
@@ -198,26 +192,6 @@ Student.init(
           msg: 'Aadhaar number must be 12 digits',
         },
       },
-    },
-    classId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: Class,
-        key: 'id',
-      }
-    },
-    sectionId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: Section,
-        key: 'id',
-      }
-    },
-    rollNumber: {
-      type: DataTypes.STRING,
-      allowNull: true,
     },
     address: {
       type: DataTypes.TEXT,
@@ -413,10 +387,6 @@ Student.init(
       unique: true,
       fields: ['schoolId', 'admissionNumber'],
       name: 'students_school_id_admission_number_unique',
-    },
-    {
-      fields: ['schoolId', 'classId'],
-      name: 'students_school_class_index',
     },
     {
       fields: ['schoolId'],

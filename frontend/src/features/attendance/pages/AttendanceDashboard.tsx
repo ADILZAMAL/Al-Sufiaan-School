@@ -1,6 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from 'react-query';
 import { getAllAttendanceStats } from '../api';
 import { useAppContext } from '../../../providers/AppContext';
+import SessionSelector from '../../sessions/components/SessionSelector';
+import { academicSessionApi } from '../../sessions/api';
+import { AcademicSession } from '../../sessions/types';
+import {
+  FaUsers,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaChartBar,
+  FaCalendarAlt,
+  FaExclamationTriangle,
+} from 'react-icons/fa';
 
 export default function AttendanceDashboard() {
   const { showToast } = useAppContext();
@@ -11,20 +23,28 @@ export default function AttendanceDashboard() {
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const [manualSessionId, setManualSessionId] = useState<number | null>(null);
 
-  const fetchStats = async () => {
+  const { data: activeSession } = useQuery<AcademicSession | null>(
+    'activeSession',
+    academicSessionApi.getActiveSession,
+    { staleTime: 5 * 60 * 1000 }
+  );
+
+  const selectedSessionId = manualSessionId ?? activeSession?.id ?? null;
+
+  const fetchStats = useCallback(async () => {
     if (!selectedDate) return;
-    
+
     setLoading(true);
     try {
-      // Get all class stats in a single API call
-      const data = await getAllAttendanceStats({ date: selectedDate });
-      
-      // Set holiday info
+      const params: { date: string; sessionId?: number } = { date: selectedDate };
+      if (selectedSessionId) params.sessionId = selectedSessionId;
+
+      const data = await getAllAttendanceStats(params);
+
       setIsHoliday(data.isHoliday);
       setHolidayName(data.holidayName);
-      
-      // Set class stats list
       setClassStatsList(data.classStats);
     } catch (error: any) {
       console.error('Error fetching stats:', error);
@@ -32,171 +52,191 @@ export default function AttendanceDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate, selectedSessionId, showToast]);
 
   useEffect(() => {
     fetchStats();
-  }, [selectedDate]);
+  }, [fetchStats]);
+
+  const totalPresent = classStatsList.reduce((sum, item) => sum + item.presentCount, 0);
+  const totalAbsent = classStatsList.reduce((sum, item) => sum + item.absentCount, 0);
+  const totalStudents = classStatsList.reduce((sum, item) => sum + item.totalStudents, 0);
+  const totalNotMarked = classStatsList.reduce((sum, item) => sum + item.notMarked, 0);
+  const overallPct = totalStudents > 0 ? ((totalPresent / totalStudents) * 100).toFixed(1) : '0';
+
+  const formattedDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Attendance Dashboard</h1>
-      
-      {/* Date Selector */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center space-x-4">
-          <label className="text-sm font-medium text-gray-700">Select Date:</label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto space-y-6">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Attendance Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Track daily attendance across all classes</p>
+          </div>
+          <SessionSelector
+            value={selectedSessionId}
+            onChange={(id) => setManualSessionId(id)}
           />
-          <button
-            onClick={fetchStats}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-          >
-            Load Stats
-          </button>
         </div>
-      </div>
 
-      {/* Holiday Alert */}
-      {isHoliday && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
+        {/* Date Selector */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+              <FaCalendarAlt className="w-4 h-4 text-blue-600" />
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                <strong>Holiday:</strong> {holidayName}
-              </p>
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Viewing</p>
+              <p className="text-sm font-medium text-gray-800">{formattedDate}</p>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Stats Cards */}
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-green-50 rounded-lg p-6 shadow">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-green-100 rounded-full p-3">
-                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div className="ml-5">
-                <p className="text-sm font-medium text-gray-500">Present</p>
-                <p className="text-2xl font-semibold text-gray-900">{classStatsList.reduce((sum, item) => sum + item.presentCount, 0)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-red-50 rounded-lg p-6 shadow">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-red-100 rounded-full p-3">
-                <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-              <div className="ml-5">
-                <p className="text-sm font-medium text-gray-500">Absent</p>
-                <p className="text-2xl font-semibold text-gray-900">{classStatsList.reduce((sum, item) => sum + item.absentCount, 0)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 rounded-lg p-6 shadow">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-blue-100 rounded-full p-3">
-                <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <div className="ml-5">
-                <p className="text-sm font-medium text-gray-500">Attendance %</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {(() => {
-                    const totalStudents = classStatsList.reduce((sum, item) => sum + item.totalStudents, 0);
-                    const totalPresent = classStatsList.reduce((sum, item) => sum + item.presentCount, 0);
-                    return totalStudents > 0 ? ((totalPresent / totalStudents) * 100).toFixed(1) : '0';
-                  })()}%
-                </p>
-              </div>
-            </div>
+          <div className="sm:ml-auto">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
           </div>
         </div>
-      )}
 
-      {/* Class/Section Wise Stats Table */}
-      <div className="bg-white rounded-lg shadow p-6 mt-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">
-          Class-Wise Attendance
-          {loading && <span className="ml-2 text-sm font-normal text-gray-500">(Loading...)</span>}
-        </h2>
-        {classStatsList.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">No class/section data available</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Present</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Absent</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Not Marked</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance %</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {classStatsList.map((item, _) => (
-                  <tr key={`${item.classId}-${item.sectionId}`} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {item.className}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {item.sectionName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full font-medium">{item.presentCount}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full font-medium">{item.absentCount}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full font-medium">{item.notMarked}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {item.totalStudents}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center">
-                        <span className="mr-2">{item.attendancePercentage ? item.attendancePercentage.toFixed(1) : '0'}%</span>
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${item.attendancePercentage >= 75 ? 'bg-green-500' : item.attendancePercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                            style={{ width: `${item.attendancePercentage || 0}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Holiday Alert */}
+        {isHoliday && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+              <FaExclamationTriangle className="w-4 h-4 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Holiday</p>
+              <p className="text-sm text-amber-700">{holidayName}</p>
+            </div>
           </div>
         )}
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Present', value: totalPresent, Icon: FaCheckCircle, colorCls: 'bg-emerald-50 text-emerald-600' },
+            { label: 'Absent', value: totalAbsent, Icon: FaTimesCircle, colorCls: 'bg-red-50 text-red-600' },
+            { label: 'Not Marked', value: totalNotMarked, Icon: FaExclamationTriangle, colorCls: 'bg-amber-50 text-amber-600' },
+            { label: 'Overall %', value: `${overallPct}%`, Icon: FaChartBar, colorCls: 'bg-blue-50 text-blue-600' },
+          ].map(({ label, value, Icon, colorCls }) => (
+            <div key={label} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colorCls}`}>
+                <Icon className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">{label}</p>
+                <p className="text-xl font-bold text-gray-900">{loading ? '–' : value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Class-wise Table */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+              <FaUsers className="w-4 h-4 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-gray-900">Class-wise Attendance</h2>
+              {loading && <p className="text-xs text-gray-400">Loading…</p>}
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+            </div>
+          ) : classStatsList.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <FaUsers className="w-6 h-6 text-gray-400" />
+              </div>
+              <p className="font-medium text-gray-700">No attendance data</p>
+              <p className="text-sm text-gray-400 mt-1">No records found for the selected date and session.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Class / Section</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Present</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Absent</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Not Marked</th>
+                    <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Attendance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {classStatsList.map((item) => {
+                    const pct = item.attendancePercentage || 0;
+                    const pctStr = pct.toFixed(1);
+                    const barColor = pct >= 75 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
+                    const pctTextColor = pct >= 75 ? 'text-emerald-700' : pct >= 50 ? 'text-amber-700' : 'text-red-700';
+
+                    return (
+                      <tr key={`${item.classId}-${item.sectionId}`} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-gray-900">{item.className}</span>
+                            {item.sectionName && (
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                                {item.sectionName}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 text-center">
+                          <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                            {item.presentCount}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-center">
+                          <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                            {item.absentCount}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-center">
+                          <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                            {item.notMarked}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-center text-sm text-gray-500 font-medium">
+                          {item.totalStudents}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3 min-w-[120px]">
+                            <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                              <div
+                                className={`h-1.5 rounded-full ${barColor}`}
+                                style={{ width: `${Math.min(pct, 100)}%` }}
+                              />
+                            </div>
+                            <span className={`text-xs font-bold w-11 text-right ${pctTextColor}`}>
+                              {pctStr}%
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

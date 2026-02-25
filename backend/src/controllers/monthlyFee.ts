@@ -8,7 +8,8 @@ import ClassFeePricing from "../models/ClassFeePricing";
 import TransportationAreaPricing from "../models/TransportationAreaPricing";
 import StudentFeePayment from "../models/StudentFeePayment";
 import User from "../models/User";
-import Class from "../models/Class";
+import AcademicSession from "../models/AcademicSession";
+import StudentEnrollment from "../models/StudentEnrollment";
 import { Op } from "sequelize";
 
 const MONTH_NAMES = [
@@ -54,20 +55,7 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
       return sendError(res, "Student cannot have both hostel and transportation services", 400);  
     }
 
-    //Check duplicate
-    const existingFee = await StudentMonthlyFee.findOne({
-      where: {
-        studentId,
-        month,
-        calendarYear,
-      },
-    });
-
-    if (existingFee) {
-      return sendError(res, `Monthly fee already generated for ${month}/${calendarYear}`, 409);
-    }
-
-    //Verify student exists and get class info
+    //Verify student exists
     const student = await Student.findByPk(studentId);
 
     if (!student) {
@@ -78,20 +66,45 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
       return sendError(res, "Cannot generate fee for student who has left school", 400);
     }
 
-    if (!student.classId) {
-      return sendError(res, "Student is not assigned to any class", 400);
+    // Resolve active session and enrollment to get classId
+    const activeSession = await AcademicSession.findOne({
+      where: { schoolId: student.schoolId, isActive: true },
+    });
+    if (!activeSession) {
+      return sendError(res, "No active academic session found", 400);
+    }
+
+    const enrollment = await StudentEnrollment.findOne({
+      where: { studentId: student.id, sessionId: activeSession.id },
+    });
+    if (!enrollment) {
+      return sendError(res, "Student has no enrollment in the active session", 400);
+    }
+
+    //Check duplicate (scoped to session)
+    const existingFee = await StudentMonthlyFee.findOne({
+      where: {
+        studentId,
+        sessionId: activeSession.id,
+        month,
+        calendarYear,
+      },
+    });
+
+    if (existingFee) {
+      return sendError(res, `Monthly fee already generated for ${month}/${calendarYear}`, 409);
     }
 
     // Fetch school data for hostel and admission fees
     const school = await School.findByPk(student.schoolId);
-    
+
     if (!school) {
       return sendError(res, "School not found", 404);
     }
 
-    // 3️⃣ Calculate fee items based on student's preferences
+    // 3️⃣ Calculate fee items based on student's enrollment class
     const feeItems: StudentMonthlyFeeItemCreationAttributes[] = await calculateFeeItems(
-      student.classId,
+      enrollment.classId,
       hostel,
       transportationAreaId,
       newAdmission,
@@ -117,6 +130,7 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
     const monthlyFee = await StudentMonthlyFee.create({
       studentId,
       schoolId: student.schoolId,
+      sessionId: activeSession.id,
       month,
       calendarYear,
       totalConfiguredAmount: subtotal,
@@ -582,7 +596,7 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
         {
           model: StudentMonthlyFee,
           as: 'studentMonthlyFee',
-          attributes: ['month', 'calendarYear'],
+          attributes: ['month', 'calendarYear', 'sessionId'],
         },
         {
           model: User,
@@ -601,44 +615,49 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
       offset,
     });
 
-    // Fetch class information for each student
+    // Fetch class information for each payment via enrollment
     const paymentData = await Promise.all(
-      payments.map(async (payment: any) => {
-        const student = await Student.findByPk(payment.studentId, {
-          include: [
-            {
-              model: Class,
-              as: 'class',
-              attributes: ['id', 'name'],
-            },
-          ],
-        });
+      payments.map(async (pmt: any) => {
+        const sessionId = (pmt.studentMonthlyFee as any)?.sessionId;
+        let className = 'N/A';
+        let classId: number | undefined;
+
+        if (sessionId) {
+          const enrollment = await StudentEnrollment.findOne({
+            where: { studentId: pmt.studentId, sessionId },
+            include: [{ association: 'class', attributes: ['id', 'name'] }],
+          });
+          if (enrollment) {
+            className = (enrollment as any).class?.name || 'N/A';
+            classId = (enrollment as any).class?.id;
+          }
+        }
 
         return {
-          id: payment.id,
-          studentId: payment.studentId,
-          studentName: `${payment.student.firstName} ${payment.student.lastName}`,
-          admissionNumber: payment.student.admissionNumber,
-          className: (student as any)?.class?.name || 'N/A',
-          classId: (student as any)?.class?.id,
-          month: payment.studentMonthlyFee?.month,
-          year: payment.studentMonthlyFee?.calendarYear,
-          amountPaid: Number(payment.amountPaid),
-          paymentDate: payment.paymentDate,
-          paymentMode: payment.paymentMode,
-          referenceNumber: payment.referenceNumber,
-          receivedBy: payment.receiver 
-            ? `${payment.receiver.firstName} ${payment.receiver.lastName}` 
+          id: pmt.id,
+          studentId: pmt.studentId,
+          studentName: `${pmt.student.firstName} ${pmt.student.lastName}`,
+          admissionNumber: pmt.student.admissionNumber,
+          className,
+          classId,
+          month: pmt.studentMonthlyFee?.month,
+          year: pmt.studentMonthlyFee?.calendarYear,
+          amountPaid: Number(pmt.amountPaid),
+          paymentDate: pmt.paymentDate,
+          paymentMode: pmt.paymentMode,
+          referenceNumber: pmt.referenceNumber,
+          receivedBy: pmt.receiver
+            ? `${pmt.receiver.firstName} ${pmt.receiver.lastName}`
             : 'Unknown',
-          receiverId: payment.receivedBy,
-          remarks: payment.remarks,
-          verified: payment.verified,
-          verifiedBy: payment.verifier 
-            ? `${payment.verifier.firstName} ${payment.verifier.lastName}` 
+          receiverId: pmt.receivedBy,
+          remarks: pmt.remarks,
+          verified: pmt.verified,
+          verifiedBy: pmt.verifier
+            ? `${pmt.verifier.firstName} ${pmt.verifier.lastName}`
             : null,
-          verifiedByUserId: payment.verifiedBy,
-          createdAt: payment.createdAt,
-          updatedAt: payment.updatedAt,
+          verifiedByUserId: pmt.verifiedBy,
+          createdAt: pmt.createdAt,
+          updatedAt: pmt.updatedAt,
         };
       })
     );
@@ -753,27 +772,30 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
       return sendError(res, "Month/year in request does not match existing fee", 400);
     }
 
-    // Verify student exists and get class info
+    // Verify student exists and get enrollment for the fee's session
     const student = await Student.findByPk(studentId);
 
     if (!student) {
       return sendError(res, "Student not found", 404);
     }
 
-    if (!student.classId) {
-      return sendError(res, "Student is not assigned to any class", 400);
+    const regenEnrollment = await StudentEnrollment.findOne({
+      where: { studentId: student.id, sessionId: existingFee.sessionId },
+    });
+    if (!regenEnrollment) {
+      return sendError(res, "Student has no enrollment in the fee's session", 400);
     }
 
     // Fetch school data for hostel and admission fees
     const school = await School.findByPk(student.schoolId);
-    
+
     if (!school) {
       return sendError(res, "School not found", 404);
     }
 
-    // Recalculate fee items based on student's preferences
+    // Recalculate fee items based on enrollment class
     const feeItems: StudentMonthlyFeeItemCreationAttributes[] = await calculateFeeItems(
-      student.classId,
+      regenEnrollment.classId,
       hostel,
       transportationAreaId,
       newAdmission,
@@ -965,12 +987,12 @@ export async function getStudentsWithDuesController(req: Request, res: Response)
         {
           model: Student,
           as: 'student',
-          attributes: ['id', 'firstName', 'lastName', 'admissionNumber', 'email', 'phone', 'studentPhoto', 'classId'],
+          attributes: ['id', 'firstName', 'lastName', 'admissionNumber', 'email', 'phone', 'studentPhoto'],
           include: [
             {
-              model: Class,
-              as: 'class',
-              attributes: ['id', 'name'],
+              model: StudentEnrollment,
+              as: 'enrollments',
+              include: [{ association: 'class', attributes: ['id', 'name'] }],
             },
           ],
         },
@@ -992,12 +1014,20 @@ export async function getStudentsWithDuesController(req: Request, res: Response)
         ) || 0;
         const dueAmount = totalPayable - paidAmount;
 
+        // Get class from enrollment matching this fee's session
+        const enrollment = fee.student?.enrollments?.find(
+          (e: any) => e.sessionId === fee.sessionId
+        ) || fee.student?.enrollments?.[0];
+
         // Only include if there's a due amount
         if (dueAmount > 0) {
           return {
             studentId: fee.studentId,
             monthlyFeeId: fee.id,
-            student: fee.student,
+            student: {
+              ...fee.student.toJSON(),
+              class: enrollment?.class || null,
+            },
             totalPayableAmount: totalPayable,
             paidAmount,
             dueAmount,

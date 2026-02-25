@@ -22,6 +22,8 @@ import studentRouter from './routes/student'
 import monthlyFeeRouter from './routes/monthlyFee'
 import attendanceRouter from './routes/attendance'
 import holidayRouter from './routes/holiday'
+import academicSessionRouter from './routes/academicSession'
+import enrollmentRouter from './routes/studentEnrollment'
 import sequelize from './config/database';
 import './models'; // Import for associations
 import cookieParser from "cookie-parser";
@@ -113,6 +115,8 @@ app.use('/api/students', studentRouter)
 app.use('/api/fees', monthlyFeeRouter)
 app.use('/api/attendance', attendanceRouter)
 app.use('/api/holidays', holidayRouter)
+app.use('/api/sessions', academicSessionRouter)
+app.use('/api', enrollmentRouter)
 
 app.listen(7000, async () => {
     console.log("Server is running on port 7000")

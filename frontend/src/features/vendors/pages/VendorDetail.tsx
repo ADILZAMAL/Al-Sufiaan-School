@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { HiArrowLeft, HiPencil, HiPlus, HiCreditCard, HiDocumentText } from 'react-icons/hi';
+import { HiArrowLeft, HiPlus, HiCreditCard, HiDocumentText } from 'react-icons/hi';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import { getVendorById, getVendorSummary, getVendorPaymentHistory, fetchVendorBills, deleteVendorBill } from '../api';
 import { Vendor, VendorSummary, VendorPayment, VendorBill } from '../types';
@@ -8,6 +8,26 @@ import AddVendorBillModal from '../components/AddVendorBillModal';
 import AddVendorPaymentModal from '../components/AddVendorPaymentModal';
 import EditVendorBillModal from '../components/EditVendorBillModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+
+const AVATAR_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-purple-100 text-purple-700',
+  'bg-orange-100 text-orange-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-pink-100 text-pink-700',
+  'bg-indigo-100 text-indigo-700',
+];
+
+const getAvatarColor = (name: string) =>
+  AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+
+const METHOD_LABELS: Record<string, { label: string; cls: string }> = {
+  cash: { label: 'Cash', cls: 'bg-gray-100 text-gray-600' },
+  bank_transfer: { label: 'Bank Transfer', cls: 'bg-blue-100 text-blue-700' },
+  upi: { label: 'UPI', cls: 'bg-purple-100 text-purple-700' },
+  cheque: { label: 'Cheque', cls: 'bg-orange-100 text-orange-700' },
+  card: { label: 'Card', cls: 'bg-indigo-100 text-indigo-700' },
+};
 
 const VendorDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,9 +47,7 @@ const VendorDetail: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      loadVendorData(parseInt(id));
-    }
+    if (id) loadVendorData(parseInt(id));
   }, [id]);
 
   const loadVendorData = async (vendorId: number) => {
@@ -39,9 +57,8 @@ const VendorDetail: React.FC = () => {
         getVendorById(vendorId),
         getVendorSummary(vendorId),
         getVendorPaymentHistory(vendorId),
-        fetchVendorBills(vendorId)
+        fetchVendorBills(vendorId),
       ]);
-      
       setVendor(vendorData);
       setSummary(summaryData);
       setPayments(paymentsData);
@@ -53,19 +70,7 @@ const VendorDetail: React.FC = () => {
     }
   };
 
-  const handleAddBillSuccess = () => {
-    // Refresh vendor data to update summary and bills
-    if (id) {
-      loadVendorData(parseInt(id));
-    }
-  };
-
-  const handleAddPaymentSuccess = () => {
-    // Refresh vendor data to update summary and payments
-    if (id) {
-      loadVendorData(parseInt(id));
-    }
-  };
+  const refresh = () => { if (id) loadVendorData(parseInt(id)); };
 
   const handleEditBill = (bill: VendorBill) => {
     setSelectedBill(bill);
@@ -73,10 +78,7 @@ const VendorDetail: React.FC = () => {
   };
 
   const handleEditBillSuccess = () => {
-    // Refresh vendor data to update summary and bills
-    if (id) {
-      loadVendorData(parseInt(id));
-    }
+    refresh();
     setSelectedBill(null);
   };
 
@@ -87,19 +89,14 @@ const VendorDetail: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (!billToDelete) return;
-    
     setIsDeleting(true);
     try {
       await deleteVendorBill(billToDelete.id);
-      // Refresh vendor data to update summary and bills
-      if (id) {
-        loadVendorData(parseInt(id));
-      }
+      refresh();
       setIsDeleteConfirmModalOpen(false);
       setBillToDelete(null);
     } catch (error) {
       console.error('Error deleting bill:', error);
-      // You could add a toast notification here instead of alert
     } finally {
       setIsDeleting(false);
     }
@@ -110,38 +107,34 @@ const VendorDetail: React.FC = () => {
     setBillToDelete(null);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
-  };
 
   const isToday = (date: Date | string) => {
     const today = new Date();
-    const givenDate = new Date(date);
+    const d = new Date(date);
     return (
-      today.getFullYear() === givenDate.getFullYear() &&
-      today.getMonth() === givenDate.getMonth() &&
-      today.getDate() === givenDate.getDate()
+      today.getFullYear() === d.getFullYear() &&
+      today.getMonth() === d.getMonth() &&
+      today.getDate() === d.getDate()
     );
   };
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="h-32 bg-gray-200 rounded mb-6"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+      <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+        <div className="max-w-5xl mx-auto space-y-4 animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3" />
+          <div className="h-24 bg-gray-200 rounded-xl" />
+          <div className="h-40 bg-gray-200 rounded-xl" />
+          <div className="h-64 bg-gray-200 rounded-xl" />
         </div>
       </div>
     );
@@ -149,334 +142,353 @@ const VendorDetail: React.FC = () => {
 
   if (!vendor) {
     return (
-      <div className="p-6">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Vendor not found</h2>
-          <button
-            onClick={() => navigate('/dashboard/expense/vendors')}
-            className="text-blue-600 hover:text-blue-800"
-          >
-            Back to Vendors
-          </button>
-        </div>
+      <div className="p-8 text-center">
+        <p className="text-gray-500 font-medium">Vendor not found.</p>
+        <button
+          onClick={() => navigate('/dashboard/expense/vendors')}
+          className="mt-3 text-sm text-blue-600 hover:underline"
+        >
+          Back to Vendors
+        </button>
       </div>
     );
   }
 
+  const tabs = [
+    { key: 'bills' as const, label: 'Bills', count: bills.length },
+    { key: 'payments' as const, label: 'Payments', count: payments.length },
+    { key: 'details' as const, label: 'Details' },
+  ];
+
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <button
-            onClick={() => navigate('/dashboard/expense/vendors')}
-            className="mr-4 p-2 text-gray-600 hover:text-gray-900"
-          >
-            <HiArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900">{vendor.name}</h1>
-        </div>
-        <div className="flex space-x-3">
-          <button 
-            onClick={() => setIsAddBillModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <HiPlus className="w-4 h-4" />
-            Add Bill
-          </button>
-          <button 
-            onClick={() => setIsAddPaymentModalOpen(true)}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <HiCreditCard className="w-4 h-4" />
-            Make Payment
-          </button>
-        </div>
-      </div>
+    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-5xl mx-auto space-y-6">
 
-      {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <HiDocumentText className="w-6 h-6 text-blue-600" />
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/dashboard/expense/vendors')}
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:text-gray-900 hover:border-gray-300 transition"
+            >
+              <HiArrowLeft className="w-4 h-4" />
+            </button>
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base shrink-0 ${getAvatarColor(vendor.name)}`}
+            >
+              {vendor.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-gray-900">{vendor.name}</h1>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    vendor.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+                  }`}
+                >
+                  {vendor.isActive ? 'Active' : 'Inactive'}
+                </span>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Bills</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.totalBills)}</p>
-              </div>
+              {vendor.category && (
+                <p className="text-sm text-gray-500">{vendor.category.name}</p>
+              )}
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <HiCreditCard className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Payments</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.totalPayments)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <HiDocumentText className="w-6 h-6 text-red-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Due Amount</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.dueAmount)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab('bills')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'bills'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Bills
-          </button>
-          <button
-            onClick={() => setActiveTab('payments')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'payments'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Payment History
-          </button>
-          <button
-            onClick={() => setActiveTab('details')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'details'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Vendor Details
-          </button>
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'details' && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Vendor Information</h3>
-            <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-              <HiPencil className="w-4 h-4" />
-              Edit
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsAddBillModalOpen(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition"
+            >
+              <HiPlus className="w-4 h-4" />
+              Add Bill
+            </button>
+            <button
+              onClick={() => setIsAddPaymentModalOpen(true)}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition"
+            >
+              <HiCreditCard className="w-4 h-4" />
+              Make Payment
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
-              <p className="mt-1 text-sm text-gray-900">{vendor.name}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Mobile</label>
-              <p className="mt-1 text-sm text-gray-900">{vendor.mobile}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Category</label>
-              <p className="mt-1 text-sm text-gray-900">{vendor.category?.name || 'N/A'}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">UPI ID</label>
-              <p className="mt-1 text-sm text-gray-900">{vendor.upiNumberId || 'N/A'}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Account Number</label>
-              <p className="mt-1 text-sm text-gray-900">{vendor.accountNumber || 'N/A'}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">IFSC Code</label>
-              <p className="mt-1 text-sm text-gray-900">{vendor.ifscCode || 'N/A'}</p>
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Address</label>
-              <p className="mt-1 text-sm text-gray-900">{vendor.address || 'N/A'}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Created</label>
-              <p className="mt-1 text-sm text-gray-900">{formatDate(vendor.createdAt)}</p>
-            </div>
-          </div>
         </div>
-      )}
 
-      {activeTab === 'payments' && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Payment History</h3>
+        {/* Summary Cards */}
+        {summary && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                <HiDocumentText className="text-blue-600 w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Total Bills</p>
+                <p className="text-lg font-bold text-gray-900">{formatCurrency(summary.totalBills)}</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                <HiCreditCard className="text-emerald-600 w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Total Paid</p>
+                <p className="text-lg font-bold text-gray-900">{formatCurrency(summary.totalPayments)}</p>
+              </div>
+            </div>
+
+            <div
+              className={`rounded-xl border p-4 flex items-center justify-between gap-3 ${
+                summary.dueAmount > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                    summary.dueAmount > 0 ? 'bg-red-100' : 'bg-gray-100'
+                  }`}
+                >
+                  <HiDocumentText
+                    className={`w-5 h-5 ${summary.dueAmount > 0 ? 'text-red-600' : 'text-gray-400'}`}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Due Amount</p>
+                  <p
+                    className={`text-lg font-bold ${
+                      summary.dueAmount > 0 ? 'text-red-600' : 'text-gray-900'
+                    }`}
+                  >
+                    {formatCurrency(summary.dueAmount)}
+                  </p>
+                </div>
+              </div>
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full font-semibold capitalize ${
+                  summary.status === 'paid'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : summary.status === 'partial'
+                    ? 'bg-yellow-100 text-yellow-700'
+                    : 'bg-red-100 text-red-700'
+                }`}
+              >
+                {summary.status}
+              </span>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Method
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Notes
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Paid By
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {payments.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                      No payments found
-                    </td>
-                  </tr>
-                ) : (
-                  payments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(payment.paymentDate)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {formatCurrency(payment.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payment.paymentMethod}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {payment.notes || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payment.user ? `${payment.user.firstName} ${payment.user.lastName}` : 'N/A'}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+        )}
+
+        {/* Pill Tabs */}
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                activeTab === tab.key
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab.label}
+              {'count' in tab && (tab.count ?? 0) > 0 && (
+                <span
+                  className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                    activeTab === tab.key
+                      ? 'bg-gray-100 text-gray-600'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
-      )}
 
-      {activeTab === 'bills' && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Bills</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Bill Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Added By
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {bills.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                      No bills found
-                    </td>
-                  </tr>
-                ) : (
-                  bills.map((bill) => (
-                    <tr key={bill.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {bill.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        {/* Bills Tab */}
+        {activeTab === 'bills' && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900">Bills</h3>
+            </div>
+            {bills.length === 0 ? (
+              <div className="py-16 text-center">
+                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <HiDocumentText className="text-gray-300 w-5 h-5" />
+                </div>
+                <p className="text-gray-500 text-sm font-medium">No bills yet</p>
+                <button
+                  onClick={() => setIsAddBillModalOpen(true)}
+                  className="mt-3 text-sm text-blue-600 hover:underline"
+                >
+                  Add the first bill
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {bills.map((bill) => (
+                  <div
+                    key={bill.id}
+                    className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                        <HiDocumentText className="text-blue-500 w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{bill.name}</p>
+                        <p className="text-xs text-gray-400">
+                          {formatDate(bill.createdAt)}
+                          {bill.user && ` · ${bill.user.firstName} ${bill.user.lastName}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 ml-4">
+                      <span className="text-sm font-semibold text-gray-900">
                         {formatCurrency(bill.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(bill.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {bill.user ? `${bill.user.firstName} ${bill.user.lastName}` : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {isToday(bill.createdAt) && (
-                          <div className="flex items-center gap-4">
-                            <button
-                              onClick={() => handleEditBill(bill)}
-                              className="text-blue-600 hover:text-blue-800"
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteBillClick(bill)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <FaTrash />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                      </span>
+                      {isToday(bill.createdAt) && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleEditBill(bill)}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition"
+                          >
+                            <FaEdit size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBillClick(bill)}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+                          >
+                            <FaTrash size={12} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Add Vendor Bill Modal */}
+        {/* Payments Tab */}
+        {activeTab === 'payments' && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900">Payment History</h3>
+            </div>
+            {payments.length === 0 ? (
+              <div className="py-16 text-center">
+                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <HiCreditCard className="text-gray-300 w-5 h-5" />
+                </div>
+                <p className="text-gray-500 text-sm font-medium">No payments yet</p>
+                <button
+                  onClick={() => setIsAddPaymentModalOpen(true)}
+                  className="mt-3 text-sm text-blue-600 hover:underline"
+                >
+                  Make the first payment
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {payments.map((payment) => (
+                  <div
+                    key={payment.id}
+                    className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                        <HiCreditCard className="text-emerald-500 w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-medium text-gray-900">
+                            {formatDate(payment.paymentDate)}
+                          </p>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              (METHOD_LABELS[payment.paymentMethod] ?? { cls: 'bg-gray-100 text-gray-600' }).cls
+                            }`}
+                          >
+                            {(METHOD_LABELS[payment.paymentMethod] ?? { label: payment.paymentMethod }).label}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-400 truncate">
+                          {payment.user && `${payment.user.firstName} ${payment.user.lastName}`}
+                          {payment.notes && ` · ${payment.notes}`}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-sm font-semibold text-emerald-700 shrink-0 ml-4">
+                      {formatCurrency(payment.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Details Tab */}
+        {activeTab === 'details' && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900">Vendor Information</h3>
+            </div>
+            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+              {[
+                { label: 'Name', value: vendor.name },
+                { label: 'Mobile', value: vendor.mobile },
+                { label: 'Category', value: vendor.category?.name ?? '—' },
+                { label: 'Status', value: vendor.isActive ? 'Active' : 'Inactive' },
+                { label: 'UPI ID', value: vendor.upiNumberId ?? '—' },
+                { label: 'Account Number', value: vendor.accountNumber ?? '—' },
+                { label: 'IFSC Code', value: vendor.ifscCode ?? '—' },
+                { label: 'Created', value: formatDate(vendor.createdAt) },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    {label}
+                  </p>
+                  <p className="text-sm text-gray-900 mt-1">{value}</p>
+                </div>
+              ))}
+              {vendor.address && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Address
+                  </p>
+                  <p className="text-sm text-gray-900 mt-1">{vendor.address}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
       {vendor && (
         <AddVendorBillModal
           isOpen={isAddBillModalOpen}
           onClose={() => setIsAddBillModalOpen(false)}
-          onSuccess={handleAddBillSuccess}
+          onSuccess={refresh}
           vendorId={vendor.id}
           vendorName={vendor.name}
         />
       )}
 
-      {/* Add Vendor Payment Modal */}
       {vendor && summary && (
         <AddVendorPaymentModal
           isOpen={isAddPaymentModalOpen}
           onClose={() => setIsAddPaymentModalOpen(false)}
-          onSuccess={handleAddPaymentSuccess}
+          onSuccess={refresh}
           vendorId={vendor.id}
           vendorName={vendor.name}
           dueAmount={summary.dueAmount}
         />
       )}
 
-      {/* Edit Vendor Bill Modal */}
       {vendor && (
         <EditVendorBillModal
           isOpen={isEditBillModalOpen}
@@ -487,7 +499,6 @@ const VendorDetail: React.FC = () => {
         />
       )}
 
-      {/* Confirm Delete Modal */}
       <ConfirmDeleteModal
         isOpen={isDeleteConfirmModalOpen}
         onClose={handleCancelDelete}

@@ -1,6 +1,7 @@
 import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 import sequelize from '../config/database';
 import Student from './Student';
+import AcademicSession from './AcademicSession';
 import School from './School';
 import User from './User';
 import StudentFeePayment from './StudentFeePayment';
@@ -19,6 +20,7 @@ export enum StudentMonthlyFeeStatus {
 class StudentMonthlyFee extends Model{
   public id!: number;
   public studentId!: number;
+  public sessionId!: number;
   public schoolId!: number;
   public month!: number;
   public calendarYear!: number;
@@ -55,6 +57,16 @@ export const initStudentMonthlyFeeModel = (sequelize: Sequelize) => {
       allowNull: false,
       references: {
         model: Student,
+        key: 'id',
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'RESTRICT',
+    },
+    sessionId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: AcademicSession,
         key: 'id',
       },
       onUpdate: 'CASCADE',
@@ -143,8 +155,8 @@ export const initStudentMonthlyFeeModel = (sequelize: Sequelize) => {
     indexes: [
     {
         unique: true,
-        fields: ['studentId', 'calendarYear', 'month'],
-        name: 'student_month_year_unique',
+        fields: ['studentId', 'sessionId', 'calendarYear', 'month'],
+        name: 'student_session_month_year_unique',
     },
     ],
   }

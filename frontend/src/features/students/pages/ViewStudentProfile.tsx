@@ -11,6 +11,8 @@ import FeeTimeline from '../components/FeeTimeline';
 import PaymentReminderCard from '../components/PaymentReminderCard';
 import AttendanceCalendar from '../../attendance/components/AttendanceCalendar';
 import { useAppContext } from '../../../providers/AppContext';
+import { enrollmentApi } from '../../sessions/api';
+import { StudentEnrollment } from '../../sessions/types';
 
 const formatDateOnly = (iso: string) =>
   new Date(iso).toLocaleDateString('en-CA', {
@@ -18,7 +20,10 @@ const formatDateOnly = (iso: string) =>
   });
 
 const getClassName = (student: Student) => {
-  return `${student.class.name} - ${student.section.name}`;
+  const enrollment = student.enrollments?.[0];
+  const className = enrollment?.class?.name || student.class?.name || 'N/A';
+  const sectionName = enrollment?.section?.name || student.section?.name || 'N/A';
+  return `${className} - ${sectionName}`;
 };
 
 const getCreator = (student: Student) => {
@@ -41,6 +46,12 @@ const ViewStudentProfile: React.FC = () => {
   const { data: student, isLoading, error, refetch } = useQuery({
     queryKey: ['student', id],
     queryFn: () => getStudentById(Number(id)),
+    enabled: !!id,
+  });
+
+  const { data: enrollmentHistory = [] } = useQuery<StudentEnrollment[]>({
+    queryKey: ['studentEnrollments', id],
+    queryFn: () => enrollmentApi.getStudentEnrollments(Number(id)),
     enabled: !!id,
   });
 
@@ -217,7 +228,7 @@ const ViewStudentProfile: React.FC = () => {
                 </div>
                 <div className="flex items-center">
                   <span className="font-medium text-gray-700">Roll No:</span>
-                  <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 rounded-md font-semibold">{student.rollNumber || 'N/A'}</span>
+                  <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 rounded-md font-semibold">{student.enrollments?.[0]?.rollNumber ?? student.rollNumber ?? 'N/A'}</span>
                 </div>
               </div>
               <div className="mt-3 text-sm text-gray-500">
@@ -328,18 +339,18 @@ const ViewStudentProfile: React.FC = () => {
               <FiDollarSign className="h-5 w-5 mr-2 text-green-600" />
               Fee Payment Timeline
             </h3>
-            <FeeTimeline 
-              timeline={feeTimeline} 
-              loading={timelineLoading} 
+            <FeeTimeline
+              timeline={feeTimeline}
+              loading={timelineLoading}
               studentId={Number(id)}
               onRefresh={handleFeeTimelineRefresh}
               student={{
                 firstName: student.firstName,
                 lastName: student.lastName,
                 admissionNumber: student.admissionNumber,
-                rollNumber: student.rollNumber,
-                className: student.class.name,
-                sectionName: student.section.name,
+                rollNumber: student.enrollments?.[0]?.rollNumber ?? student.rollNumber,
+                className: student.enrollments?.[0]?.class?.name ?? student.class?.name ?? '',
+                sectionName: student.enrollments?.[0]?.section?.name ?? student.section?.name ?? '',
                 schoolId: student.schoolId,
                 fatherName: student.fatherName,
               }}
@@ -509,6 +520,45 @@ const ViewStudentProfile: React.FC = () => {
                 <p className="text-sm text-gray-900 font-medium">N/A</p>
               </div>
             </div>
+          </div>
+
+          {/* Academic History */}
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center pb-2 border-b border-gray-200">
+              <FiBookOpen className="h-5 w-5 mr-2 text-blue-600" />
+              Academic History
+            </h3>
+            {enrollmentHistory.length === 0 ? (
+              <p className="text-sm text-gray-500 italic">No enrollment records found.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roll Number</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {enrollmentHistory.map((enrollment) => (
+                      <tr key={enrollment.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900">
+                          {enrollment.session?.name || `Session #${enrollment.sessionId}`}
+                          {enrollment.session?.isActive && (
+                            <span className="ml-2 px-1.5 py-0.5 text-xs bg-green-100 text-green-700 rounded-full font-semibold">Active</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-700">{enrollment.class?.name || '—'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-700">{enrollment.section?.name || '—'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-500">{enrollment.rollNumber || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* System Information */}

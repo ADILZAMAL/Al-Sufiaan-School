@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HiX } from 'react-icons/hi';
+import { FaTimes } from 'react-icons/fa';
 import { createVendorBill } from '../api';
 import { CreateVendorBillData } from '../types';
 
@@ -11,56 +11,44 @@ interface AddVendorBillModalProps {
   vendorName: string;
 }
 
-const AddVendorBillModal: React.FC<AddVendorBillModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  vendorId, 
-  vendorName 
+const AddVendorBillModal: React.FC<AddVendorBillModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  vendorId,
+  vendorName,
 }) => {
   const [formData, setFormData] = useState<CreateVendorBillData>({
     amount: 0,
     name: '',
-    vendorId: vendorId
+    vendorId,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'number' ? parseFloat(value) || 0 : value
+      [name]: type === 'number' ? parseFloat(value) || 0 : value,
     }));
-    
-    // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Bill description is required';
-    }
-
-    if (!formData.amount || formData.amount <= 0) {
-      newErrors.amount = 'Please enter a valid amount greater than 0';
-    }
-
+    if (!formData.name.trim()) newErrors.name = 'Bill description is required';
+    if (!formData.amount || formData.amount <= 0)
+      newErrors.amount = 'Enter a valid amount greater than 0';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validateForm()) return;
     setIsLoading(true);
     try {
       await createVendorBill({ ...formData, vendorId });
@@ -69,18 +57,14 @@ const AddVendorBillModal: React.FC<AddVendorBillModalProps> = ({
       resetForm();
     } catch (error) {
       console.error('Error creating vendor bill:', error);
-      setErrors({ submit: 'Failed to create vendor bill. Please try again.' });
+      setErrors({ submit: 'Failed to create bill. Please try again.' });
     } finally {
       setIsLoading(false);
     }
   };
 
   const resetForm = () => {
-    setFormData({
-      amount: 0,
-      name: '',
-      vendorId: vendorId
-    });
+    setFormData({ amount: 0, name: '', vendorId });
     setErrors({});
   };
 
@@ -91,46 +75,50 @@ const AddVendorBillModal: React.FC<AddVendorBillModalProps> = ({
 
   if (!isOpen) return null;
 
+  const inputCls = (field: string) =>
+    `w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+      errors[field] ? 'border-red-300 bg-red-50' : 'border-gray-200'
+    }`;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Add Bill for {vendorName}</h2>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <HiX className="w-6 h-6" />
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Add Bill</h2>
+            <p className="text-xs text-gray-400 mt-0.5">for {vendorName}</p>
+          </div>
+          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 transition">
+            <FaTimes size={15} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           {errors.submit && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
               {errors.submit}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Bill Description *
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Bill Description <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.name ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="Enter bill description"
+              className={inputCls('name')}
+              placeholder="e.g. Electricity bill, Supplies"
             />
-            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Amount *
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Amount <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -138,26 +126,24 @@ const AddVendorBillModal: React.FC<AddVendorBillModalProps> = ({
               value={formData.amount || ''}
               onChange={handleInputChange}
               min="0"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.amount ? 'border-red-300' : 'border-gray-300'
-              }`}
+              className={inputCls('amount')}
               placeholder="Enter amount"
             />
-            {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
+            {errors.amount && <p className="text-red-500 text-xs mt-1">{errors.amount}</p>}
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex gap-3 pt-1 border-t border-gray-100">
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="flex-1 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
             >
               {isLoading ? 'Creating...' : 'Create Bill'}
             </button>

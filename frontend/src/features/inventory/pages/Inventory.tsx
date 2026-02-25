@@ -4,7 +4,18 @@ import { useMutation, useQuery, useQueryClient } from "react-query";
 import * as apiClient from "../api";
 import { TransactionType } from "../api";
 import { useAppContext } from "../../../providers/AppContext";
-import { FaPlus, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import {
+  FaPlus,
+  FaChevronDown,
+  FaChevronUp,
+  FaTimes,
+  FaBoxOpen,
+  FaExclamationTriangle,
+  FaCubes,
+  FaCheckCircle,
+  FaClock,
+  FaSearch,
+} from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 export type AddProductFormData = {
@@ -18,6 +29,7 @@ const Inventory = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedTransactions, setExpandedTransactions] = useState<Set<number>>(new Set());
+  const [productSearch, setProductSearch] = useState("");
 
   const {
     register,
@@ -64,7 +76,19 @@ const Inventory = () => {
 
   const filteredProducts = useMemo(() => {
     if (!products) return [];
-    return products;
+    if (!productSearch.trim()) return products;
+    return products.filter((p) =>
+      p.name.toLowerCase().includes(productSearch.toLowerCase())
+    );
+  }, [products, productSearch]);
+
+  const stats = useMemo(() => {
+    if (!products) return { total: 0, lowStock: 0, totalUnits: 0 };
+    return {
+      total: products.length,
+      lowStock: products.filter((p) => p.qty <= 5).length,
+      totalUnits: products.reduce((acc, p) => acc + p.qty, 0),
+    };
   }, [products]);
 
   const toggleTransactionExpansion = (transactionId: number) => {
@@ -79,316 +103,364 @@ const Inventory = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  const handleVerifyTransaction = (transactionId: number) => {
-    verifyMutation.mutate(transactionId);
+  const getQtyBadge = (qty: number) => {
+    if (qty <= 2)
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+          {qty} left
+        </span>
+      );
+    if (qty <= 5)
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+          {qty} left
+        </span>
+      );
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+        {qty} in stock
+      </span>
+    );
   };
 
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">
-            Inventory Management
-          </h2>
-          <div className="flex items-center gap-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <h2 className="text-2xl font-bold text-gray-900">Inventory Management</h2>
+          <div className="flex items-center gap-3">
             <Link
               to="/dashboard/sell-products"
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-all duration-200"
+              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
             >
               Sell Product
             </Link>
-            {(userRole === 'SUPER_ADMIN' || userRole === null) && (
+            {(userRole === "SUPER_ADMIN" || userRole === null) && (
               <button
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200"
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
                 onClick={() => setIsModalOpen(true)}
               >
-                <FaPlus />
+                <FaPlus className="text-xs" />
                 Add Product
               </button>
             )}
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Available Qty
-                    </th>
-                    <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredProducts.map((product, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {product.name}
-                      </td>
-                      <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-500">
-                        {product.qty}
-                      </td>
-                      <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-500">
-                        ₹{product.price}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+            <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <FaBoxOpen className="text-blue-600 text-sm" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 font-medium">Total Products</p>
+              <p className="text-xl font-bold text-gray-900">{isLoading ? "—" : stats.total}</p>
             </div>
           </div>
-        )}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+            <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+              <FaExclamationTriangle className="text-red-600 text-sm" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 font-medium">Low Stock</p>
+              <p className="text-xl font-bold text-gray-900">{isLoading ? "—" : stats.lowStock}</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+            <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+              <FaCubes className="text-purple-600 text-sm" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 font-medium">Total Units</p>
+              <p className="text-xl font-bold text-gray-900">{isLoading ? "—" : stats.totalUnits}</p>
+            </div>
+          </div>
+        </div>
 
-        {/* Recent Transactions Section */}
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-800">Recent Transactions</h3>
+        {/* Products Section */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <h3 className="font-semibold text-gray-900">Products</h3>
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                className="pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-52"
+              />
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-10 text-gray-400 text-sm">
+              {productSearch ? "No products match your search." : "No products found."}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {filteredProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
+                >
+                  <span className="text-sm font-medium text-gray-900">{product.name}</span>
+                  <div className="flex items-center gap-4">
+                    {getQtyBadge(product.qty)}
+                    <span className="text-sm font-semibold text-gray-700 w-16 text-right">
+                      ₹{product.price}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Transactions */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900 text-lg">Recent Transactions</h3>
             <Link
               to="/dashboard/transaction-history"
-              className="text-blue-600 hover:text-blue-800 font-medium"
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
             >
-              View All Transactions →
+              View All →
             </Link>
           </div>
 
           {transactionsLoading ? (
             <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Student Name
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Class - Section
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Sold By
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Mode of Payment
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Amount
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Verified
-                      </th>
-                      <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {recentTransactions?.map((transaction: TransactionType) => (
-                      <React.Fragment key={transaction.id}>
-                        <tr 
-                          className="hover:bg-gray-50"
-                        >
-                          <td 
-                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-900 cursor-pointer"
+            <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+              {(!recentTransactions || recentTransactions.length === 0) ? (
+                <div className="text-center py-10 text-gray-400 text-sm">
+                  No recent transactions found.
+                </div>
+              ) : (
+                <>
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Date</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Student</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Class</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Sold By</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Payment</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Amount</th>
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                        <th className="py-3 px-5" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {recentTransactions.map((transaction: TransactionType) => (
+                        <React.Fragment key={transaction.id}>
+                          <tr
+                            className="hover:bg-gray-50 transition-colors cursor-pointer"
                             onClick={() => toggleTransactionExpansion(transaction.id)}
                           >
-                            {formatDate(transaction.createdAt)}
-                          </td>
-                          <td 
-                            className="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900 cursor-pointer"
-                            onClick={() => toggleTransactionExpansion(transaction.id)}
-                          >
-                            {transaction.studentName}
-                          </td>
-                          <td 
-                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
-                            onClick={() => toggleTransactionExpansion(transaction.id)}
-                          >
-                            {transaction.className} - {transaction.sectionName}
-                          </td>
-                          <td 
-                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-600 cursor-pointer"
-                            onClick={() => toggleTransactionExpansion(transaction.id)}
-                          >
-                            {transaction.soldBy}
-                          </td>
-                          <td 
-                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-600 cursor-pointer"
-                            onClick={() => toggleTransactionExpansion(transaction.id)}
-                          >
-                            {transaction.modeOfPayment}
-                          </td>
-                          <td 
-                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-900 font-medium cursor-pointer"
-                            onClick={() => toggleTransactionExpansion(transaction.id)}
-                          >
-                            ₹{transaction.totalAmount.toFixed(2)}
-                          </td>
-                          <td className="py-4 px-6 whitespace-nowrap text-sm">
-                            {transaction.isVerified ? (
-                              <div className="flex items-center">
-                                <span className="text-green-600 text-lg" title={`Verified by ${transaction.verifiedBy}`}>
-                                  ✓
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-400">Not Verified</span>
-                                {userRole === 'SUPER_ADMIN' && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleVerifyTransaction(transaction.id);
-                                    }}
-                                    className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition"
-                                    disabled={verifyMutation.isLoading}
-                                  >
-                                    {verifyMutation.isLoading ? 'Verifying...' : 'Verify'}
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                          <td 
-                            className="py-4 px-6 whitespace-nowrap text-sm text-gray-400 cursor-pointer"
-                            onClick={() => toggleTransactionExpansion(transaction.id)}
-                          >
-                            {expandedTransactions.has(transaction.id) ? (
-                              <FaChevronUp />
-                            ) : (
-                              <FaChevronDown />
-                            )}
-                          </td>
-                        </tr>
-                        {expandedTransactions.has(transaction.id) && (
-                          <tr>
-                            <td colSpan={8} className="px-6 py-4 bg-gray-50">
-                              <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                  <h4 className="font-semibold text-gray-800">Products Purchased:</h4>
-                                  <span className="text-sm text-gray-600">
-                                    Payment: {transaction.modeOfPayment}
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
+                              {formatDate(transaction.createdAt)}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {transaction.studentName}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-500">
+                              {transaction.className} – {transaction.sectionName}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
+                              {transaction.soldBy}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
+                              {transaction.modeOfPayment}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-sm font-semibold text-gray-900">
+                              ₹{transaction.totalAmount.toFixed(2)}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap">
+                              {transaction.isVerified ? (
+                                <div className="flex items-center gap-1.5">
+                                  <FaCheckCircle className="text-emerald-500 text-sm" />
+                                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                                    Verified
                                   </span>
                                 </div>
-                                <div className="grid gap-2">
-                                  {transaction.transactionItems.map((item, index) => (
-                                    <div key={index} className="flex justify-between items-center py-2 px-4 bg-white rounded border">
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <FaClock className="text-amber-500 text-sm" />
+                                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                                      Pending
+                                    </span>
+                                  </div>
+                                  {userRole === "SUPER_ADMIN" && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        verifyMutation.mutate(transaction.id);
+                                      }}
+                                      className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                      disabled={verifyMutation.isLoading}
+                                    >
+                                      {verifyMutation.isLoading ? "…" : "Verify"}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-5 whitespace-nowrap text-gray-400 text-sm">
+                              {expandedTransactions.has(transaction.id) ? (
+                                <FaChevronUp />
+                              ) : (
+                                <FaChevronDown />
+                              )}
+                            </td>
+                          </tr>
+                          {expandedTransactions.has(transaction.id) && (
+                            <tr>
+                              <td colSpan={8} className="px-5 py-4 bg-gray-50">
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                                  Products Purchased
+                                </p>
+                                <div className="space-y-2">
+                                  {transaction.transactionItems.map((item, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex justify-between items-center py-2 px-4 bg-white rounded-lg border border-gray-200"
+                                    >
                                       <span className="text-sm font-medium text-gray-900">
                                         {item.productName}
                                       </span>
-                                      <span className="text-sm text-gray-600">
-                                        Qty: {item.quantity} × ₹{item.unitPrice} = ₹{item.totalPrice.toFixed(2)}
+                                      <span className="text-sm text-gray-500">
+                                        {item.quantity} × ₹{item.unitPrice} ={" "}
+                                        <span className="font-semibold text-gray-900">
+                                          ₹{item.totalPrice.toFixed(2)}
+                                        </span>
                                       </span>
                                     </div>
                                   ))}
                                 </div>
-                                <div className="text-right">
-                                  <span className="text-sm text-gray-600">
-                                    Transaction ID: #{transaction.id}
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
-                {(!recentTransactions || recentTransactions.length === 0) && (
-                  <div className="text-center py-8 text-gray-500">
-                    No recent transactions found.
-                  </div>
-                )}
-              </div>
+                                <p className="text-right text-xs text-gray-400 mt-3">
+                                  Transaction #{transaction.id}
+                                </p>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
             </div>
           )}
         </div>
       </div>
 
+      {/* Add Product Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md transform transition-all duration-300">
-            <h3 className="text-xl font-semibold mb-6 text-gray-800">
-              Add New Product
-            </h3>
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Add New Product</h3>
+              <button
+                onClick={() => { setIsModalOpen(false); reset(); }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <FaTimes />
+              </button>
+            </div>
             <form onSubmit={onSubmit}>
               <div className="space-y-4">
-                <input
-                  type="text"
-                  className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Product Name"
-                  {...register("name", { required: "This field is required" })}
-                />
-                {errors.name && (
-                  <span className="text-red-500">{errors.name.message}</span>
-                )}
-                <input
-                  type="number"
-                  className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Quantity"
-                  {...register("qty", {
-                    required: "This field is required",
-                    valueAsNumber: true,
-                  })}
-                />
-                {errors.qty && (
-                  <span className="text-red-500">{errors.qty.message}</span>
-                )}
-                <input
-                  type="text"
-                  className="w-full border px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Price"
-                  {...register("price", {
-                    required: "This field is required",
-                    pattern: {
-                      value: /^\d+(\.\d{1,2})?$/,
-                      message: "Invalid price format",
-                    },
-                  })}
-                />
-                {errors.price && (
-                  <span className="text-red-500">{errors.price.message}</span>
-                )}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Product Name
+                  </label>
+                  <input
+                    type="text"
+                    className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.name ? "border-red-300 bg-red-50" : "border-gray-200"
+                    }`}
+                    placeholder="e.g. Notebook"
+                    {...register("name", { required: "This field is required" })}
+                  />
+                  {errors.name && (
+                    <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.qty ? "border-red-300 bg-red-50" : "border-gray-200"
+                    }`}
+                    placeholder="e.g. 100"
+                    {...register("qty", {
+                      required: "This field is required",
+                      valueAsNumber: true,
+                    })}
+                  />
+                  {errors.qty && (
+                    <p className="text-red-500 text-xs mt-1">{errors.qty.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Price (₹)
+                  </label>
+                  <input
+                    type="text"
+                    className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.price ? "border-red-300 bg-red-50" : "border-gray-200"
+                    }`}
+                    placeholder="e.g. 25.00"
+                    {...register("price", {
+                      required: "This field is required",
+                      pattern: {
+                        value: /^\d+(\.\d{1,2})?$/,
+                        message: "Invalid price format",
+                      },
+                    })}
+                  />
+                  {errors.price && (
+                    <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>
+                  )}
+                </div>
               </div>
-              <div className="flex justify-end space-x-4 mt-6">
+              <div className="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
-                  className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 transition"
-                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                  onClick={() => { setIsModalOpen(false); reset(); }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                  disabled={mutation.isLoading}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Add Product
+                  {mutation.isLoading ? "Adding…" : "Add Product"}
                 </button>
               </div>
             </form>
