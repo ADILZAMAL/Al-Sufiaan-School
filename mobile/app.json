@@ -23,6 +23,15 @@
       "backgroundColor": "#3b82f6"
     },
     "web": {},
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Al Sufiaan School to access your photos to update student profile picture.",
+          "cameraPermission": "Allow Al Sufiaan School to use the camera to take a student profile photo."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "09ebdba5-d51d-405b-a0e1-95b840e8152b"

@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
 import { classesApi } from '../api/classes';
@@ -19,6 +20,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 
 type ClassSelectionScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ClassSelection'>;
+type ClassSelectionScreenRouteProp = RouteProp<RootStackParamList, 'ClassSelection'>;
 
 const ClassSelectionScreen: React.FC = () => {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -28,6 +30,8 @@ const ClassSelectionScreen: React.FC = () => {
   const [holiday, setHoliday] = useState<Holiday | null>(null);
   const { user, logout } = useAuth();
   const navigation = useNavigation<ClassSelectionScreenNavigationProp>();
+  const route = useRoute<ClassSelectionScreenRouteProp>();
+  const { mode } = route.params;
 
   useEffect(() => {
     checkHolidayAndLoadClasses();
@@ -51,19 +55,20 @@ const ClassSelectionScreen: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Check if today is a holiday
-      const today = new Date();
-      const todayString = formatDate(today);
-      const holidayCheck = await holidayApi.checkIsHoliday(todayString);
-      
-      if (holidayCheck.isHoliday && holidayCheck.holiday) {
-        setIsHoliday(true);
-        setHoliday(holidayCheck.holiday);
-        setLoading(false);
-        return;
+      // Only check holiday for attendance mode
+      if (mode === 'attendance') {
+        const today = new Date();
+        const todayString = formatDate(today);
+        const holidayCheck = await holidayApi.checkIsHoliday(todayString);
+
+        if (holidayCheck.isHoliday && holidayCheck.holiday) {
+          setIsHoliday(true);
+          setHoliday(holidayCheck.holiday);
+          setLoading(false);
+          return;
+        }
       }
 
-      // If not a holiday, load classes
       setIsHoliday(false);
       setHoliday(null);
       const data = await classesApi.getClasses(user.schoolId);
@@ -87,6 +92,7 @@ const ClassSelectionScreen: React.FC = () => {
     navigation.navigate('SectionSelection', {
       classId: classItem.id,
       className: classItem.name,
+      mode,
     });
   };
 

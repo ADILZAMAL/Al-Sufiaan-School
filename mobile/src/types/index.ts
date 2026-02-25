@@ -85,6 +85,80 @@ export interface BulkAttendanceResponse {
   }>;
 }
 
+export interface StudentEnrollment {
+  id: number;
+  sessionId: number;
+  classId: number;
+  sectionId: number | null;
+  rollNumber: string | null;
+  class: { id: number; name: string };
+  section: { id: number; name: string } | null;
+  session: { id: number; name: string; isActive: boolean };
+}
+
+export interface StudentDetail {
+  id: number;
+  admissionNumber: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  bloodGroup: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'NA';
+  religion: 'Islam' | 'Hinduism' | 'Christianity' | 'Sikhism' | 'Buddhism' | 'Jainism' | 'Other';
+  phone: string;
+  email?: string | null;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  fatherName: string;
+  fatherPhone?: string | null;
+  motherName: string;
+  motherPhone?: string | null;
+  guardianName?: string | null;
+  guardianRelation?: string | null;
+  guardianPhone?: string | null;
+  studentPhoto?: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  enrollments: StudentEnrollment[];
+}
+
+export interface StudentUpdatePayload {
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'NA';
+  religion?: 'Islam' | 'Hinduism' | 'Christianity' | 'Sikhism' | 'Buddhism' | 'Jainism' | 'Other';
+  phone?: string;
+  email?: string | null;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  fatherName?: string;
+  fatherPhone?: string | null;
+  motherName?: string;
+  motherPhone?: string | null;
+  guardianName?: string | null;
+  guardianRelation?: string | null;
+  guardianPhone?: string | null;
+  studentPhoto?: string | null;
+}
+
+export interface PhotoUploadResponse {
+  studentPhoto?: {
+    url: string;
+    publicId: string;
+    format: string;
+    width: number;
+    height: number;
+    bytes: number;
+  };
+}
+
 export interface Holiday {
   id: number;
   name: string;
