@@ -12,6 +12,7 @@ import {
 const router = Router();
 
 const adminOnly = requireRole(['SUPER_ADMIN', 'ADMIN']);
+const adminOrTeacher = requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']);
 
 // GET /api/sessions/:sessionId/enrollments
 router.get(
@@ -46,7 +47,7 @@ router.post(
 router.put(
     '/enrollments/:id',
     verifyToken,
-    adminOnly,
+    adminOrTeacher,
     param('id').isInt(),
     body('classId').optional().isInt().withMessage('classId must be an integer'),
     body('sectionId').optional().isInt().withMessage('sectionId must be an integer'),

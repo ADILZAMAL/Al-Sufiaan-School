@@ -66,19 +66,6 @@ const HomeScreen: React.FC = () => {
 
           <TouchableOpacity
             style={styles.card}
-            onPress={() => navigation.navigate('ChangePassword')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.cardIcon}>🔑</Text>
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Change Password</Text>
-              <Text style={styles.cardSubtitle}>Update your login password</Text>
-            </View>
-            <Text style={styles.cardArrow}>→</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.card}
             onPress={() => navigation.navigate('PayslipList')}
             activeOpacity={0.85}
           >
@@ -86,6 +73,19 @@ const HomeScreen: React.FC = () => {
             <View style={styles.cardText}>
               <Text style={styles.cardTitle}>My Payslips</Text>
               <Text style={styles.cardSubtitle}>View salary slips & payment history</Text>
+            </View>
+            <Text style={styles.cardArrow}>→</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('ChangePassword')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.cardIcon}>🔑</Text>
+            <View style={styles.cardText}>
+              <Text style={styles.cardTitle}>Change Password</Text>
+              <Text style={styles.cardSubtitle}>Update your login password</Text>
             </View>
             <Text style={styles.cardArrow}>→</Text>
           </TouchableOpacity>
