@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { StudentEnrollment, AcademicSession, Student, Class, Section, Attendance, StudentMonthlyFee } from '../models';
 import { sendSuccess, sendError } from '../utils/response';
+import logger from '../utils/logger';
 
 // ── GET /api/sessions/:sessionId/enrollments ──────────────────────────────────
 
@@ -43,7 +44,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
 
         return sendSuccess(res, enrollments, 'Enrollments retrieved successfully');
     } catch (error) {
-        console.error('Error fetching enrollments:', error);
+        logger.error('Error fetching enrollments', { error });
         return sendError(res, 'Failed to fetch enrollments', 500);
     }
 };
@@ -88,7 +89,7 @@ export const getStudentEnrollments = async (req: Request, res: Response) => {
 
         return sendSuccess(res, enrollments, 'Student enrollment history retrieved successfully');
     } catch (error) {
-        console.error('Error fetching student enrollments:', error);
+        logger.error('Error fetching student enrollments', { error });
         return sendError(res, 'Failed to fetch student enrollments', 500);
     }
 };
@@ -170,7 +171,7 @@ export const enrollStudent = async (req: Request, res: Response) => {
 
         return sendSuccess(res, result, 'Student enrolled successfully', 201);
     } catch (error) {
-        console.error('Error enrolling student:', error);
+        logger.error('Error enrolling student', { error });
         return sendError(res, 'Failed to enroll student', 500);
     }
 };
@@ -240,7 +241,7 @@ export const updateEnrollment = async (req: Request, res: Response) => {
 
         return sendSuccess(res, result, 'Enrollment updated successfully');
     } catch (error) {
-        console.error('Error updating enrollment:', error);
+        logger.error('Error updating enrollment', { error });
         return sendError(res, 'Failed to update enrollment', 500);
     }
 };
@@ -293,7 +294,7 @@ export const deleteEnrollment = async (req: Request, res: Response) => {
 
         return sendSuccess(res, null, 'Enrollment deleted successfully');
     } catch (error) {
-        console.error('Error deleting enrollment:', error);
+        logger.error('Error deleting enrollment', { error });
         return sendError(res, 'Failed to delete enrollment', 500);
     }
 };

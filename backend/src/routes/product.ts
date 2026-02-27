@@ -3,6 +3,7 @@ import verifyToken, { requireRole } from '../middleware/auth'
 import Product from '../models/Product'
 import {check, validationResult} from 'express-validator'
 import { Op } from 'sequelize'
+import logger from '../utils/logger'
 
 const router = express.Router()
 
@@ -20,7 +21,7 @@ router.post("/", verifyToken, requireRole(['SUPER_ADMIN']), [
         let product = await Product.create({name, price, qty, buyPrice: price, schoolId: req.schoolId});
         res.status(200).json({success: true})
     } catch (error) {
-        console.log(error);
+        logger.error('Error creating product', { error });
         res.status(500).json({success: false, error: {code: 'INTERNAL_SERVER_ERROR', message: "Someting went wrong"}})
     }
 }
@@ -38,7 +39,7 @@ router.get("/", verifyToken,async (req: Request, res: Response) => {
         })
         res.status(200).send({success: true, data: products})
     } catch (error) {
-        console.log(error)
+        logger.error('Error fetching products', { error })
         res.status(500).json({success: false, error: {code: 'INTERNAL_SERVER_ERROR', message: "Someting went wrong"}})
     }
 })

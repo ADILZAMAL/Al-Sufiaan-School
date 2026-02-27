@@ -7,6 +7,7 @@ import User from '../models/User';
 import { sendError, sendSuccess } from '../utils/response';
 import sequelize from '../config/database';
 import { Op } from 'sequelize';
+import logger from '../utils/logger';
 
 export const addVendorPayment = async (req: Request, res: Response) => {
   const errors = validationResult(req);
@@ -63,7 +64,7 @@ export const addVendorPayment = async (req: Request, res: Response) => {
     sendSuccess(res, { vendorPayment, expense }, 'Vendor payment added successfully and expense recorded', 201);
   } catch (error) {
     await transaction.rollback();
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -102,7 +103,7 @@ export const fetchVendorPayments = async (req: Request, res: Response) => {
     });
     sendSuccess(res, result, 'Vendor payments fetched successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -134,7 +135,7 @@ export const getVendorPaymentHistory = async (req: Request, res: Response) => {
 
     sendSuccess(res, payments, 'Vendor payment history fetched successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -166,7 +167,7 @@ export const updateVendorPayment = async (req: Request, res: Response) => {
     await vendorPayment.update(updateData);
     sendSuccess(res, vendorPayment, 'Vendor payment updated successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -206,7 +207,7 @@ export const deleteVendorPayment = async (req: Request, res: Response) => {
     sendSuccess(res, {}, 'Vendor payment and corresponding expense deleted successfully');
   } catch (error) {
     await transaction.rollback();
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };

@@ -41,7 +41,7 @@ const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER |
         ? false
         : (sql: string, executionTime?: number) => {
             const requestId = getRequestId();
-            logger.info('Sequelize query', { sql, executionTimeMs: executionTime, ...(requestId && { requestId }) });
+            logger.debug('Sequelize query', { sql, executionTimeMs: executionTime, ...(requestId && { requestId }) });
         },
 });
 

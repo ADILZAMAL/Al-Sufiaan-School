@@ -1,4 +1,5 @@
 import cloudinary from '../config/cloudinary';
+import logger from './logger';
 
 /**
  * Delete a photo from Cloudinary using its public ID
@@ -10,7 +11,7 @@ export const deletePhotoFromCloudinary = async (publicId: string): Promise<boole
         const result = await cloudinary.uploader.destroy(publicId);
         return result.result === 'ok';
     } catch (error) {
-        console.error('Error deleting photo from Cloudinary:', error);
+        logger.error('Error deleting photo from Cloudinary', { error });
         return false;
     }
 };

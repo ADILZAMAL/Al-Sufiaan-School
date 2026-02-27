@@ -8,6 +8,7 @@ import School from '../models/School';
 import User from '../models/User';
 import { sendSuccess, sendError } from '../utils/response';
 import sequelize from '../config/database';
+import logger from '../utils/logger';
 import { Op } from 'sequelize';
 
 // Helper function to get month name
@@ -285,7 +286,7 @@ export const generatePayslip = async (req: Request, res: Response) => {
 
         return sendSuccess(res, payslip, 'Payslip generated successfully', 201);
     } catch (error: any) {
-        console.error('Error generating payslip:', error);
+        logger.error('Error generating payslip', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -318,7 +319,7 @@ export const getPayslipsByStaff = async (req: Request, res: Response) => {
             }
         }, 'Payslips retrieved successfully');
     } catch (error: any) {
-        console.error('Error fetching payslips:', error);
+        logger.error('Error fetching payslips', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -335,7 +336,7 @@ export const getPayslipById = async (req: Request, res: Response) => {
 
         return sendSuccess(res, payslip, 'Payslip retrieved successfully');
     } catch (error: any) {
-        console.error('Error fetching payslip:', error);
+        logger.error('Error fetching payslip', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -354,7 +355,7 @@ export const checkPayslipExists = async (req: Request, res: Response) => {
 
         return sendSuccess(res, { exists: !!payslip, payslip }, 'Check completed');
     } catch (error: any) {
-        console.error('Error checking payslip:', error);
+        logger.error('Error checking payslip', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -396,7 +397,7 @@ export const getAllPayslips = async (req: Request, res: Response) => {
             }
         }, 'Payslips retrieved successfully');
     } catch (error: any) {
-        console.error('Error fetching all payslips:', error);
+        logger.error('Error fetching all payslips', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -415,7 +416,7 @@ export const deletePayslip = async (req: Request, res: Response) => {
 
         return sendSuccess(res, null, 'Payslip deleted successfully');
     } catch (error: any) {
-        console.error('Error deleting payslip:', error);
+        logger.error('Error deleting payslip', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -549,9 +550,9 @@ export const makePayment = async (req: Request, res: Response) => {
             await transaction.rollback();
         } catch (rollbackError) {
             // Transaction was already committed or rolled back
-            console.log('Transaction already finished, cannot rollback');
+            logger.warn('Transaction already finished, cannot rollback');
         }
-        console.error('Error making payment:', error);
+        logger.error('Error making payment', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -587,7 +588,7 @@ export const getPaymentHistory = async (req: Request, res: Response) => {
         }, 'Payment history retrieved successfully');
 
     } catch (error: any) {
-        console.error('Error fetching payment history:', error);
+        logger.error('Error fetching payment history', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -616,7 +617,7 @@ export const getPayslipWithPayments = async (req: Request, res: Response) => {
         return sendSuccess(res, payslipWithPayments, 'Payslip with payments retrieved successfully');
 
     } catch (error: any) {
-        console.error('Error fetching payslip with payments:', error);
+        logger.error('Error fetching payslip with payments', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -689,7 +690,7 @@ export const deletePayment = async (req: Request, res: Response) => {
 
     } catch (error: any) {
         await transaction.rollback();
-        console.error('Error deleting payment:', error);
+        logger.error('Error deleting payment', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -713,7 +714,7 @@ export const getNextAvailableMonth = async (req: Request, res: Response) => {
         return sendSuccess(res, nextAvailableData, 'Next available month retrieved successfully');
 
     } catch (error: any) {
-        console.error('Error getting next available month:', error);
+        logger.error('Error getting next available month', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };

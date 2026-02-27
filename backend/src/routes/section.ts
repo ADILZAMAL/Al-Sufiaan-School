@@ -3,6 +3,7 @@ import verifyToken from '../middleware/auth'
 import { check, validationResult } from 'express-validator'
 import Section from '../models/Section'
 import { sendSuccess, sendError } from '../utils/response';
+import logger from '../utils/logger';
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ router.get("/", verifyToken, async (req: Request, res: Response) => {
 
         return sendSuccess(res, sections, 'Sections retrieved successfully');
     } catch (error) {
-        console.error('Error fetching sections:', error);
+        logger.error('Error fetching sections', { error });
         return sendError(res, 'Failed to fetch sections', 500);
     }
 });
@@ -47,7 +48,7 @@ router.post("/", verifyToken,
             let section = await Section.create({name, classId, schoolId: req.schoolId});
             res.status(200).json({success: true, data: section})
         } catch (error) {
-            console.log(error);
+            logger.error('Error creating section', { error });
             res.status(500).json({success: false, error: {code: 'INTERNAL_SERVER_ERROR', message: "Someting went wrong"}})
         }
     })

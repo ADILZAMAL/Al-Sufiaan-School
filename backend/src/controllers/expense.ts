@@ -5,6 +5,7 @@ import ExpenseCategory from '../models/ExpenseCategory';
 import User from '../models/User';
 import { sendError, sendSuccess } from '../utils/response';
 import sequelize from 'sequelize';
+import logger from '../utils/logger';
 
 export const addExpense = async (req: Request, res: Response) => {
   const errors = validationResult(req);
@@ -37,7 +38,7 @@ export const addExpense = async (req: Request, res: Response) => {
     const expense = await Expense.create(expenseData);
     sendSuccess(res, expense, 'Expense added successfully', 201);
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -74,7 +75,7 @@ export const fetchExpense = async (req: Request, res: Response) => {
     });
     sendSuccess(res, result, 'Expenses fetched successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -95,7 +96,7 @@ export const fetchTotalExpenseForCurrentMonth = async (req: Request, res: Respon
     });
     sendSuccess(res, { total: result }, 'Total expense for current month fetched successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 }
@@ -155,7 +156,7 @@ export const updateExpense = async (req: Request, res: Response) => {
     await expense.update(updateData);
     sendSuccess(res, expense, 'Expense updated successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 }
@@ -190,7 +191,7 @@ export const deleteExpense = async (req: Request, res: Response) => {
     await expense.destroy();
     sendSuccess(res, {}, 'Expense deleted successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 }

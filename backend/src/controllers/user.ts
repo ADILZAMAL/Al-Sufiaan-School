@@ -5,6 +5,7 @@ import User from '../models/User';
 import bcrypt from 'bcryptjs';
 import { sendError, sendSuccess } from '../utils/response';
 import { Op } from 'sequelize';
+import logger from '../utils/logger';
 
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
@@ -14,7 +15,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     }
     sendSuccess(res, user, 'User retrieved successfully');
   } catch (error) {
-    console.log(error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 }
@@ -41,7 +42,7 @@ export const changePassword = async (req: Request, res: Response) => {
     await user.save();
     sendSuccess(res, null, 'Password changed successfully');
   } catch (error) {
-    console.log(error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 }
@@ -62,7 +63,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
     });
     sendSuccess(res, users, 'Users retrieved successfully');
   } catch (error) {
-    console.log(error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -85,7 +86,7 @@ export const getUserById = async (req: Request, res: Response) => {
     }
     sendSuccess(res, user, 'User retrieved successfully');
   } catch (error) {
-    console.log(error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -137,7 +138,7 @@ export const createUser = async (req: Request, res: Response) => {
 
     sendSuccess(res, userResponse, 'User created successfully');
   } catch (error) {
-    console.log(error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -193,7 +194,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     sendSuccess(res, updatedUser, 'User updated successfully');
   } catch (error) {
-    console.log(error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -217,7 +218,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     await user.destroy();
     sendSuccess(res, null, 'User deleted successfully');
   } catch (error) {
-    console.log(error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -265,7 +266,7 @@ export const updateProfile = async (req: Request, res: Response) => {
 
     sendSuccess(res, updatedUser, 'Profile updated successfully');
   } catch (error) {
-    console.log(error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };

@@ -4,6 +4,7 @@ import { sendSuccess, sendError } from '../utils/response';
 import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
 import sequelize from '../config/database';
+import logger from '../utils/logger';
 
 // Check if a date falls within any holiday range
 export const checkHolidayOverlap = async (
@@ -127,7 +128,7 @@ export const createHoliday = async (req: Request, res: Response) => {
 
     return sendSuccess(res, holiday, 'Holiday created successfully');
   } catch (error) {
-    console.error('Error creating holiday:', error);
+    logger.error('Error creating holiday', { error });
     return sendError(res, 'Failed to create holiday', 500);
   }
 };
@@ -190,7 +191,7 @@ export const getHolidays = async (req: Request, res: Response) => {
 
     return sendSuccess(res, filteredHolidays, 'Holidays retrieved successfully');
   } catch (error) {
-    console.error('Error fetching holidays:', error);
+    logger.error('Error fetching holidays', { error });
     return sendError(res, 'Failed to fetch holidays', 500);
   }
 };
@@ -221,7 +222,7 @@ export const getHolidayById = async (req: Request, res: Response) => {
 
     return sendSuccess(res, holiday, 'Holiday retrieved successfully');
   } catch (error) {
-    console.error('Error fetching holiday:', error);
+    logger.error('Error fetching holiday', { error });
     return sendError(res, 'Failed to fetch holiday', 500);
   }
 };
@@ -296,7 +297,7 @@ export const updateHoliday = async (req: Request, res: Response) => {
 
     return sendSuccess(res, updatedHoliday, 'Holiday updated successfully');
   } catch (error) {
-    console.error('Error updating holiday:', error);
+    logger.error('Error updating holiday', { error });
     return sendError(res, 'Failed to update holiday', 500);
   }
 };
@@ -323,7 +324,7 @@ export const deleteHoliday = async (req: Request, res: Response) => {
 
     return sendSuccess(res, null, 'Holiday deleted successfully');
   } catch (error) {
-    console.error('Error deleting holiday:', error);
+    logger.error('Error deleting holiday', { error });
     return sendError(res, 'Failed to delete holiday', 500);
   }
 };
@@ -385,7 +386,7 @@ export const checkIsHoliday = async (req: Request, res: Response) => {
       'Date is a holiday'
     );
   } catch (error) {
-    console.error('Error checking holiday:', error);
+    logger.error('Error checking holiday', { error });
     return sendError(res, 'Failed to check holiday', 500);
   }
 };

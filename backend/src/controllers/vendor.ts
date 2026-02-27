@@ -8,6 +8,7 @@ import Expense from '../models/Expense';
 import User from '../models/User';
 import { sendError, sendSuccess } from '../utils/response';
 import sequelize from 'sequelize';
+import logger from '../utils/logger';
 
 export const addVendor = async (req: Request, res: Response) => {
   const errors = validationResult(req);
@@ -39,7 +40,7 @@ export const addVendor = async (req: Request, res: Response) => {
     const vendor = await Vendor.create(vendorData);
     sendSuccess(res, vendor, 'Vendor added successfully', 201);
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -64,7 +65,7 @@ export const fetchVendors = async (req: Request, res: Response) => {
     });
     sendSuccess(res, result, 'Vendors fetched successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -89,7 +90,7 @@ export const getVendorById = async (req: Request, res: Response) => {
     
     sendSuccess(res, vendor, 'Vendor fetched successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -129,7 +130,7 @@ export const updateVendor = async (req: Request, res: Response) => {
     await vendor.update(updateData);
     sendSuccess(res, vendor, 'Vendor updated successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -146,7 +147,7 @@ export const deleteVendor = async (req: Request, res: Response) => {
     await vendor.update({ isActive: false });
     sendSuccess(res, {}, 'Vendor deleted successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -194,7 +195,7 @@ export const getVendorSummary = async (req: Request, res: Response) => {
 
     sendSuccess(res, summary, 'Vendor summary fetched successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
