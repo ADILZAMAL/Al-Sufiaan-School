@@ -7,7 +7,7 @@ import { sendSuccess, sendError } from '../utils/response';
 interface AuthenticatedRequest extends Request {
     userId: string;
     schoolId: string;
-    userRole: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER';
+    userRole: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
 }
 
 // Get all transportation area pricing records

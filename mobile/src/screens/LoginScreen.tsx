@@ -19,21 +19,21 @@ import SchoolLogo from '../../assets/school-logo.svg';
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
 const LoginScreen: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigation = useNavigation<LoginScreenNavigationProp>();
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter both email and password');
+    if (!mobileNumber.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter both mobile number and password');
       return;
     }
 
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await login(mobileNumber.trim(), password);
       // Navigation will happen automatically via AppNavigator
     } catch (error: any) {
       Alert.alert(
@@ -60,12 +60,12 @@ const LoginScreen: React.FC = () => {
         <View style={styles.form}>
           <TextInput
             style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
+            placeholder="Mobile Number"
+            value={mobileNumber}
+            onChangeText={setMobileNumber}
+            keyboardType="phone-pad"
             autoCapitalize="none"
-            autoComplete="email"
+            autoComplete="tel"
             editable={!loading}
           />
 
@@ -75,8 +75,6 @@ const LoginScreen: React.FC = () => {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            autoCapitalize="none"
-            autoComplete="password"
             editable={!loading}
           />
 

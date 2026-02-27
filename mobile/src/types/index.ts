@@ -63,7 +63,9 @@ export interface User {
 export interface LoginResponse {
   userId: number;
   schoolId: number;
-  role: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER';
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
+  staffId?: number | null;
+  staffName?: string | null;
   token?: string;
 }
 
@@ -85,6 +87,80 @@ export interface BulkAttendanceResponse {
   }>;
 }
 
+export interface StudentEnrollment {
+  id: number;
+  sessionId: number;
+  classId: number;
+  sectionId: number | null;
+  rollNumber: string | null;
+  class: { id: number; name: string };
+  section: { id: number; name: string } | null;
+  session: { id: number; name: string; isActive: boolean };
+}
+
+export interface StudentDetail {
+  id: number;
+  admissionNumber: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  bloodGroup: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'NA';
+  religion: 'Islam' | 'Hinduism' | 'Christianity' | 'Sikhism' | 'Buddhism' | 'Jainism' | 'Other';
+  phone: string;
+  email?: string | null;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  fatherName: string;
+  fatherPhone?: string | null;
+  motherName: string;
+  motherPhone?: string | null;
+  guardianName?: string | null;
+  guardianRelation?: string | null;
+  guardianPhone?: string | null;
+  studentPhoto?: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  enrollments: StudentEnrollment[];
+}
+
+export interface StudentUpdatePayload {
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'NA';
+  religion?: 'Islam' | 'Hinduism' | 'Christianity' | 'Sikhism' | 'Buddhism' | 'Jainism' | 'Other';
+  phone?: string;
+  email?: string | null;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  fatherName?: string;
+  fatherPhone?: string | null;
+  motherName?: string;
+  motherPhone?: string | null;
+  guardianName?: string | null;
+  guardianRelation?: string | null;
+  guardianPhone?: string | null;
+  studentPhoto?: string | null;
+}
+
+export interface PhotoUploadResponse {
+  studentPhoto?: {
+    url: string;
+    publicId: string;
+    format: string;
+    width: number;
+    height: number;
+    bytes: number;
+  };
+}
+
 export interface Holiday {
   id: number;
   name: string;
@@ -95,4 +171,51 @@ export interface Holiday {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Payslip {
+  id: number;
+  payslipNumber: string;
+  staffId: number;
+  month: number;
+  year: number;
+  monthName: string;
+  staffName: string;
+  staffRole: string;
+  schoolName: string;
+  baseSalary: number;
+  workingDays: number;
+  presentDays: number;
+  absentDays: number;
+  casualLeave: number;
+  halfDays: number;
+  grossSalary: number;
+  deductions: number;
+  netSalary: number;
+  totalPaidAmount: number;
+  remainingAmount: number;
+  paymentStatus: 'UNPAID' | 'PARTIAL' | 'PAID';
+  lastPaymentDate: string | null;
+}
+
+export interface PayslipPayment {
+  id: number;
+  paymentAmount: number;
+  paymentDate: string;
+  paymentMethod: 'Cash' | 'UPI' | 'Bank Transfer';
+  notes: string | null;
+}
+
+export interface PayslipWithPayments extends Payslip {
+  payments: PayslipPayment[];
+}
+
+export interface PayslipListResponse {
+  payslips: Payslip[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

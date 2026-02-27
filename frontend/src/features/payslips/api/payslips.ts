@@ -31,8 +31,8 @@ export const payslipApi = {
   },
 
   // Get all payslips for a specific staff member
-  getByStaff: async (staffType: 'teaching' | 'non-teaching', staffId: number, page = 1, limit = 10): Promise<PayslipListResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/payslips/staff/${staffType}/${staffId}?page=${page}&limit=${limit}`, {
+  getByStaff: async (staffId: number, page = 1, limit = 10): Promise<PayslipListResponse> => {
+    const response = await fetch(`${API_BASE_URL}/api/payslips/staff/${staffId}?page=${page}&limit=${limit}`, {
       credentials: 'include'
     });
 
@@ -57,8 +57,8 @@ export const payslipApi = {
   },
 
   // Check if payslip exists for staff/month/year
-  checkExists: async (staffType: 'teaching' | 'non-teaching', staffId: number, month: number, year: number): Promise<PayslipExistsResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/payslips/check/${staffType}/${staffId}/${month}/${year}`, {
+  checkExists: async (staffId: number, month: number, year: number): Promise<PayslipExistsResponse> => {
+    const response = await fetch(`${API_BASE_URL}/api/payslips/check/${staffId}/${month}/${year}`, {
       credentials: 'include'
     });
 
@@ -181,14 +181,14 @@ export const payslipApi = {
   },
 
   // Get next available month for payslip generation
-  getNextAvailableMonth: async (staffType: 'teaching' | 'non-teaching', staffId: number): Promise<{
+  getNextAvailableMonth: async (staffId: number): Promise<{
     nextAvailableMonth: number;
     nextAvailableYear: number;
     nextAvailableMonthName: string;
     lastGeneratedMonth: string | null;
     canGenerate: boolean;
   }> => {
-    const response = await fetch(`${API_BASE_URL}/api/payslips/staff/${staffType}/${staffId}/next-available-month`, {
+    const response = await fetch(`${API_BASE_URL}/api/payslips/staff/${staffId}/next-available-month`, {
       credentials: 'include'
     });
 

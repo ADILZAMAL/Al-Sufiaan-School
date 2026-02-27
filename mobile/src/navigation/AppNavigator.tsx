@@ -1,20 +1,32 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
+import HomeScreen from '../screens/HomeScreen';
 import ClassSelectionScreen from '../screens/ClassSelectionScreen';
 import SectionSelectionScreen from '../screens/SectionSelectionScreen';
 import AttendanceScreen from '../screens/AttendanceScreen';
+import StudentListScreen from '../screens/StudentListScreen';
+import StudentProfileScreen from '../screens/StudentProfileScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import PayslipListScreen from '../screens/PayslipListScreen';
+import PayslipDetailScreen from '../screens/PayslipDetailScreen';
 import LoadingScreen from '../screens/LoadingScreen';
 import SchoolLogo from '../../assets/school-logo.svg';
 
 export type RootStackParamList = {
   Loading: undefined;
   Login: undefined;
-  ClassSelection: undefined;
-  SectionSelection: { classId: number; className: string };
+  Home: undefined;
+  ClassSelection: { mode: 'attendance' | 'students' };
+  SectionSelection: { classId: number; className: string; mode: 'attendance' | 'students' };
   Attendance: { classId: number; sectionId: number; className: string; sectionName: string };
+  StudentList: { classId: number; sectionId: number; className: string; sectionName: string };
+  StudentProfile: { studentId: number; studentName: string };
+  ChangePassword: undefined;
+  PayslipList: undefined;
+  PayslipDetail: { payslipId: number; monthName: string; year: number };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -30,11 +42,6 @@ const headerStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  logo: {
-    width: 32,
-    height: 32,
-    marginRight: 8,
   },
 });
 
@@ -67,15 +74,22 @@ const AppNavigator: React.FC = () => {
       ) : (
         <>
           <Stack.Screen
+            name="Home"
+            component={HomeScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
             name="ClassSelection"
             component={ClassSelectionScreen}
-            options={{ title: 'Select Class' }}
+            options={({ route }) => ({
+              title: route.params.mode === 'students' ? 'Student Profiles' : 'Take Attendance',
+            })}
           />
           <Stack.Screen
             name="SectionSelection"
             component={SectionSelectionScreen}
             options={({ route }) => ({
-              title: `${route.params.className} - Select Section`,
+              title: `${route.params.className} — Select Section`,
             })}
           />
           <Stack.Screen
@@ -83,6 +97,37 @@ const AppNavigator: React.FC = () => {
             component={AttendanceScreen}
             options={({ route }) => ({
               title: `${route.params.className} - ${route.params.sectionName}`,
+            })}
+          />
+          <Stack.Screen
+            name="StudentList"
+            component={StudentListScreen}
+            options={({ route }) => ({
+              title: `${route.params.className} — ${route.params.sectionName}`,
+            })}
+          />
+          <Stack.Screen
+            name="StudentProfile"
+            component={StudentProfileScreen}
+            options={({ route }) => ({
+              title: route.params.studentName,
+            })}
+          />
+          <Stack.Screen
+            name="ChangePassword"
+            component={ChangePasswordScreen}
+            options={{ title: 'Change Password' }}
+          />
+          <Stack.Screen
+            name="PayslipList"
+            component={PayslipListScreen}
+            options={{ title: 'My Payslips' }}
+          />
+          <Stack.Screen
+            name="PayslipDetail"
+            component={PayslipDetailScreen}
+            options={({ route }) => ({
+              title: `${route.params.monthName} ${route.params.year}`,
             })}
           />
         </>

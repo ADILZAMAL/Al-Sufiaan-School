@@ -7,7 +7,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { StackNavigationProp, RouteProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { sectionsApi } from '../api/sections';
 import { Section } from '../types';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -21,7 +22,7 @@ type SectionSelectionScreenNavigationProp = StackNavigationProp<RootStackParamLi
 const SectionSelectionScreen: React.FC = () => {
   const route = useRoute<SectionSelectionScreenRouteProp>();
   const navigation = useNavigation<SectionSelectionScreenNavigationProp>();
-  const { classId, className } = route.params;
+  const { classId, className, mode } = route.params;
   const { logout } = useAuth();
 
   const [sections, setSections] = useState<Section[]>([]);
@@ -53,12 +54,21 @@ const SectionSelectionScreen: React.FC = () => {
   };
 
   const handleSectionSelect = (section: Section) => {
-    navigation.navigate('Attendance', {
-      classId,
-      sectionId: section.id,
-      className,
-      sectionName: section.name,
-    });
+    if (mode === 'students') {
+      navigation.navigate('StudentList', {
+        classId,
+        sectionId: section.id,
+        className,
+        sectionName: section.name,
+      });
+    } else {
+      navigation.navigate('Attendance', {
+        classId,
+        sectionId: section.id,
+        className,
+        sectionName: section.name,
+      });
+    }
   };
 
   if (loading) {

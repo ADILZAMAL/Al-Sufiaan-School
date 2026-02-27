@@ -89,6 +89,8 @@ ExpenseCategory.hasMany(Expense, { foreignKey: 'categoryId', as: 'expenses' });
 
 // Staff associations
 Staff.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+Staff.hasOne(User, { foreignKey: 'staffId', as: 'loginUser' });
+User.belongsTo(Staff, { foreignKey: 'staffId', as: 'staff' });
 
 // Payslip associations
 Payslip.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });

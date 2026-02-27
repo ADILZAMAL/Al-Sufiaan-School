@@ -9,7 +9,7 @@ const USER_KEY = 'user_data';
 interface AuthContextType {
   user: LoginResponse | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (mobileNumber: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -42,9 +42,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (mobileNumber: string, password: string) => {
     try {
-      const response = await authApi.login(email, password);
+      const response = await authApi.login(mobileNumber, password);
 
       // Store token and user data
       // The backend now returns token in response body for mobile compatibility

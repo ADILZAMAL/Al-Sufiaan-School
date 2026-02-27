@@ -1,6 +1,6 @@
 import express from 'express';
 import { check } from 'express-validator';
-import { login } from '../controllers/auth';
+import { login, changePassword } from '../controllers/auth';
 import { Request, Response } from 'express';
 import verifyToken from '../middleware/auth';
 import { sendSuccess } from '../utils/response';
@@ -80,10 +80,9 @@ const router = express.Router();
 router.post(
     "/login",
     [
-        check("email", "Email is required").isEmail(),
-        check("password", "Password is required").isLength({
-            min: 6,
-        })
+        check("email").optional().isEmail().withMessage("Invalid email format"),
+        check("mobileNumber").optional().notEmpty().withMessage("Mobile number is required"),
+        check("password", "Password is required").isLength({ min: 8 }),
     ],
     login
 )
@@ -130,5 +129,8 @@ router.post("/logout", (req: Request, res: Response) => {
     res.cookie("auth_token", "", cookieOptions);
     sendSuccess(res, {}, 'Signed out');
 });
+
+// PUT /api/auth/change-password — Authenticated staff/user changes their own password
+router.put("/change-password", verifyToken, changePassword);
 
 export default router
