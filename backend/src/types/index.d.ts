@@ -3,4 +3,7 @@ declare namespace Express {
         userId: string;
         schoolId: string;
     }
+    export interface Locals {
+        requestId?: string;
+    }
 }

@@ -5,6 +5,7 @@ import Vendor from '../models/Vendor';
 import User from '../models/User';
 import { sendError, sendSuccess } from '../utils/response';
 import sequelize from 'sequelize';
+import logger from '../utils/logger';
 
 export const addVendorBill = async (req: Request, res: Response) => {
   const errors = validationResult(req);
@@ -37,7 +38,7 @@ export const addVendorBill = async (req: Request, res: Response) => {
     const vendorBill = await VendorBill.create(vendorBillData);
     sendSuccess(res, vendorBill, 'Vendor bill added successfully', 201);
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -79,7 +80,7 @@ export const fetchVendorBills = async (req: Request, res: Response) => {
     });
     sendSuccess(res, result, 'Vendor bills fetched successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -129,7 +130,7 @@ export const updateVendorBill = async (req: Request, res: Response) => {
     await vendorBill.update(updateData);
     sendSuccess(res, vendorBill, 'Vendor bill updated successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -155,7 +156,7 @@ export const deleteVendorBill = async (req: Request, res: Response) => {
     await vendorBill.destroy();
     sendSuccess(res, {}, 'Vendor bill deleted successfully');
   } catch (error) {
-    console.log('Something went wrong', error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };

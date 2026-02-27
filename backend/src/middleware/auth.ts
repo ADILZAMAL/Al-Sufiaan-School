@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import logger from '../utils/logger';
 
 declare global {
   namespace Express {
@@ -24,7 +25,11 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   }
   
   if (!token) {
-    console.log('Auth middleware - No token found in cookies or Authorization header');
+    logger.warn('No token found in cookies or Authorization header', {
+      requestId: res.locals.requestId,
+      method: req.method,
+      url: req.url,
+    });
     return res.status(401).json({ message: "unauthorized" });
   }
 
@@ -35,7 +40,10 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
     req.userRole = (decoded as JwtPayload).role;
     next();
   } catch (error) {
-    console.log('Auth middleware - Token verification failed:', error);
+    logger.warn('Token verification failed', {
+      requestId: res.locals.requestId,
+      error: (error as Error).message,
+    });
     return res.status(401).json({ message: "unauthorized" });
   }
 };

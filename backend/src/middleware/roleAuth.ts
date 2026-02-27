@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { sendError } from '../utils/response';
+import logger from '../utils/logger';
 import User from '../models/User';
 
 // Middleware to check if user is SUPER_ADMIN
@@ -16,7 +17,11 @@ export const requireSuperAdmin = async (req: Request, res: Response, next: NextF
     
     next();
   } catch (error) {
-    console.log(error);
+    logger.error('requireSuperAdmin check failed', {
+      requestId: res.locals.requestId,
+      error: (error as Error).message,
+      stack: (error as Error).stack,
+    });
     sendError(res, 'Something went wrong');
   }
 };
@@ -43,7 +48,11 @@ export const canModifyUser = async (req: Request, res: Response, next: NextFunct
     
     return sendError(res, 'Access denied. You can only modify your own profile.', 403);
   } catch (error) {
-    console.log(error);
+    logger.error('canModifyUser check failed', {
+      requestId: res.locals.requestId,
+      error: (error as Error).message,
+      stack: (error as Error).stack,
+    });
     sendError(res, 'Something went wrong');
   }
 };

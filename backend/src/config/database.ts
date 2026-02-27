@@ -1,4 +1,5 @@
 import {Sequelize} from 'sequelize'
+import logger from '../utils/logger';
 import School, {initSchoolModel} from '../models/School';
 import {initUserModel} from '../models/User';
 import Class from '../models/Class'
@@ -25,6 +26,9 @@ import {initStudentFeePaymentModel} from "../models/StudentFeePayment"
 import {initAttendanceModel} from "../models/Attendance"
 import {initHolidayModel} from "../models/Holiday"
 import "dotenv/config";
+import { getRequestId } from '../utils/context';
+
+const isSqlLoggingDisabled = process.env.DISABLE_SQL_LOGGING === 'true';
 
 const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER || '', process.env.DB_PASSWORD, {
     host: process.env.DB_HOST,
@@ -32,9 +36,13 @@ const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER |
     define: {
         freezeTableName: true
     },
-    logging: (msg) => {
-        console.log(msg);
-    },
+    benchmark: true,
+    logging: isSqlLoggingDisabled
+        ? false
+        : (sql: string, executionTime?: number) => {
+            const requestId = getRequestId();
+            logger.debug('Sequelize query', { sql, executionTimeMs: executionTime, ...(requestId && { requestId }) });
+        },
 });
 
 // Class.init(sequelize)
@@ -68,10 +76,10 @@ initHolidayModel(sequelize);
 //Sync the Model with the database
 sequelize.sync()
     .then(() => {
-        console.log('Database synced!')
+        logger.info('Database synced successfully');
     })
     .catch(err => {
-        console.log('Error syncing database: ', err)
+        logger.error('Error syncing database', { error: err.message, stack: err.stack });
     })
 
 export default sequelize;

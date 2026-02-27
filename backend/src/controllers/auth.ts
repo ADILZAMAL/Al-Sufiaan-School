@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import { sendError, sendSuccess } from '../utils/response';
 import { getAuthCookieOptions } from '../utils/cookieOptions';
 import { validatePasswordStrength } from '../utils/passwordValidator';
+import logger from '../utils/logger';
 
 export const login = async (req: Request, res: Response) => {
   const errors = validationResult(req);
@@ -60,7 +61,7 @@ export const login = async (req: Request, res: Response) => {
     // Also return token in response body for mobile apps
     sendSuccess(res, { userId: user.id, schoolId: user.schoolId, role: user.role, staffId: user.staffId ?? null, staffName, token }, 'Login successful');
   } catch (error) {
-    console.log(error);
+    logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -97,7 +98,7 @@ export const changePassword = async (req: Request, res: Response) => {
 
     return sendSuccess(res, null, 'Password changed successfully');
   } catch (error) {
-    console.log(error);
+    logger.error('Something went wrong', { error });
     return sendError(res, 'Something went wrong');
   }
 };

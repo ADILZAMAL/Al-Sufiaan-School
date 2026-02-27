@@ -4,6 +4,7 @@ import sequelize from '../config/database';
 import { AcademicSession, Class, StudentEnrollment, Attendance, StudentMonthlyFee } from '../models';
 import { sendSuccess, sendError } from '../utils/response';
 import { validationResult } from 'express-validator';
+import logger from '../utils/logger';
 
 // ── GET /api/sessions ────────────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ export const getAllSessions = async (req: Request, res: Response) => {
 
         return sendSuccess(res, sessions, 'Sessions retrieved successfully');
     } catch (error) {
-        console.error('Error fetching sessions:', error);
+        logger.error('Error fetching sessions', { error });
         return sendError(res, 'Failed to fetch sessions', 500);
     }
 };
@@ -45,7 +46,7 @@ export const getActiveSession = async (req: Request, res: Response) => {
 
         return sendSuccess(res, session, 'Active session retrieved successfully');
     } catch (error) {
-        console.error('Error fetching active session:', error);
+        logger.error('Error fetching active session', { error });
         return sendError(res, 'Failed to fetch active session', 500);
     }
 };
@@ -85,7 +86,7 @@ export const getSessionById = async (req: Request, res: Response) => {
 
         return sendSuccess(res, data, 'Session retrieved successfully');
     } catch (error) {
-        console.error('Error fetching session:', error);
+        logger.error('Error fetching session', { error });
         return sendError(res, 'Failed to fetch session', 500);
     }
 };
@@ -135,7 +136,7 @@ export const createSession = async (req: Request, res: Response) => {
 
         return sendSuccess(res, session, 'Session created successfully', 201);
     } catch (error) {
-        console.error('Error creating session:', error);
+        logger.error('Error creating session', { error });
         return sendError(res, 'Failed to create session', 500);
     }
 };
@@ -172,7 +173,7 @@ export const activateSession = async (req: Request, res: Response) => {
         const updated = await AcademicSession.findByPk(id);
         return sendSuccess(res, updated, `Session "${session.name}" activated successfully`);
     } catch (error) {
-        console.error('Error activating session:', error);
+        logger.error('Error activating session', { error });
         return sendError(res, 'Failed to activate session', 500);
     }
 };
@@ -249,7 +250,7 @@ export const updateSession = async (req: Request, res: Response) => {
 
         return sendSuccess(res, session, 'Session updated successfully');
     } catch (error) {
-        console.error('Error updating session:', error);
+        logger.error('Error updating session', { error });
         return sendError(res, 'Failed to update session', 500);
     }
 };
@@ -289,7 +290,7 @@ export const deleteSession = async (req: Request, res: Response) => {
 
         return sendSuccess(res, null, 'Session deleted successfully');
     } catch (error) {
-        console.error('Error deleting session:', error);
+        logger.error('Error deleting session', { error });
         return sendError(res, 'Failed to delete session', 500);
     }
 };

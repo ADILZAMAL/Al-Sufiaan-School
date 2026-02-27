@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
 import cloudinary, { staffPhotoUploadOptions } from '../config/cloudinary';
 import { UploadApiResponse } from 'cloudinary';
+import logger from '../utils/logger';
 
 // Helper function to upload a single image to Cloudinary
 const uploadImageToCloudinary = async (
@@ -60,7 +61,7 @@ export const uploadStaffPhoto = async (req: Request, res: Response) => {
             bytes: uploadResult.bytes
         }, 'Photo uploaded successfully', 201);
     } catch (error: any) {
-        console.error('Error uploading photo to Cloudinary:', error);
+        logger.error('Error uploading photo to Cloudinary', { error });
         return sendError(res, 'Failed to upload photo', 500);
     }
 };
@@ -102,7 +103,7 @@ export const uploadStudentPhotos = async (req: Request, res: Response) => {
                             bytes: result.bytes
                         };
                     }).catch(error => {
-                        console.error(`Error uploading ${photoType}:`, error);
+                        logger.error(`Error uploading ${photoType}:`, { error });
                         uploadResults[photoType] = { error: error.message };
                     })
                 );
@@ -131,7 +132,7 @@ export const uploadStudentPhotos = async (req: Request, res: Response) => {
             201
         );
     } catch (error: any) {
-        console.error('Error uploading student photos to Cloudinary:', error);
+        logger.error('Error uploading student photos to Cloudinary', { error });
         return sendError(res, 'Failed to upload student photos', 500);
     }
 };

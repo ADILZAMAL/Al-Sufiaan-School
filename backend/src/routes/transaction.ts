@@ -8,6 +8,7 @@ import Class from '../models/Class';
 import Section from '../models/Section';
 import User from '../models/User';
 import sequelize from '../config/database';
+import logger from '../utils/logger';
 
 const router = express.Router();
 
@@ -83,7 +84,7 @@ router.get('/recent', verifyToken, async (req: Request, res: Response) => {
 
     res.status(200).json({ success: true, data: formattedTransactions });
   } catch (error) {
-    console.log(error);
+    logger.error('Error fetching recent transactions', { error });
     res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' } });
   }
 });
@@ -192,7 +193,7 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.log(error);
+    logger.error('Error fetching transactions', { error });
     res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' } });
   }
 });
@@ -284,7 +285,7 @@ router.post(
       res.status(201).json({ success: true, data: {} });
     } catch (error) {
       await t.rollback();
-      console.log(error);
+      logger.error('Error creating transaction', { error });
       res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' } });
     }
   }
@@ -337,10 +338,10 @@ router.put('/:id/verify', verifyToken, async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ 
-      success: false, 
-      error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' } 
+    logger.error('Error verifying transaction', { error });
+    res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' }
     });
   }
 });

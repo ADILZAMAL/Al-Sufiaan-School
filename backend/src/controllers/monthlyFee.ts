@@ -11,6 +11,7 @@ import User from "../models/User";
 import AcademicSession from "../models/AcademicSession";
 import StudentEnrollment from "../models/StudentEnrollment";
 import { Op } from "sequelize";
+import logger from '../utils/logger';
 
 const MONTH_NAMES = [
   '', 'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL',
@@ -164,7 +165,7 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
 
     return sendSuccess(res, createdFeeWithItems, "Fee generated successfully", 201);
   } catch (error) {
-    console.error("Error generating monthly fee:", error);
+    logger.error("Error generating monthly fee:", { error });
     return sendError(res, "Failed to generate monthly fee", 500);
   }
 };
@@ -239,7 +240,7 @@ async function calculateFeeItems(
 
     return feeItems;
   } catch (error) {
-    console.error("Error calculating fee items:", error);
+    logger.error("Error calculating fee items:", { error });
     throw error;
   }
 }
@@ -441,7 +442,7 @@ export async function getStudentFeeTimelineController(req: Request, res: Respons
 
     return sendSuccess(res, timeline, 'Student fee timeline retrieved successfully');
   } catch (error) {
-    console.error('Error fetching student fee timeline:', error);
+    logger.error('Error fetching student fee timeline', { error });
     if (error instanceof Error && error.message === 'Student not found') {
       return sendError(res, 'Student not found', 404);
     }
@@ -547,7 +548,7 @@ export async function collectFeePaymentController(req: Request, res: Response) {
 
     return sendSuccess(res, updatedFee, 'Payment collected successfully', 201);
   } catch (error) {
-    console.error('Error collecting fee payment:', error);
+    logger.error('Error collecting fee payment', { error });
     return sendError(res, 'Failed to collect payment', 500);
   }
 }
@@ -672,7 +673,7 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
       },
     }, 'Incoming payments fetched successfully');
   } catch (error) {
-    console.error('Error fetching incoming payments:', error);
+    logger.error('Error fetching incoming payments', { error });
     return sendError(res, 'Failed to fetch incoming payments', 500);
   }
 }
@@ -711,7 +712,7 @@ export async function verifyPaymentController(req: Request, res: Response) {
       verifiedBy: userId,
     }, 'Payment verified successfully');
   } catch (error) {
-    console.error('Error verifying payment:', error);
+    logger.error('Error verifying payment', { error });
     return sendError(res, 'Failed to verify payment', 500);
   }
 }
@@ -858,7 +859,7 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
 
     return sendSuccess(res, updatedFeeWithItems, "Fee regenerated successfully", 200);
   } catch (error) {
-    console.error("Error regenerating monthly fee:", error);
+    logger.error("Error regenerating monthly fee:", { error });
     return sendError(res, "Failed to regenerate monthly fee", 500);
   }
 }
@@ -945,7 +946,7 @@ export async function getFeeDashboardController(req: Request, res: Response) {
     
     return sendSuccess(res, monthlyStats, 'Fee dashboard data retrieved successfully');
   } catch (error) {
-    console.error('Error fetching fee dashboard:', error);
+    logger.error('Error fetching fee dashboard', { error });
     return sendError(res, 'Failed to fetch fee dashboard data', 500);
   }
 }
@@ -1040,7 +1041,7 @@ export async function getStudentsWithDuesController(req: Request, res: Response)
 
     return sendSuccess(res, studentsWithDues, 'Students with dues retrieved successfully');
   } catch (error) {
-    console.error('Error fetching students with dues:', error);
+    logger.error('Error fetching students with dues', { error });
     return sendError(res, 'Failed to fetch students with dues', 500);
   }
 }

@@ -4,6 +4,7 @@ import { sendSuccess, sendError } from '../utils/response';
 import { validationResult } from 'express-validator';
 import { generateAdmissionNumber } from '../utils/studentUtils';
 import { Op } from 'sequelize';
+import logger from '../utils/logger';
 
 // Get all students
 export const getAllStudents = async (req: Request, res: Response) => {
@@ -99,7 +100,7 @@ export const getAllStudents = async (req: Request, res: Response) => {
 
     return sendSuccess(res, studentsWithDue, 'Students retrieved successfully');
   } catch (error) {
-    console.error('Error fetching students:', error);
+    logger.error('Error fetching students', { error });
     return sendError(res, 'Failed to fetch students', 500);
   }
 };
@@ -131,7 +132,7 @@ export const getStudentById = async (req: Request, res: Response) => {
 
     return sendSuccess(res, student, 'Student retrieved successfully');
   } catch (error) {
-    console.error('Error fetching student:', error);
+    logger.error('Error fetching student', { error });
     return sendError(res, 'Failed to fetch student', 500);
   }
 };
@@ -211,7 +212,7 @@ export const createStudent = async (req: Request, res: Response) => {
 
     return sendSuccess(res, createdStudent, 'Student created successfully', 201);
   } catch (error) {
-    console.error('Error creating student:', error);
+    logger.error('Error creating student', { error });
     return sendError(res, 'Failed to create student', 500);
   }
 };
@@ -258,7 +259,7 @@ export const updateStudent = async (req: Request, res: Response) => {
 
     return sendSuccess(res, updatedStudent, 'Student updated successfully');
   } catch (error) {
-    console.error('Error updating student:', error);
+    logger.error('Error updating student', { error });
     return sendError(res, 'Failed to update student', 500);
   }
 };
@@ -277,7 +278,7 @@ export const deleteStudent = async (req: Request, res: Response) => {
 
     return sendSuccess(res, null, 'Student deleted successfully');
   } catch (error) {
-    console.error('Error deleting student:', error);
+    logger.error('Error deleting student', { error });
     return sendError(res, 'Failed to delete student', 500);
   }
 };
@@ -332,7 +333,7 @@ export const getStudentsByClass = async (req: Request, res: Response) => {
 
     return sendSuccess(res, students, 'Students retrieved successfully');
   } catch (error) {
-    console.error('Error fetching students by class:', error);
+    logger.error('Error fetching students by class', { error });
     return sendError(res, 'Failed to fetch students', 500);
   }
 };
@@ -364,7 +365,7 @@ export const getStudentsWithPaymentReminders = async (req: Request, res: Respons
 
     return sendSuccess(res, students, 'Students with payment reminders retrieved successfully');
   } catch (error) {
-    console.error('Error fetching students with payment reminders:', error);
+    logger.error('Error fetching students with payment reminders', { error });
     return sendError(res, 'Failed to fetch students with payment reminders', 500);
   }
 };
@@ -420,7 +421,7 @@ export const updatePaymentReminder = async (req: Request, res: Response) => {
 
     return sendSuccess(res, updatedStudent, 'Payment reminder updated successfully');
   } catch (error) {
-    console.error('Error updating payment reminder:', error);
+    logger.error('Error updating payment reminder', { error });
     return sendError(res, 'Failed to update payment reminder', 500);
   }
 };
@@ -452,7 +453,7 @@ export const markStudentLeftSchool = async (req: Request, res: Response) => {
 
     return sendSuccess(res, updatedStudent, message);
   } catch (error) {
-    console.error('Error marking student as left school:', error);
+    logger.error('Error marking student as left school', { error });
     return sendError(res, 'Failed to update student status', 500);
   }
 };

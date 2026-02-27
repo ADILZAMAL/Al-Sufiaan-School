@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import ExpenseCategory from '../models/ExpenseCategory';
 import { sendError, sendSuccess } from '../utils/response';
 import sequelize from 'sequelize';
+import logger from '../utils/logger';
 
 export const createExpenseCategory = async (req: Request, res: Response) => {
   const errors = validationResult(req);
@@ -34,7 +35,7 @@ export const createExpenseCategory = async (req: Request, res: Response) => {
 
     sendSuccess(res, category, 'Expense category created successfully', 201);
   } catch (error) {
-    console.log('Error creating expense category:', error);
+    logger.error('Error creating expense category', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -58,7 +59,7 @@ export const getExpenseCategories = async (req: Request, res: Response) => {
 
     sendSuccess(res, categories, 'Expense categories fetched successfully');
   } catch (error) {
-    console.log('Error fetching expense categories:', error);
+    logger.error('Error fetching expense categories', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -105,7 +106,7 @@ export const updateExpenseCategory = async (req: Request, res: Response) => {
 
     sendSuccess(res, category, 'Expense category updated successfully');
   } catch (error) {
-    console.log('Error updating expense category:', error);
+    logger.error('Error updating expense category', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -137,7 +138,7 @@ export const deleteExpenseCategory = async (req: Request, res: Response) => {
 
     sendSuccess(res, {}, 'Expense category deleted successfully');
   } catch (error) {
-    console.log('Error deleting expense category:', error);
+    logger.error('Error deleting expense category', { error });
     sendError(res, 'Something went wrong');
   }
 };
@@ -157,7 +158,7 @@ export const getExpenseCategoryById = async (req: Request, res: Response) => {
 
     sendSuccess(res, category, 'Expense category fetched successfully');
   } catch (error) {
-    console.log('Error fetching expense category:', error);
+    logger.error('Error fetching expense category', { error });
     sendError(res, 'Something went wrong');
   }
 };

@@ -4,6 +4,7 @@ import User from '../models/User';
 import bcrypt from 'bcryptjs';
 import { sendSuccess, sendError } from '../utils/response';
 import { validatePasswordStrength } from '../utils/passwordValidator';
+import logger from '../utils/logger';
 
 const TEACHING_ROLES = [
     'Principal',
@@ -158,7 +159,7 @@ export const createStaff = async (req: Request, res: Response) => {
 
         return sendSuccess(res, staff, 'Staff created successfully', 201);
     } catch (error: any) {
-        console.error('Error creating staff:', error);
+        logger.error('Error creating staff', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -193,7 +194,7 @@ export const getAllStaff = async (req: Request, res: Response) => {
             loginUser: undefined,
         })), 'Staff retrieved successfully');
     } catch (error: any) {
-        console.error('Error fetching staff:', error);
+        logger.error('Error fetching staff', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -222,7 +223,7 @@ export const getStaffById = async (req: Request, res: Response) => {
             loginUser: undefined,
         }, 'Staff retrieved successfully');
     } catch (error: any) {
-        console.error('Error fetching staff:', error);
+        logger.error('Error fetching staff', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -274,7 +275,7 @@ export const updateStaff = async (req: Request, res: Response) => {
 
         return sendSuccess(res, staff, 'Staff updated successfully');
     } catch (error: any) {
-        console.error('Error updating staff:', error);
+        logger.error('Error updating staff', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -293,7 +294,7 @@ export const markStaffLeftSchool = async (req: Request, res: Response) => {
 
         return sendSuccess(res, staff, 'Staff marked as left school successfully');
     } catch (error: any) {
-        console.error('Error marking staff as left school:', error);
+        logger.error('Error marking staff as left school', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -343,7 +344,7 @@ export const enableStaffLogin = async (req: Request, res: Response) => {
             staffId: staff.id,
         }, 'Staff login enabled successfully', 201);
     } catch (error: any) {
-        console.error('Error enabling staff login:', error);
+        logger.error('Error enabling staff login', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -366,7 +367,7 @@ export const disableStaffLogin = async (req: Request, res: Response) => {
 
         return sendSuccess(res, null, 'Staff login disabled successfully');
     } catch (error: any) {
-        console.error('Error disabling staff login:', error);
+        logger.error('Error disabling staff login', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };
@@ -396,7 +397,7 @@ export const resetStaffPassword = async (req: Request, res: Response) => {
 
         return sendSuccess(res, null, 'Password reset successfully');
     } catch (error: any) {
-        console.error('Error resetting staff password:', error);
+        logger.error('Error resetting staff password', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };

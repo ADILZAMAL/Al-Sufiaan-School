@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import TransportationAreaPricing from '../models/TransportationAreaPricing';
 import School from '../models/School';
 import { sendSuccess, sendError } from '../utils/response';
+import logger from '../utils/logger';
 
 interface AuthenticatedRequest extends Request {
     userId: string;
@@ -45,7 +46,7 @@ export const getAllTransportationAreaPricing = async (req: AuthenticatedRequest,
             }
         }, 'Transportation area pricing retrieved successfully');
     } catch (error) {
-        console.error('Error fetching transportation area pricing:', error);
+        logger.error('Error fetching transportation area pricing', { error });
         return sendError(res, 'Failed to fetch transportation area pricing', 500);
     }
 };
@@ -66,7 +67,7 @@ export const getTransportationAreaPricingById = async (req: AuthenticatedRequest
 
         return sendSuccess(res, transportationAreaPricing, 'Transportation area pricing retrieved successfully');
     } catch (error) {
-        console.error('Error fetching transportation area pricing:', error);
+        logger.error('Error fetching transportation area pricing', { error });
         return sendError(res, 'Failed to fetch transportation area pricing', 500);
     }
 };
@@ -96,7 +97,7 @@ export const getTransportationAreaPricingByArea = async (req: AuthenticatedReque
             areaName
         }, 'Transportation area pricing retrieved successfully');
     } catch (error) {
-        console.error('Error fetching transportation area pricing by area:', error);
+        logger.error('Error fetching transportation area pricing by area', { error });
         return sendError(res, 'Failed to fetch transportation area pricing', 500);
     }
 };
@@ -141,7 +142,7 @@ export const createTransportationAreaPricing = async (req: AuthenticatedRequest,
 
         return sendSuccess(res, createdPricing, 'Transportation area pricing created successfully', 201);
     } catch (error) {
-        console.error('Error creating transportation area pricing:', error);
+        logger.error('Error creating transportation area pricing', { error });
         return sendError(res, 'Failed to create transportation area pricing', 500);
     }
 };
@@ -187,7 +188,7 @@ export const updateTransportationAreaPricing = async (req: AuthenticatedRequest,
 
         return sendSuccess(res, updatedPricing, 'Transportation area pricing updated successfully');
     } catch (error) {
-        console.error('Error updating transportation area pricing:', error);
+        logger.error('Error updating transportation area pricing', { error });
         return sendError(res, 'Failed to update transportation area pricing', 500);
     }
 };
@@ -210,7 +211,7 @@ export const deleteTransportationAreaPricing = async (req: AuthenticatedRequest,
 
         return sendSuccess(res, null, 'Transportation area pricing deleted successfully');
     } catch (error) {
-        console.error('Error deleting transportation area pricing:', error);
+        logger.error('Error deleting transportation area pricing', { error });
         return sendError(res, 'Failed to delete transportation area pricing', 500);
     }
 };
@@ -258,14 +259,14 @@ export const bulkUpsertTransportationAreaPricing = async (req: AuthenticatedRequ
                     results.push({ action: 'created', id: newPricing.id });
                 }
             } catch (error) {
-                console.error('Error in bulk operation for item:', data, error);
+                logger.error('Error in bulk operation for item', { data, error });
                 // Continue with other items
             }
         }
 
         return sendSuccess(res, results, 'Bulk operation completed successfully');
     } catch (error) {
-        console.error('Error in bulk upsert:', error);
+        logger.error('Error in bulk upsert', { error });
         return sendError(res, 'Failed to perform bulk operation', 500);
     }
 };
@@ -303,7 +304,7 @@ export const getTransportationAreaPricingStats = async (req: AuthenticatedReques
             averagePrice: Number(averagePrice?.get('avgPrice') || 0)
         }, 'Transportation area pricing statistics retrieved successfully');
     } catch (error) {
-        console.error('Error fetching transportation area pricing statistics:', error);
+        logger.error('Error fetching transportation area pricing statistics', { error });
         return sendError(res, 'Failed to fetch statistics', 500);
     }
 };

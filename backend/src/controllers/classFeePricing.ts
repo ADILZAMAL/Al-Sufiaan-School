@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import ClassFeePricing from '../models/ClassFeePricing';
 import Class from '../models/Class';
 import { sendSuccess, sendError } from '../utils/response';
+import logger from '../utils/logger';
 
 // Create a new class fee pricing (tuition fee)
 export const createClassFeePricing = async (req: Request, res: Response) => {
@@ -62,7 +63,7 @@ export const createClassFeePricing = async (req: Request, res: Response) => {
 
         sendSuccess(res, createdPricing, 'Class tuition fee pricing created successfully', 201);
     } catch (error: any) {
-        console.error('Error creating class fee pricing:', error);
+        logger.error('Error creating class fee pricing', { error });
         sendError(res, 'Failed to create class fee pricing', 500, error.message);
     }
 };
@@ -98,7 +99,7 @@ export const getAllClassFeePricing = async (req: Request, res: Response) => {
 
         sendSuccess(res, classFeePricing, 'Class fee pricing retrieved successfully');
     } catch (error: any) {
-        console.error('Error fetching class fee pricing:', error);
+        logger.error('Error fetching class fee pricing', { error });
         sendError(res, 'Failed to fetch class fee pricing', 500, error.message);
     }
 };
@@ -128,7 +129,7 @@ export const getClassFeePricing = async (req: Request, res: Response) => {
 
         sendSuccess(res, classFeePricing, 'Class fee pricing retrieved successfully');
     } catch (error: any) {
-        console.error('Error fetching class fee pricing:', error);
+        logger.error('Error fetching class fee pricing', { error });
         sendError(res, 'Failed to fetch class fee pricing', 500, error.message);
     }
 };
@@ -164,7 +165,7 @@ export const getClassFeePricingByClass = async (req: Request, res: Response) => 
             classId
         }, 'Class fee pricing retrieved successfully');
     } catch (error: any) {
-        console.error('Error fetching class fee pricing by class:', error);
+        logger.error('Error fetching class fee pricing by class', { error });
         sendError(res, 'Failed to fetch class fee pricing by class', 500, error.message);
     }
 };
@@ -212,7 +213,7 @@ export const updateClassFeePricing = async (req: Request, res: Response) => {
 
         sendSuccess(res, updatedPricing, 'Class fee pricing updated successfully');
     } catch (error: any) {
-        console.error('Error updating class fee pricing:', error);
+        logger.error('Error updating class fee pricing', { error });
         sendError(res, 'Failed to update class fee pricing', 500, error.message);
     }
 };
@@ -238,7 +239,7 @@ export const deleteClassFeePricing = async (req: Request, res: Response) => {
 
         sendSuccess(res, null, 'Class fee pricing deleted successfully');
     } catch (error: any) {
-        console.error('Error deleting class fee pricing:', error);
+        logger.error('Error deleting class fee pricing', { error });
         sendError(res, 'Failed to delete class fee pricing', 500, error.message);
     }
 };
@@ -294,7 +295,7 @@ export const bulkUpsertClassFeePricing = async (req: Request, res: Response) => 
 
         sendSuccess(res, results, 'Bulk class fee pricing operation completed successfully');
     } catch (error: any) {
-        console.error('Error in bulk class fee pricing operation:', error);
+        logger.error('Error in bulk class fee pricing operation', { error });
         sendError(res, 'Failed to perform bulk class fee pricing operation', 500, error.message);
     }
 };

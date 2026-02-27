@@ -4,6 +4,7 @@ import { sendSuccess, sendError } from '../utils/response';
 import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
 import sequelize from '../config/database';
+import logger from '../utils/logger';
 
 // Helper function to check if a date is Sunday
 const isSunday = (date: Date): boolean => {
@@ -254,7 +255,7 @@ export const getAttendance = async (req: Request, res: Response) => {
 
     return sendSuccess(res, attendances, 'Attendance records retrieved successfully');
   } catch (error) {
-    console.error('Error fetching attendance:', error);
+    logger.error('Error fetching attendance', { error });
     return sendError(res, 'Failed to fetch attendance records', 500);
   }
 };
@@ -289,7 +290,7 @@ export const getAttendanceById = async (req: Request, res: Response) => {
 
     return sendSuccess(res, attendance, 'Attendance record retrieved successfully');
   } catch (error) {
-    console.error('Error fetching attendance:', error);
+    logger.error('Error fetching attendance', { error });
     return sendError(res, 'Failed to fetch attendance record', 500);
   }
 };
@@ -356,7 +357,7 @@ export const updateAttendance = async (req: Request, res: Response) => {
 
     return sendSuccess(res, updatedAttendance, 'Attendance record updated successfully');
   } catch (error) {
-    console.error('Error updating attendance:', error);
+    logger.error('Error updating attendance', { error });
     return sendError(res, 'Failed to update attendance record', 500);
   }
 };
@@ -513,7 +514,7 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
       'All attendance statistics retrieved successfully'
     );
   } catch (error) {
-    console.error('Error fetching all attendance statistics:', error);
+    logger.error('Error fetching all attendance statistics', { error });
     return sendError(res, 'Failed to fetch all attendance statistics', 500);
   }
 };
@@ -605,7 +606,7 @@ export const getAttendanceStats = async (req: Request, res: Response) => {
       'Attendance statistics retrieved successfully'
     );
   } catch (error) {
-    console.error('Error fetching attendance statistics:', error);
+    logger.error('Error fetching attendance statistics', { error });
     return sendError(res, 'Failed to fetch attendance statistics', 500);
   }
 };
@@ -724,7 +725,7 @@ export const getStudentsWithAttendance = async (req: Request, res: Response) => 
 
     return sendSuccess(res, studentsWithAttendance, 'Students with attendance status retrieved successfully');
   } catch (error) {
-    console.error('Error fetching students with attendance:', error);
+    logger.error('Error fetching students with attendance', { error });
     return sendError(res, 'Failed to fetch students with attendance status', 500);
   }
 };
@@ -890,7 +891,7 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       'Student attendance calendar retrieved successfully'
     );
   } catch (error) {
-    console.error('Error fetching student attendance calendar:', error);
+    logger.error('Error fetching student attendance calendar', { error });
     return sendError(res, 'Failed to fetch student attendance calendar', 500);
   }
 };
