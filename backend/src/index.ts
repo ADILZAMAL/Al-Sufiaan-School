@@ -1,6 +1,9 @@
 import express, {Request, Response} from 'express';
 import cors from 'cors';
 import "dotenv/config";
+import logger from './utils/logger';
+import { requestIdMiddleware, httpLogger } from './middleware/requestLogger';
+import { globalErrorHandler } from './middleware/errorHandler';
 import schoolRouter from './routes/school';
 import userRouter from './routes/user';
 import authRouter from './routes/auth';
@@ -81,14 +84,18 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customSiteTitle: 'Al-Sufiaan School API Documentation'
 }));
 
+// Request ID + HTTP access logging (must be before routes)
+app.use(requestIdMiddleware);
+app.use(httpLogger);
+
 //Authenticate connection
 sequelize.authenticate()
     .then(() => {
-        console.log('Connection has been established successfully.')
+        logger.info('Database connection established successfully');
     })
     .catch(err => {
-        console.error('Unable to connect to the database:', err);
-      })
+        logger.error('Unable to connect to the database', { error: err.message, stack: err.stack });
+    })
 
 app.get("/api/test", async (req: Request, res: Response) => {
     res.json({message: "Hello from express endpoint!"})
@@ -118,6 +125,45 @@ app.use('/api/holidays', holidayRouter)
 app.use('/api/sessions', academicSessionRouter)
 app.use('/api', enrollmentRouter)
 
-app.listen(7000, async () => {
-    console.log("Server is running on port 7000")
-})
+// Global error handler — must be the last middleware
+app.use(globalErrorHandler);
+
+const server = app.listen(7000, () => {
+    logger.info('Server is running', { port: 7000, env: process.env.NODE_ENV || 'development' });
+});
+
+// Graceful shutdown
+const shutdown = (signal: string) => {
+    logger.info(`${signal} received — starting graceful shutdown`);
+    server.close(() => {
+        logger.info('HTTP server closed');
+        sequelize.close()
+            .then(() => {
+                logger.info('Database connection closed. Exiting.');
+                process.exit(0);
+            })
+            .catch((err) => {
+                logger.error('Error closing database connection during shutdown', { error: err.message });
+                process.exit(1);
+            });
+    });
+    // Force exit after 10s if graceful shutdown stalls
+    setTimeout(() => {
+        logger.error('Graceful shutdown timed out. Forcing exit.');
+        process.exit(1);
+    }, 10_000);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM')); // Render sends SIGTERM on deploy
+process.on('SIGINT', () => shutdown('SIGINT'));   // Ctrl+C in development
+
+process.on('uncaughtException', (err: Error) => {
+    logger.error('Uncaught exception', { error: err.message, stack: err.stack });
+    shutdown('uncaughtException');
+});
+
+process.on('unhandledRejection', (reason: unknown) => {
+    const message = reason instanceof Error ? reason.message : String(reason);
+    logger.error('Unhandled rejection', { reason: message });
+    shutdown('unhandledRejection');
+});
