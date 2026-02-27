@@ -68,35 +68,38 @@ export const getAllStudents = async (req: Request, res: Response) => {
       order: [['firstName', 'ASC'], ['lastName', 'ASC']],
     });
 
-    // Calculate total due for each student
-    const studentsWithDue = await Promise.all(
-      students.map(async (student: any) => {
-        const studentData = student.toJSON();
-
-        const monthlyFees = await StudentMonthlyFee.findAll({
+    // Fetch all unpaid fees for all students in a single query (avoids N+1)
+    const studentIds = students.map((s: any) => s.id);
+    const allMonthlyFees = studentIds.length > 0
+      ? await StudentMonthlyFee.findAll({
           where: {
-            studentId: student.id,
+            studentId: { [Op.in]: studentIds },
             status: { [Op.ne]: 'PAID' },
           },
-          include: [
-            {
-              model: StudentFeePayment,
-              as: 'payments',
-              attributes: ['amountPaid'],
-            },
-          ],
-        });
+          include: [{ model: StudentFeePayment, as: 'payments', attributes: ['amountPaid'] }],
+        })
+      : [];
 
-        let totalDue = 0;
-        for (const fee of monthlyFees) {
-          const totalPayable = Number(fee.totalPayableAmount);
-          const paidAmount = fee.payments?.reduce((sum: number, p: any) => sum + Number(p.amountPaid), 0) || 0;
-          totalDue += Math.max(0, totalPayable - paidAmount);
-        }
+    // Group fees by studentId
+    const feesByStudentId = new Map<number, typeof allMonthlyFees>();
+    for (const fee of allMonthlyFees) {
+      const sid = (fee as any).studentId;
+      if (!feesByStudentId.has(sid)) feesByStudentId.set(sid, []);
+      feesByStudentId.get(sid)!.push(fee);
+    }
 
-        return { ...studentData, totalDue };
-      })
-    );
+    // Calculate total due for each student
+    const studentsWithDue = students.map((student: any) => {
+      const studentData = student.toJSON();
+      const monthlyFees = feesByStudentId.get(student.id) || [];
+      let totalDue = 0;
+      for (const fee of monthlyFees) {
+        const totalPayable = Number(fee.totalPayableAmount);
+        const paidAmount = fee.payments?.reduce((sum: number, p: any) => sum + Number(p.amountPaid), 0) || 0;
+        totalDue += Math.max(0, totalPayable - paidAmount);
+      }
+      return { ...studentData, totalDue };
+    });
 
     return sendSuccess(res, studentsWithDue, 'Students retrieved successfully');
   } catch (error) {
