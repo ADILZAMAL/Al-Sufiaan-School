@@ -6,7 +6,7 @@ declare global {
     interface Request {
       userId: string;
       schoolId: string;
-      userRole: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER';
+      userRole: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
     }
   }
 }
@@ -40,7 +40,7 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export const requireRole = (allowedRoles: ('SUPER_ADMIN' | 'ADMIN' | 'CASHIER')[]) => {
+export const requireRole = (allowedRoles: ('SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER')[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.userRole) {
       return res.status(401).json({ 

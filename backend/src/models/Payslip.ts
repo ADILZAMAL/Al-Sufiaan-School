@@ -9,7 +9,6 @@ class Payslip extends Model {
     
     // Staff Reference
     public staffId!: number;
-    public staffType!: 'teaching' | 'non-teaching';
     
     // Period Information
     public month!: number;
@@ -79,10 +78,6 @@ export const initPayslipModel = (sequelize: Sequelize) => {
         },
         staffId: {
             type: DataTypes.INTEGER,
-            allowNull: false,
-        },
-        staffType: {
-            type: DataTypes.ENUM('teaching', 'non-teaching'),
             allowNull: false,
         },
         month: {

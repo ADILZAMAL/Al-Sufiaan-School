@@ -2,7 +2,6 @@ export interface Payslip {
   id?: number;
   payslipNumber: string;
   staffId: number;
-  staffType: 'teaching' | 'non-teaching';
   month: number;
   year: number;
   monthName: string;
@@ -56,7 +55,6 @@ export interface Payslip {
 
 export interface PayslipFormData {
   staffId: number;
-  staffType: 'teaching' | 'non-teaching';
   month: number;
   year: number;
   workingDays: number | string;

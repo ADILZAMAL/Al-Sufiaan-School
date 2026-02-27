@@ -3,11 +3,13 @@ import School from './School';
 
 class User extends Model {
     public id!: number;
-    public email!: string;
+    public email!: string | null;
     public password!: string;
-    public firstName!: string;
-    public lastName!: string;
-    public role!: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER';
+    public firstName!: string | null;
+    public lastName!: string | null;
+    public mobileNumber?: string | null;
+    public staffId?: number | null;
+    public role!: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
     public schoolId!: number;
     public lastLogin?: Date;
     public readonly createdAt!: Date;
@@ -24,7 +26,7 @@ export const initUserModel = (sequelize: Sequelize) => {
         },
         email: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true,
         },
         password: {
             type: DataTypes.STRING,
@@ -32,14 +34,22 @@ export const initUserModel = (sequelize: Sequelize) => {
         },
         firstName: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true,
         },
         lastName: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true,
+        },
+        mobileNumber: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        staffId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
         },
         role: {
-            type: DataTypes.ENUM('SUPER_ADMIN', 'ADMIN', 'CASHIER'),
+            type: DataTypes.ENUM('SUPER_ADMIN', 'ADMIN', 'CASHIER', 'TEACHER'),
             allowNull: false,
             defaultValue: 'CASHIER',
         },
@@ -74,6 +84,16 @@ export const initUserModel = (sequelize: Sequelize) => {
             name: 'user_email_index',
             unique: true,
             fields: ['email']
+          },
+          {
+            name: 'user_mobileNumber_unique',
+            unique: true,
+            fields: ['mobileNumber']
+          },
+          {
+            name: 'user_staffId_unique',
+            unique: true,
+            fields: ['staffId']
           }
         ]
     });

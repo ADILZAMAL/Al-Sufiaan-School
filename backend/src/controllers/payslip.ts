@@ -39,13 +39,10 @@ const getStaffDetails = async (staffId: number) => {
 };
 
 // Helper function to calculate next available month for a staff member
-const calculateNextAvailableMonth = async (staffId: number, staffType: 'teaching' | 'non-teaching') => {
+const calculateNextAvailableMonth = async (staffId: number) => {
     // Get the latest payslip for this staff member
     const latestPayslip = await Payslip.findOne({
-        where: { 
-            staffId, 
-            staffType 
-        },
+        where: { staffId },
         order: [['year', 'DESC'], ['month', 'DESC']]
     });
 
@@ -110,7 +107,6 @@ export const generatePayslip = async (req: Request, res: Response) => {
     try {
         const {
             staffId,
-            staffType,
             month,
             year,
             workingDays = 26,
@@ -121,8 +117,8 @@ export const generatePayslip = async (req: Request, res: Response) => {
         } = req.body;
 
         // Validate required fields
-        if (!staffId || !staffType || !month || !year) {
-            return sendError(res, 'Missing required fields: staffId, staffType, month, year', 400);
+        if (!staffId || !month || !year) {
+            return sendError(res, 'Missing required fields: staffId, month, year', 400);
         }
 
         // Validate month and year
@@ -154,7 +150,7 @@ export const generatePayslip = async (req: Request, res: Response) => {
 
         // Check if payslip already exists for this staff/month/year
         const existingPayslip = await Payslip.findOne({
-            where: { staffId, staffType, month, year }
+            where: { staffId, month, year }
         });
 
         if (existingPayslip) {
@@ -162,7 +158,7 @@ export const generatePayslip = async (req: Request, res: Response) => {
         }
 
         // Validate sequential month generation
-        const nextAvailableData = await calculateNextAvailableMonth(staffId, staffType);
+        const nextAvailableData = await calculateNextAvailableMonth(staffId);
         
         if (!nextAvailableData.canGenerate) {
             return sendError(res, 'Cannot generate payslip for future months. All payslips are up to date.', 400);
@@ -242,7 +238,6 @@ export const generatePayslip = async (req: Request, res: Response) => {
         const payslip = await Payslip.create({
             payslipNumber,
             staffId,
-            staffType,
             month,
             year,
             monthName: getMonthName(month),
@@ -297,17 +292,17 @@ export const generatePayslip = async (req: Request, res: Response) => {
 
 export const getPayslipsByStaff = async (req: Request, res: Response) => {
     try {
-        const { staffType, staffId } = req.params;
+        const { staffId } = req.params;
         const { page = 1, limit = 10 } = req.query;
 
-        if (!staffType || !staffId) {
-            return sendError(res, 'Staff type and ID are required', 400);
+        if (!staffId) {
+            return sendError(res, 'Staff ID is required', 400);
         }
 
         const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
 
         const { count, rows: payslips } = await Payslip.findAndCountAll({
-            where: { staffId: parseInt(staffId), staffType },
+            where: { staffId: parseInt(staffId) },
             order: [['year', 'DESC'], ['month', 'DESC']],
             limit: parseInt(limit as string),
             offset
@@ -347,12 +342,11 @@ export const getPayslipById = async (req: Request, res: Response) => {
 
 export const checkPayslipExists = async (req: Request, res: Response) => {
     try {
-        const { staffType, staffId, month, year } = req.params;
+        const { staffId, month, year } = req.params;
 
         const payslip = await Payslip.findOne({
             where: {
                 staffId: parseInt(staffId),
-                staffType,
                 month: parseInt(month),
                 year: parseInt(year)
             }
@@ -702,18 +696,14 @@ export const deletePayment = async (req: Request, res: Response) => {
 
 export const getNextAvailableMonth = async (req: Request, res: Response) => {
     try {
-        const { staffType, staffId } = req.params;
+        const { staffId } = req.params;
 
-        if (!staffType || !staffId) {
-            return sendError(res, 'Staff type and ID are required', 400);
-        }
-
-        if (!['teaching', 'non-teaching'].includes(staffType)) {
-            return sendError(res, 'Invalid staff type. Must be "teaching" or "non-teaching"', 400);
+        if (!staffId) {
+            return sendError(res, 'Staff ID is required', 400);
         }
 
         // Use the helper function to calculate next available month
-        const nextAvailableData = await calculateNextAvailableMonth(parseInt(staffId), staffType as 'teaching' | 'non-teaching');
+        const nextAvailableData = await calculateNextAvailableMonth(parseInt(staffId));
 
         
         if (!nextAvailableData.canGenerate) {

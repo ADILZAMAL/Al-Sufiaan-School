@@ -22,14 +22,14 @@ router.use(verifyToken);
 // POST /api/payslips/generate - Generate new payslip
 router.post('/generate', generatePayslip);
 
-// GET /api/payslips/staff/:staffType/:staffId - Get all payslips for a specific staff member
-router.get('/staff/:staffType/:staffId', getPayslipsByStaff);
+// GET /api/payslips/staff/:staffId - Get all payslips for a specific staff member
+router.get('/staff/:staffId', getPayslipsByStaff);
 
-// GET /api/payslips/staff/:staffType/:staffId/next-available-month - Get next available month for payslip generation
-router.get('/staff/:staffType/:staffId/next-available-month', getNextAvailableMonth);
+// GET /api/payslips/staff/:staffId/next-available-month - Get next available month for payslip generation
+router.get('/staff/:staffId/next-available-month', getNextAvailableMonth);
 
-// GET /api/payslips/check/:staffType/:staffId/:month/:year - Check if payslip exists
-router.get('/check/:staffType/:staffId/:month/:year', checkPayslipExists);
+// GET /api/payslips/check/:staffId/:month/:year - Check if payslip exists
+router.get('/check/:staffId/:month/:year', checkPayslipExists);
 
 // GET /api/payslips/all - Get all payslips for a school (with filters)
 router.get('/all', getAllPayslips);
