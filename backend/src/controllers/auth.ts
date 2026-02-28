@@ -15,16 +15,10 @@ export const login = async (req: Request, res: Response) => {
     return sendError(res, 'Validation failed', 400, errors.array());
   }
 
-  const { email, mobileNumber, password } = req.body;
-
-  if (!email && !mobileNumber) {
-    return sendError(res, 'Email or mobile number is required', 400);
-  }
+  const { mobileNumber, password } = req.body;
 
   try {
-    const user = await User.findOne({
-      where: email ? { email } : { mobileNumber },
-    });
+    const user = await User.findOne({ where: { mobileNumber } });
     if (!user) {
       return sendError(res, 'Invalid Credentials', 400);
     }

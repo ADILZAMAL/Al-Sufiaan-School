@@ -15,16 +15,15 @@ const router = express.Router();
  *     LoginRequest:
  *       type: object
  *       required:
- *         - email
+ *         - mobileNumber
  *         - password
  *       properties:
- *         email:
+ *         mobileNumber:
  *           type: string
- *           format: email
- *           description: User email address
+ *           description: User mobile number
  *         password:
  *           type: string
- *           minLength: 6
+ *           minLength: 8
  *           description: User password
  *     LoginResponse:
  *       type: object
@@ -80,8 +79,7 @@ const router = express.Router();
 router.post(
     "/login",
     [
-        check("email").optional().isEmail().withMessage("Invalid email format"),
-        check("mobileNumber").optional().notEmpty().withMessage("Mobile number is required"),
+        check("mobileNumber", "Mobile number is required").notEmpty(),
         check("password", "Password is required").isLength({ min: 8 }),
     ],
     login
