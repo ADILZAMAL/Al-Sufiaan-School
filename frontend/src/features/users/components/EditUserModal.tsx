@@ -16,11 +16,12 @@ const inputErrorClass = 'w-full px-3 py-2.5 border border-red-300 bg-red-50 roun
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1.5';
 
 const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSuccess }) => {
+  const isTeacher = user.role === 'TEACHER';
   const [formData, setFormData] = useState<UpdateUserData>({
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
-    role: user.role,
+    firstName: user.firstName ?? undefined,
+    lastName: user.lastName ?? undefined,
+    email: user.email ?? undefined,
+    role: isTeacher ? undefined : user.role as 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -63,7 +64,9 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSuccess 
             </div>
             <div>
               <h3 className="text-base font-semibold text-gray-900">Edit User</h3>
-              <p className="text-xs text-gray-400">{user.firstName} {user.lastName}</p>
+              <p className="text-xs text-gray-400">
+                {user.role === 'TEACHER' ? user.staff?.name : `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || '—'}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
