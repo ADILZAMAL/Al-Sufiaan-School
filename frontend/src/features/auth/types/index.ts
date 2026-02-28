@@ -1,5 +1,5 @@
 export type SignInFormData = {
-  email: string;
+  mobileNumber: string;
   password: string;
 };
 

@@ -61,7 +61,7 @@ export const staffApi = {
       body: JSON.stringify({ password })
     });
     const body = await response.json();
-    if (!body.success) throw new Error(body.message || 'Failed to enable staff login');
+    if (!body.success) throw new Error(body.error?.message || body.message || 'Failed to enable staff login');
   },
 
   disableLogin: async (staffId: number): Promise<void> => {
@@ -70,7 +70,7 @@ export const staffApi = {
       credentials: 'include'
     });
     const body = await response.json();
-    if (!body.success) throw new Error(body.message || 'Failed to disable staff login');
+    if (!body.success) throw new Error(body.error?.message || body.message || 'Failed to disable staff login');
   },
 
   resetPassword: async (staffId: number, newPassword: string): Promise<void> => {
@@ -81,6 +81,6 @@ export const staffApi = {
       body: JSON.stringify({ newPassword })
     });
     const body = await response.json();
-    if (!body.success) throw new Error(body.message || 'Failed to reset password');
+    if (!body.success) throw new Error(body.error?.message || body.message || 'Failed to reset password');
   },
 };

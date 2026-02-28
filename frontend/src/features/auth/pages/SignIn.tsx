@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "react-query";
 import * as apiClient from "../api";
 import { useAppContext } from "../../../providers/AppContext";
 import { useNavigate } from "react-router-dom";
-import { FaEnvelope, FaLock, FaSpinner, FaEye, FaEyeSlash, FaGraduationCap, FaUserCheck, FaChartBar } from "react-icons/fa";
+import { FaPhone, FaLock, FaSpinner, FaEye, FaEyeSlash, FaGraduationCap, FaUserCheck, FaChartBar } from "react-icons/fa";
 import { SignInFormData } from "../types";
 
 const FEATURES = [
@@ -106,28 +106,34 @@ const SignIn = () => {
           </div>
 
           <form className="space-y-5" onSubmit={onSubmit}>
-            {/* Email */}
+            {/* Mobile Number */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Email Address
+                Mobile Number
               </label>
               <div className="relative">
-                <FaEnvelope className="absolute top-1/2 left-3.5 -translate-y-1/2 text-gray-400 text-sm" />
+                <FaPhone className="absolute top-1/2 left-3.5 -translate-y-1/2 text-gray-400 text-sm" />
                 <input
-                  type="email"
-                  placeholder="you@school.com"
+                  type="tel"
+                  placeholder="e.g. 9876543210"
                   className={`w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm bg-white
                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                     transition-colors
-                    ${errors.email
+                    ${errors.mobileNumber
                       ? "border-red-300 bg-red-50 focus:ring-red-400"
                       : "border-gray-200"
                     }`}
-                  {...register("email", { required: "Email is required" })}
+                  {...register("mobileNumber", {
+                    required: "Mobile number is required",
+                    pattern: {
+                      value: /^\d{10}$/,
+                      message: "Enter a valid 10-digit mobile number",
+                    },
+                  })}
                 />
               </div>
-              {errors.email && (
-                <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+              {errors.mobileNumber && (
+                <p className="text-red-500 text-xs mt-1">{errors.mobileNumber.message}</p>
               )}
             </div>
 
