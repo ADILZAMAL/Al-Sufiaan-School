@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import School from '../models/School';
 import User from '../models/User';
+import Staff from '../models/Staff';
 import bcrypt from 'bcryptjs';
 import { sendError, sendSuccess } from '../utils/response';
 import { Op } from 'sequelize';
@@ -57,6 +58,12 @@ export const getAllUsers = async (req: Request, res: Response) => {
           model: School,
           as: 'School',
           attributes: ['name', 'sid']
+        },
+        {
+          model: Staff,
+          as: 'staff',
+          attributes: ['id', 'name'],
+          required: false
         }
       ],
       order: [['createdAt', 'DESC']]

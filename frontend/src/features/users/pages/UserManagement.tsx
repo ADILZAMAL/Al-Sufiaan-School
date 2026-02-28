@@ -6,7 +6,7 @@ import AddUserModal from '../components/AddUserModal';
 import EditUserModal from '../components/EditUserModal';
 import DeleteUserModal from '../components/DeleteUserModal';
 import {
-  FaUsers, FaShieldAlt, FaUserShield, FaUser, FaPlus, FaEdit, FaTrash
+  FaUsers, FaShieldAlt, FaUserShield, FaUser, FaPlus, FaEdit, FaTrash, FaChalkboardTeacher
 } from 'react-icons/fa';
 import { HiOutlineExclamation } from 'react-icons/hi';
 
@@ -23,6 +23,7 @@ const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
   SUPER_ADMIN: { label: 'Super Admin', color: 'bg-red-100 text-red-700' },
   ADMIN: { label: 'Admin', color: 'bg-blue-100 text-blue-700' },
   CASHIER: { label: 'Cashier', color: 'bg-emerald-100 text-emerald-700' },
+  TEACHER: { label: 'Teacher', color: 'bg-amber-100 text-amber-700' },
 };
 
 const UserManagement: React.FC = () => {
@@ -51,6 +52,7 @@ const UserManagement: React.FC = () => {
     { label: 'Super Admins', value: users?.filter(u => u.role === 'SUPER_ADMIN').length ?? 0, chipClass: 'bg-red-50 text-red-600', icon: FaShieldAlt },
     { label: 'Admins', value: users?.filter(u => u.role === 'ADMIN').length ?? 0, chipClass: 'bg-blue-50 text-blue-600', icon: FaUserShield },
     { label: 'Cashiers', value: users?.filter(u => u.role === 'CASHIER').length ?? 0, chipClass: 'bg-emerald-50 text-emerald-600', icon: FaUser },
+    { label: 'Teachers', value: users?.filter(u => u.role === 'TEACHER').length ?? 0, chipClass: 'bg-amber-50 text-amber-600', icon: FaChalkboardTeacher },
   ];
 
   if (isLoading) {
@@ -96,7 +98,7 @@ const UserManagement: React.FC = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {STATS.map(({ label, value, chipClass, icon: Icon }) => (
             <div key={label} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
               <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${chipClass}`}>
@@ -131,8 +133,18 @@ const UserManagement: React.FC = () => {
           ) : (
             <div className="divide-y divide-gray-100">
               {users?.map((user) => {
-                const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase() || '?';
-                const avatarColor = AVATAR_COLORS[(user.firstName?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
+                const isTeacher = user.role === 'TEACHER';
+                const displayName = isTeacher
+                  ? (user.staff?.name ?? '—')
+                  : `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || '—';
+                const displaySub = isTeacher
+                  ? (user.mobileNumber ?? '—')
+                  : (user.email ?? '—');
+                const avatarChar = displayName[0]?.toUpperCase() ?? '?';
+                const initials = isTeacher
+                  ? avatarChar
+                  : (`${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase() || '?');
+                const avatarColor = AVATAR_COLORS[(displayName.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
                 const roleConfig = ROLE_CONFIG[user.role] ?? { label: user.role, color: 'bg-gray-100 text-gray-700' };
                 return (
                   <div key={user.id} className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors">
@@ -141,8 +153,8 @@ const UserManagement: React.FC = () => {
                         {initials}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{user.firstName} {user.lastName}</p>
-                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
+                        <p className="text-xs text-gray-400 truncate">{displaySub}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 ml-4">
