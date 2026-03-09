@@ -76,7 +76,7 @@ const StaffManagement: React.FC = () => {
     ? byFilter.filter(
         (s) =>
           s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (s.role ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (s.designation?.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
           s.email.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : byFilter;
@@ -165,7 +165,7 @@ const StaffManagement: React.FC = () => {
             <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search by name, role or email..."
+              placeholder="Search by name, designation or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -270,8 +270,8 @@ const StaffManagement: React.FC = () => {
                       >
                         {staff.staffType === 'teaching' ? 'Teaching' : 'Non-Teaching'}
                       </span>
-                      {staff.role && (
-                        <span className="text-xs text-gray-500 truncate">{staff.role}</span>
+                      {staff.designation?.name && (
+                        <span className="text-xs text-gray-500 truncate">{staff.designation.name}</span>
                       )}
                       {staff.loginEnabled && (
                         <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">

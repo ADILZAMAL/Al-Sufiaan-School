@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { getCurrentSchool, updateSchool, School } from '../../../api/school';
 import { useAppContext } from '../../../providers/AppContext';
@@ -6,8 +6,10 @@ import { HiCheck, HiPlus, HiX, HiOutlineExclamation } from 'react-icons/hi';
 import {
   FaPlus, FaEdit, FaTrash, FaTimes, FaBuilding, FaMapMarkerAlt,
   FaCreditCard, FaPhone, FaBus, FaTags, FaMoneyBillWave,
-  FaCheckCircle, FaTimesCircle
+  FaCheckCircle, FaTimesCircle, FaBriefcase
 } from 'react-icons/fa';
+import { designationApi } from '../../designations/api/designation';
+import { Designation } from '../../designations/types';
 import { useClassFeePricingManager } from '../../fees/hooks/useClassFeePricing';
 import { CreateClassFeePricingRequest } from '../../fees/types';
 import { useTransportationAreaPricingManager } from '../../transportation/hooks/useTransportationAreaPricing';
@@ -23,13 +25,14 @@ interface ExpenseCategory {
   updatedAt: string;
 }
 
-type TabId = 'school' | 'tuition' | 'transportation' | 'expenses';
+type TabId = 'school' | 'tuition' | 'transportation' | 'expenses' | 'designations';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'school', label: 'School Info', icon: FaBuilding },
   { id: 'tuition', label: 'Tuition Fees', icon: FaMoneyBillWave },
   { id: 'transportation', label: 'Transportation', icon: FaBus },
   { id: 'expenses', label: 'Expense Categories', icon: FaTags },
+  { id: 'designations', label: 'Designations', icon: FaBriefcase },
 ];
 
 const inputClass = 'w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed transition-colors';
@@ -51,6 +54,16 @@ const SchoolSettings: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [editCategoryName, setEditCategoryName] = useState('');
+
+  // Designation state
+  const [designations, setDesignations] = useState<Designation[]>([]);
+  const [isLoadingDesignations, setIsLoadingDesignations] = useState(false);
+  const [showDesignationModal, setShowDesignationModal] = useState(false);
+  const [editingDesignation, setEditingDesignation] = useState<Designation | null>(null);
+  const [deleteDesignation, setDeleteDesignation] = useState<Designation | null>(null);
+  const [designationForm, setDesignationForm] = useState({ name: '', description: '' });
+  const [isSavingDesignation, setIsSavingDesignation] = useState(false);
+  const [isDeletingDesignation, setIsDeletingDesignation] = useState(false);
 
   // Class Fee Pricing hooks
   const {
@@ -221,6 +234,79 @@ const SchoolSettings: React.FC = () => {
 
   const handlePaymentModeKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') { e.preventDefault(); handleAddPaymentMode(); }
+  };
+
+  // Designation handlers
+  const fetchDesignations = () => {
+    setIsLoadingDesignations(true);
+    designationApi.getAll()
+      .then(setDesignations)
+      .catch(() => showToast({ message: 'Failed to load designations', type: 'ERROR' }))
+      .finally(() => setIsLoadingDesignations(false));
+  };
+
+  useEffect(() => {
+    if (activeTab === 'designations') fetchDesignations();
+  }, [activeTab]);
+
+  const openAddDesignationModal = () => {
+    setEditingDesignation(null);
+    setDesignationForm({ name: '', description: '' });
+    setShowDesignationModal(true);
+  };
+
+  const openEditDesignationModal = (d: Designation) => {
+    setEditingDesignation(d);
+    setDesignationForm({ name: d.name, description: d.description || '' });
+    setShowDesignationModal(true);
+  };
+
+  const closeDesignationModal = () => {
+    setShowDesignationModal(false);
+    setEditingDesignation(null);
+    setDesignationForm({ name: '', description: '' });
+  };
+
+  const handleSaveDesignation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!designationForm.name.trim()) return;
+    setIsSavingDesignation(true);
+    try {
+      if (editingDesignation) {
+        await designationApi.update(editingDesignation.id, {
+          name: designationForm.name.trim(),
+          description: designationForm.description.trim() || undefined,
+        });
+        showToast({ message: 'Designation updated successfully!', type: 'SUCCESS' });
+      } else {
+        await designationApi.create({
+          name: designationForm.name.trim(),
+          description: designationForm.description.trim() || undefined,
+        });
+        showToast({ message: 'Designation created successfully!', type: 'SUCCESS' });
+      }
+      closeDesignationModal();
+      fetchDesignations();
+    } catch (error: any) {
+      showToast({ message: error.message || 'Operation failed', type: 'ERROR' });
+    } finally {
+      setIsSavingDesignation(false);
+    }
+  };
+
+  const handleConfirmDeleteDesignation = async () => {
+    if (!deleteDesignation) return;
+    setIsDeletingDesignation(true);
+    try {
+      await designationApi.delete(deleteDesignation.id);
+      showToast({ message: 'Designation deleted successfully!', type: 'SUCCESS' });
+      setDeleteDesignation(null);
+      fetchDesignations();
+    } catch (error: any) {
+      showToast({ message: error.message || 'Failed to delete designation', type: 'ERROR' });
+    } finally {
+      setIsDeletingDesignation(false);
+    }
   };
 
   const handlePricingSubmit = (e: React.FormEvent) => {
@@ -905,7 +991,172 @@ const SchoolSettings: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* ── Designations Tab ── */}
+        {activeTab === 'designations' && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <FaBriefcase className="text-indigo-600 text-sm" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900">Designations</h2>
+                  <p className="text-xs text-gray-400">Manage staff designations for teaching and non-teaching roles</p>
+                </div>
+              </div>
+              <button
+                onClick={openAddDesignationModal}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <FaPlus className="text-xs" /> Add Designation
+              </button>
+            </div>
+
+            {isLoadingDesignations ? (
+              <div className="py-12 flex justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              </div>
+            ) : designations.length === 0 ? (
+              <div className="py-16 text-center">
+                <FaBriefcase className="mx-auto text-3xl text-gray-200 mb-3" />
+                <p className="text-sm text-gray-400">No designations yet</p>
+                <p className="text-xs text-gray-300 mt-1">Click "Add Designation" to create the first one</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {designations.map((d) => (
+                    <div key={d.id} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                        <FaBriefcase className="text-indigo-400 text-xs" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900">{d.name}</p>
+                          {!d.isActive && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">Inactive</span>
+                          )}
+                        </div>
+                        {d.description && (
+                          <p className="text-xs text-gray-400 mt-0.5 truncate">{d.description}</p>
+                        )}
+                      </div>
+                      <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        (d.staffCount ?? 0) > 0 ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {d.staffCount ?? 0} staff
+                      </span>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => openEditDesignationModal(d)}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <FaEdit className="text-sm" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteDesignation(d)}
+                          disabled={(d.staffCount ?? 0) > 0}
+                          title={(d.staffCount ?? 0) > 0 ? `${d.staffCount} staff assigned — reassign first` : 'Delete'}
+                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        >
+                          <FaTrash className="text-sm" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* ── Designation Add/Edit Modal ── */}
+      {showDesignationModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-base font-semibold text-gray-900">
+                {editingDesignation ? 'Edit Designation' : 'Add Designation'}
+              </h3>
+              <button onClick={closeDesignationModal} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors">
+                <FaTimes />
+              </button>
+            </div>
+            <form onSubmit={handleSaveDesignation} className="p-6 space-y-4">
+              <div>
+                <label className={labelClass}>Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={designationForm.name}
+                  onChange={(e) => setDesignationForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g. Head Master, PGT Mathematics"
+                  required
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Description</label>
+                <input
+                  type="text"
+                  value={designationForm.description}
+                  onChange={(e) => setDesignationForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="Optional description"
+                  className={inputClass}
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeDesignationModal}
+                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingDesignation || !designationForm.name.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {isSavingDesignation ? 'Saving…' : editingDesignation ? 'Update' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Designation Delete Confirmation Modal ── */}
+      {deleteDesignation && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="px-6 py-5 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <HiOutlineExclamation className="text-red-600 text-2xl" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Delete Designation</h3>
+              <p className="text-sm text-gray-500">
+                Are you sure you want to delete <span className="font-medium text-gray-900">"{deleteDesignation.name}"</span>? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 px-6 pb-6">
+              <button
+                onClick={() => setDeleteDesignation(null)}
+                className="flex-1 px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDeleteDesignation}
+                disabled={isDeletingDesignation}
+                className="flex-1 px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {isDeletingDesignation ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Transportation Form Modal ── */}
       {showTransportationForm && (

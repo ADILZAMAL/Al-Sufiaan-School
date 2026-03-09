@@ -15,7 +15,7 @@ class Staff extends Model {
     public highestAcademicQualification!: string;
     public tradeDegree!: string;
     public highestProfessionalQualification!: string;
-    public role!: string;
+    public designationId!: number | null;
     public mathematicsLevel!: string | null;
     public scienceLevel!: string | null;
     public englishLevel!: string | null;
@@ -92,9 +92,15 @@ export const initStaffModel = (sequelize: Sequelize) => {
             type: DataTypes.STRING,
             allowNull: true,
         },
-        role: {
-            type: DataTypes.STRING,
-            allowNull: false,
+        designationId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: 'designations',
+                key: 'id',
+            },
+            onUpdate: 'CASCADE',
+            onDelete: 'SET NULL',
         },
         mathematicsLevel: {
             type: DataTypes.STRING(50),

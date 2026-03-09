@@ -26,6 +26,7 @@ import monthlyFeeRouter from './routes/monthlyFee'
 import attendanceRouter from './routes/attendance'
 import holidayRouter from './routes/holiday'
 import academicSessionRouter from './routes/academicSession'
+import designationRouter from './routes/designation'
 import enrollmentRouter from './routes/studentEnrollment'
 import sequelize from './config/database';
 import './models'; // Import for associations
@@ -123,6 +124,7 @@ app.use('/api/fees', monthlyFeeRouter)
 app.use('/api/attendance', attendanceRouter)
 app.use('/api/holidays', holidayRouter)
 app.use('/api/sessions', academicSessionRouter)
+app.use('/api/designations', designationRouter)
 app.use('/api', enrollmentRouter)
 
 // Global error handler — must be the last middleware

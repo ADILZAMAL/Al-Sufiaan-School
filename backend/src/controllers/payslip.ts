@@ -4,6 +4,7 @@ import PayslipPayment from '../models/PayslipPayment';
 import Expense from '../models/Expense';
 import ExpenseCategory from '../models/ExpenseCategory';
 import Staff from '../models/Staff';
+import Designation from '../models/Designation';
 import School from '../models/School';
 import User from '../models/User';
 import { sendSuccess, sendError } from '../utils/response';
@@ -36,7 +37,9 @@ const generatePayslipNumber = async (month: number, year: number, staffId: numbe
 
 // Helper function to get staff details
 const getStaffDetails = async (staffId: number) => {
-    return await Staff.findByPk(staffId);
+    return await Staff.findByPk(staffId, {
+        include: [{ model: Designation, as: 'designation', attributes: ['id', 'name'], required: false }],
+    });
 };
 
 // Helper function to calculate next available month for a staff member
@@ -247,7 +250,7 @@ export const generatePayslip = async (req: Request, res: Response) => {
             staffName: staff.name,
             staffEmail: staff.email,
             staffMobile: staff.mobileNumber,
-            staffRole: (staff as any).role || 'Not specified',
+            staffRole: (staff as any).designation?.name || 'Not specified',
             staffAadhaar: staff.aadhaarNumber,
             staffAccountNumber: staff.accountNumber || '',
             staffIfscCode: staff.ifscCode || '',

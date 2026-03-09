@@ -73,6 +73,19 @@ export const staffApi = {
     if (!body.success) throw new Error(body.error?.message || body.message || 'Failed to disable staff login');
   },
 
+  uploadPhoto: async (file: File): Promise<string> => {
+    const form = new FormData();
+    form.append('photo', file);
+    const response = await fetch(`${API_BASE_URL}/api/photos/upload-staff-photo`, {
+      method: 'POST',
+      credentials: 'include',
+      body: form,
+    });
+    const body = await response.json();
+    if (!body.success) throw new Error(body.message || 'Failed to upload photo');
+    return body.data.photoUrl;
+  },
+
   resetPassword: async (staffId: number, newPassword: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/api/staff/${staffId}/reset-password`, {
       method: 'PUT',

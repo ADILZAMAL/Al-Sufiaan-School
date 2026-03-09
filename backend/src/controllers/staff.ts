@@ -1,49 +1,11 @@
 import { Request, Response } from 'express';
 import Staff from '../models/Staff';
 import User from '../models/User';
+import Designation from '../models/Designation';
 import bcrypt from 'bcryptjs';
 import { sendSuccess, sendError } from '../utils/response';
 import { validatePasswordStrength } from '../utils/passwordValidator';
 import logger from '../utils/logger';
-
-const TEACHING_ROLES = [
-    'Principal',
-    'Vice Principal',
-    'Head of Department (HOD)',
-    'PGT (Post Graduate Teacher)',
-    'TGT (Trained Graduate Teacher)',
-    'PRT (Primary Teacher)',
-    'NTT (Nursery Teacher)',
-    'Assistant Teacher',
-    'Special Educator',
-    'Physical Education Teacher (PET)',
-    'Art / Music / Dance Teacher',
-    'Computer Teacher',
-    'Librarian',
-    'Lab Assistant'
-];
-
-const NON_TEACHING_ROLES = [
-    'Administrator',
-    'Office Manager',
-    'Accountant',
-    'Clerk / Data Entry Operator',
-    'Receptionist',
-    'Admission Counselor',
-    'IT Admin / Technician',
-    'Transport Incharge',
-    'Peon / Office Assistant',
-    'Ayah / Nanny / Helper',
-    'Security Guard',
-    'Cook',
-    'Driver / Conductor',
-    'Gardener (Mali)'
-];
-
-const validateRole = (role: string, staffType: 'teaching' | 'non-teaching'): boolean => {
-    const validRoles = staffType === 'teaching' ? TEACHING_ROLES : NON_TEACHING_ROLES;
-    return validRoles.includes(role);
-};
 
 export const createStaff = async (req: Request, res: Response) => {
     try {
@@ -60,7 +22,7 @@ export const createStaff = async (req: Request, res: Response) => {
             highestAcademicQualification,
             tradeDegree,
             highestProfessionalQualification,
-            role,
+            designationId,
             mathematicsLevel,
             scienceLevel,
             englishLevel,
@@ -85,14 +47,22 @@ export const createStaff = async (req: Request, res: Response) => {
         }
 
         // Validate required fields
-        if (!name || !gender || !dateOfBirth || !mobileNumber || !email || !aadhaarNumber || !nameAsPerAadhaar || !role || !schoolId || !dateOfJoiningService) {
+        if (!name || !gender || !dateOfBirth || !mobileNumber || !email || !aadhaarNumber || !nameAsPerAadhaar || !schoolId || !dateOfJoiningService) {
             return sendError(res, 'Missing required fields', 400);
         }
 
-        // Validate role for the given staffType
-        if (!validateRole(role, staffType)) {
-            return sendError(res, `Invalid role for staffType "${staffType}"`, 400);
+        if (!designationId) {
+            return sendError(res, 'designationId is required', 400);
         }
+
+        // Validate designation
+        const designation = await Designation.findOne({
+            where: { id: designationId, schoolId, isActive: true },
+        });
+        if (!designation) {
+            return sendError(res, 'Invalid or inactive designation', 400);
+        }
+        const resolvedDesignationId = designation.id;
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -137,7 +107,7 @@ export const createStaff = async (req: Request, res: Response) => {
             highestAcademicQualification,
             tradeDegree,
             highestProfessionalQualification,
-            role,
+            designationId: resolvedDesignationId,
             mathematicsLevel: staffType === 'non-teaching' ? null : mathematicsLevel,
             scienceLevel: staffType === 'non-teaching' ? null : scienceLevel,
             englishLevel: staffType === 'non-teaching' ? null : englishLevel,
@@ -185,7 +155,10 @@ export const getAllStaff = async (req: Request, res: Response) => {
         const staff = await Staff.findAll({
             where: whereClause,
             order: [['createdAt', 'DESC']],
-            include: [{ model: User, as: 'loginUser', attributes: ['id'], required: false }],
+            include: [
+                { model: User, as: 'loginUser', attributes: ['id'], required: false },
+                { model: Designation, as: 'designation', attributes: ['id', 'name'], required: false },
+            ],
         });
 
         return sendSuccess(res, staff.map((s: any) => ({
@@ -204,7 +177,10 @@ export const getStaffById = async (req: Request, res: Response) => {
         const { id } = req.params;
 
         const staff = await Staff.findByPk(id, {
-            include: [{ model: User, as: 'loginUser', attributes: ['id', 'mobileNumber', 'lastLogin'], required: false }],
+            include: [
+                { model: User, as: 'loginUser', attributes: ['id', 'mobileNumber', 'lastLogin'], required: false },
+                { model: Designation, as: 'designation', attributes: ['id', 'name'], required: false },
+            ],
         });
 
         if (!staff) {
@@ -242,9 +218,14 @@ export const updateStaff = async (req: Request, res: Response) => {
         // Prevent changing staffType after creation
         delete updateData.staffType;
 
-        // Validate role if being updated
-        if (updateData.role && !validateRole(updateData.role, staff.staffType)) {
-            return sendError(res, `Invalid role for staffType "${staff.staffType}"`, 400);
+        // Validate designation if being updated
+        if (updateData.designationId) {
+            const designation = await Designation.findOne({
+                where: { id: updateData.designationId, schoolId: staff.schoolId, isActive: true },
+            });
+            if (!designation) {
+                return sendError(res, 'Invalid or inactive designation', 400);
+            }
         }
 
         // If email is being updated, check uniqueness

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StaffFormData,
   StaffFormErrors,
@@ -6,10 +6,10 @@ import {
   SOCIAL_CATEGORY_OPTIONS,
   ACADEMIC_QUALIFICATION_OPTIONS,
   TRADE_DEGREE_OPTIONS,
-  TEACHING_STAFF_ROLES,
-  NON_TEACHING_STAFF_ROLES,
 } from '../types';
 import PhotoUpload from '../../../components/common/PhotoUpload';
+import { designationApi } from '../../designations/api/designation';
+import { Designation } from '../../designations/types';
 
 interface PersonalDetailsFormProps {
   formData: StaffFormData;
@@ -27,8 +27,20 @@ const PersonalDetailsForm: React.FC<PersonalDetailsFormProps> = ({
   formData,
   errors,
   onChange,
-  staffType = 'teaching',
 }) => {
+  const [designations, setDesignations] = useState<Designation[]>([]);
+  const [loadingDesignations, setLoadingDesignations] = useState(false);
+
+  useEffect(() => {
+    setLoadingDesignations(true);
+    designationApi.getAll({ active: true })
+      .then(setDesignations)
+      .catch(() => setDesignations([]))
+      .finally(() => setLoadingDesignations(false));
+  }, []);
+
+  const selectedDesignation = designations.find(d => d.id === Number(formData.designationId));
+
   return (
     <div className="space-y-7">
 
@@ -233,34 +245,36 @@ const PersonalDetailsForm: React.FC<PersonalDetailsFormProps> = ({
         </div>
       </div>
 
-      {/* Role */}
+      {/* Designation */}
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-          Role
+          Designation
         </p>
         <div className="max-w-sm">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Role <span className="text-red-500">*</span>
+            Designation <span className="text-red-500">*</span>
           </label>
           <select
-            value={formData.role}
-            onChange={(e) => onChange('role', e.target.value)}
-            className={inputCls(errors.role)}
+            value={formData.designationId ?? ''}
+            onChange={(e) => {
+              const id = e.target.value ? Number(e.target.value) : '';
+              onChange('designationId', id);
+            }}
+            className={inputCls(errors.designationId)}
+            disabled={loadingDesignations}
           >
-            <option value="">Select Role</option>
-            {(staffType === 'teaching' ? TEACHING_STAFF_ROLES : NON_TEACHING_STAFF_ROLES).map(
-              (role) => (
-                <option key={role.value} value={role.value}>{role.label}</option>
-              )
-            )}
+            <option value="">
+              {loadingDesignations ? 'Loading...' : designations.length === 0 ? 'No designations configured' : 'Select Designation'}
+            </option>
+            {designations.map((d) => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
           </select>
-          {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role}</p>}
-          {formData.role && (
-            <p className="text-xs text-gray-500 mt-2">
-              {(staffType === 'teaching' ? TEACHING_STAFF_ROLES : NON_TEACHING_STAFF_ROLES).find(
-                (r) => r.value === formData.role
-              )?.description}
-            </p>
+          {errors.designationId && (
+            <p className="text-red-500 text-xs mt-1">{errors.designationId}</p>
+          )}
+          {selectedDesignation?.description && (
+            <p className="text-xs text-gray-500 mt-2">{selectedDesignation.description}</p>
           )}
         </div>
       </div>

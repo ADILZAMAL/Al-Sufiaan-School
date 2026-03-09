@@ -25,6 +25,7 @@ import {initStudentMonthlyFeeItemModel} from "../models/StudentMonthlyFeeItem"
 import {initStudentFeePaymentModel} from "../models/StudentFeePayment"
 import {initAttendanceModel} from "../models/Attendance"
 import {initHolidayModel} from "../models/Holiday"
+import {initDesignationModel} from "../models/Designation"
 import "dotenv/config";
 import { getRequestId } from '../utils/context';
 
@@ -73,6 +74,7 @@ initStudentMonthlyFeeItemModel(sequelize);
 initStudentFeePaymentModel(sequelize);
 initAttendanceModel(sequelize);
 initHolidayModel(sequelize);
+initDesignationModel(sequelize);
 //Sync the Model with the database
 sequelize.sync()
     .then(() => {

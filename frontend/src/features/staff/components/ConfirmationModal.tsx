@@ -71,14 +71,6 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </div>
           </div>
 
-          {/* Role Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Role Information</h3>
-            <div className="text-sm">
-              <div><strong>Role:</strong> {formData.role || 'Not specified'}</div>
-            </div>
-          </div>
-
           {/* Subject Competencies (Teaching Staff Only) */}
           {staffType === 'teaching' && (
             <div>

@@ -19,9 +19,8 @@ const initialFormData: StaffFormData = {
   tradeDegree: '',
   highestProfessionalQualification: '',
   
-  // Role Information
-  role: '',
-  
+  designationId: '',
+
   // Photo
   photoUrl: '',
   
@@ -105,8 +104,8 @@ export const useStaffForm = () => {
         newErrors.nameAsPerAadhaar = 'Name as per Aadhaar is required';
       }
       
-      if (!formData.role.trim()) {
-        newErrors.role = 'Role is required';
+      if (!formData.designationId) {
+        newErrors.designationId = 'Designation is required';
       }
     }
 

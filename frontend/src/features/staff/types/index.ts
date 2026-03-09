@@ -21,7 +21,8 @@ export interface Staff {
   highestAcademicQualification?: string;
   tradeDegree?: string;
   highestProfessionalQualification?: string;
-  role?: string;
+  designationId?: number | null;
+  designation?: { id: number; name: string } | null;
   photoUrl?: string;
   active?: boolean;
   mathematicsLevel?: string | null;
@@ -58,7 +59,6 @@ export interface TeachingStaff {
   highestAcademicQualification?: string;
   tradeDegree?: string;
   highestProfessionalQualification?: string;
-  role?: string;
   photoUrl?: string;
   active?: boolean;
   mathematicsLevel?: string;
@@ -93,7 +93,6 @@ export interface NonTeachingStaff {
   highestAcademicQualification?: string;
   tradeDegree?: string;
   highestProfessionalQualification?: string;
-  role?: string;
   photoUrl?: string;
   active?: boolean;
   typeOfDisability?: string;
@@ -129,9 +128,8 @@ export interface StaffFormData {
   tradeDegree: string;
   highestProfessionalQualification: string;
   
-  // Role Information
-  role: string;
-  
+  designationId: number | '';
+
   // Photo
   photoUrl: string;  // Existing photo URL (for edit mode)
   photoFile?: File;  // New photo file (for upload)
@@ -244,36 +242,3 @@ export const DISABILITY_OPTIONS = [
   { value: 'Multiple Disabilities', label: 'Multiple Disabilities' }
 ];
 
-export const TEACHING_STAFF_ROLES = [
-  { value: 'Principal', label: 'Principal', description: 'Head of the school, responsible for overall administration.' },
-  { value: 'Vice Principal', label: 'Vice Principal', description: 'Assists the principal in managing academics and discipline.' },
-  { value: 'Head of Department (HOD)', label: 'Head of Department (HOD)', description: 'Senior teacher managing a specific subject department.' },
-  { value: 'PGT (Post Graduate Teacher)', label: 'PGT (Post Graduate Teacher)', description: 'Teaches classes 11–12; usually holds a Master\'s and B.Ed.' },
-  { value: 'TGT (Trained Graduate Teacher)', label: 'TGT (Trained Graduate Teacher)', description: 'Teaches classes 6–10; typically holds a Bachelor\'s and B.Ed.' },
-  { value: 'PRT (Primary Teacher)', label: 'PRT (Primary Teacher)', description: 'Teaches classes 1–5.' },
-  { value: 'NTT (Nursery Teacher)', label: 'NTT (Nursery Teacher)', description: 'Teaches pre-primary/nursery level students.' },
-  { value: 'Assistant Teacher', label: 'Assistant Teacher', description: 'Supports main teacher, often in lower grades.' },
-  { value: 'Special Educator', label: 'Special Educator', description: 'Provides learning support to CWSN (Children With Special Needs).' },
-  { value: 'Physical Education Teacher (PET)', label: 'Physical Education Teacher (PET)', description: 'Handles sports and physical fitness.' },
-  { value: 'Art / Music / Dance Teacher', label: 'Art / Music / Dance Teacher', description: 'Conducts extracurriculars.' },
-  { value: 'Computer Teacher', label: 'Computer Teacher', description: 'Teaches ICT and computer-related subjects.' },
-  { value: 'Librarian', label: 'Librarian', description: 'Manages the library and reading materials.' },
-  { value: 'Lab Assistant', label: 'Lab Assistant', description: 'Assists in science lab preparation and safety.' }
-];
-
-export const NON_TEACHING_STAFF_ROLES = [
-  { value: 'Administrator', label: 'Administrator', description: 'Handles overall non-academic operations.' },
-  { value: 'Office Manager', label: 'Office Manager', description: 'Supervises day-to-day admin office work.' },
-  { value: 'Accountant', label: 'Accountant', description: 'Manages school finance, payroll, and fees.' },
-  { value: 'Clerk / Data Entry Operator', label: 'Clerk / Data Entry Operator', description: 'Maintains records, UDISE+ data, admission files, etc.' },
-  { value: 'Receptionist', label: 'Receptionist', description: 'Front desk duties, communication, and coordination.' },
-  { value: 'Admission Counselor', label: 'Admission Counselor', description: 'Handles inquiries, school tours, and student admissions.' },
-  { value: 'IT Admin / Technician', label: 'IT Admin / Technician', description: 'Manages school IT infrastructure and websites.' },
-  { value: 'Transport Incharge', label: 'Transport Incharge', description: 'Oversees school buses and transport logistics.' },
-  { value: 'Peon / Office Assistant', label: 'Peon / Office Assistant', description: 'Assists in delivering files, cleaning staff rooms, etc.' },
-  { value: 'Ayah / Nanny / Helper', label: 'Ayah / Nanny / Helper', description: 'Assists teachers in pre-primary classes.' },
-  { value: 'Security Guard', label: 'Security Guard', description: 'Ensures campus security.' },
-  { value: 'Cook', label: 'Cook', description: 'Prepares meals for students and staff.' },
-  { value: 'Driver / Conductor', label: 'Driver / Conductor', description: 'For school buses.' },
-  { value: 'Gardener (Mali)', label: 'Gardener (Mali)', description: 'Maintains school garden.' }
-];

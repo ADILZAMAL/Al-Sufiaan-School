@@ -63,7 +63,7 @@ const EditStaffDetails: React.FC = () => {
       nameAsPerAadhaar: staffData.nameAsPerAadhaar,
       highestAcademicQualification: staffData.highestAcademicQualification || '',
       tradeDegree: staffData.tradeDegree || '',
-      role: staffData.role || '',
+      designationId: staffData.designationId ?? '',
       photoUrl: staffData.photoUrl || '',
       typeOfDisability: staffData.typeOfDisability || '',
       natureOfAppointment: staffData.natureOfAppointment || '',
@@ -95,10 +95,18 @@ const EditStaffDetails: React.FC = () => {
 
     setIsSaving(true);
     try {
+      let photoUrl = formData.photoUrl || undefined;
+      if (formData.photoFile) {
+        photoUrl = await staffApi.uploadPhoto(formData.photoFile);
+      }
+
+      const { photoFile, photoPreview, ...rest } = formData;
       const submitData = {
-        ...formData,
+        ...rest,
+        photoUrl,
         gender: formData.gender || undefined,
         salaryPerMonth: formData.salaryPerMonth ? parseFloat(formData.salaryPerMonth) : undefined,
+        designationId: formData.designationId !== '' ? formData.designationId : null,
         schoolId: staff.schoolId,
         staffType: staff.staffType
       };

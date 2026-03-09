@@ -45,8 +45,15 @@ const AddStaff: React.FC = () => {
         return;
       }
 
+      let photoUrl: string | undefined = formData.photoUrl || undefined;
+      if (formData.photoFile) {
+        photoUrl = await staffApi.uploadPhoto(formData.photoFile);
+      }
+
+      const { photoFile, photoPreview, ...restFormData } = formData;
       const apiData = {
-        ...formData,
+        ...restFormData,
+        photoUrl,
         staffType,
         gender: formData.gender as 'Male' | 'Female' | 'Other',
         dateOfJoiningService: formData.dateOfJoiningService || undefined,

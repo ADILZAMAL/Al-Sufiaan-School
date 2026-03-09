@@ -259,13 +259,13 @@ const ViewStaffDetails: React.FC = () => {
               </div>
             </div>
 
-            {/* Role Information */}
+            {/* Designation */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Role Information</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Designation</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-500">Role</label>
-                  <p className="mt-1 text-sm text-gray-900">{staff.role || 'Not specified'}</p>
+                  <label className="block text-sm font-medium text-gray-500">Designation</label>
+                  <p className="mt-1 text-sm text-gray-900">{staff.designation?.name || 'Not assigned'}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500">Staff Type</label>
