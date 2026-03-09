@@ -341,11 +341,12 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
           setShowAdmissionForm(true);
         }, 500);
       } else {
-        showToast({ message: result.message || 'Failed to add student', type: "ERROR" });
+        const validationMsg = result.error && Object.values(result.error).find((v): v is { msg: string } => typeof v === 'object' && v !== null && 'msg' in v)?.msg;
+        showToast({ message: validationMsg || result.message || 'Failed to add student', type: "ERROR" });
       }
     } catch (error) {
       console.error('Error adding student:', error);
-      showToast({ message: 'Failed to add student', type: "ERROR" });
+      showToast({ message: error instanceof Error ? error.message : 'Failed to add student', type: "ERROR" });
     } finally {
       setLoading(false);
       setUploadingPhotos(false);

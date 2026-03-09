@@ -248,6 +248,7 @@ export interface StudentResponse {
   success: boolean;
   message: string;
   data?: Student;
+  error?: Record<string, { msg?: string } | string>;
 }
 
 export interface StudentListResponse {
