@@ -556,17 +556,17 @@ export async function collectFeePaymentController(req: Request, res: Response) {
 // Controller to get all incoming payments
 export async function getAllIncomingPayments(req: Request, res: Response) {
   try {
-    const { 
-      page = '1', 
-      limit = '10', 
-      fromDate, 
-      toDate, 
-      paymentMode 
+    const {
+      page,
+      limit,
+      fromDate,
+      toDate,
+      paymentMode
     } = req.query;
 
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
-    const offset = (pageNum - 1) * limitNum;
+    const pageNum = page ? parseInt(page as string) : 1;
+    const limitNum = limit ? parseInt(limit as string) : null;
+    const offset = limitNum ? (pageNum - 1) * limitNum : 0;
 
     // Build where clause for filters
     const whereClause: any = {};
@@ -612,8 +612,7 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
         },
       ],
       order: [['paymentDate', 'DESC'], ['createdAt', 'DESC']],
-      limit: limitNum,
-      offset,
+      ...(limitNum !== null && { limit: limitNum, offset }),
     });
 
     // Fetch class information for each payment via enrollment
@@ -667,7 +666,7 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
       payments: paymentData,
       pagination: {
         currentPage: pageNum,
-        totalPages: Math.ceil(count / limitNum),
+        totalPages: limitNum ? Math.ceil(count / limitNum) : 1,
         totalItems: count,
         itemsPerPage: limitNum,
       },
