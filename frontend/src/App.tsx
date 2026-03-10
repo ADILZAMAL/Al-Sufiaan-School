@@ -119,19 +119,13 @@ const router = createBrowserRouter([
       },
       {
         path: "staff",
-        element: <StaffManagement />
-      },
-      {
-        path: "staff/add",
-        element: <AddStaff />
-      },
-      {
-        path: "staff/view/:id",
-        element: <ViewStaffDetails />
-      },
-      {
-        path: "staff/edit/:id",
-        element: <EditStaffDetails />
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']} />,
+        children: [
+          { index: true, element: <StaffManagement /> },
+          { path: "add", element: <AddStaff /> },
+          { path: "view/:id", element: <ViewStaffDetails /> },
+          { path: "edit/:id", element: <EditStaffDetails /> },
+        ]
       },
       {
         path: "fee",
