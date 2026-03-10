@@ -1,4 +1,4 @@
-import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCurrencyDollar, HiOutlineUserCircle, HiOutlineAcademicCap, HiOutlineLibrary, HiOutlineBell, HiOutlineCalendar, HiOutlineSun, HiOutlineBookOpen, HiOutlineArrowCircleUp } from 'react-icons/hi'
+import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCurrencyDollar, HiOutlineUserCircle, HiOutlineAcademicCap, HiOutlineLibrary, HiOutlineBell, HiOutlineCalendar, HiOutlineSun, HiOutlineBookOpen, HiOutlineArrowCircleUp, HiOutlineClipboardList } from 'react-icons/hi'
 
 export const DASHBOARD_SIDEBAR_LINKS = [
 	{
@@ -112,6 +112,44 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				label: 'Promote Students',
 				path: 'sessions/promote',
 				icon: <HiOutlineArrowCircleUp />
+			}
+		]
+	},
+	{
+		key: 'academics',
+		label: 'Academics',
+		path: 'academics/subjects',
+		icon: <HiOutlineAcademicCap />,
+		children: [
+			{
+				key: 'academics-subjects',
+				label: 'Subjects',
+				path: 'academics/subjects',
+				icon: <HiOutlineBookOpen />
+			},
+			{
+				key: 'academics-assignments',
+				label: 'Teacher Assignments',
+				path: 'academics/assignments',
+				icon: <HiOutlineClipboardList />
+			},
+			{
+				key: 'academics-marks-viewer',
+				label: 'Marks Viewer',
+				path: 'academics/marks-viewer',
+				icon: <HiOutlineChartBar />
+			},
+			{
+				key: 'academics-pending-marks',
+				label: 'Pending Marks',
+				path: 'academics/pending-marks',
+				icon: <HiOutlineClipboardList />
+			},
+			{
+				key: 'academics-syllabus',
+				label: 'Syllabus Progress',
+				path: 'academics/syllabus-progress',
+				icon: <HiOutlineBookOpen />
 			}
 		]
 	},

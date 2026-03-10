@@ -36,6 +36,14 @@ import Holidays from "./features/attendance/pages/Holidays"
 import AttendanceDashboard from "./features/attendance/pages/AttendanceDashboard"
 import SessionManagement from "./features/sessions/pages/SessionManagement"
 import StudentPromotion from "./features/sessions/pages/StudentPromotion"
+import SubjectsPage from "./features/academics/pages/SubjectsPage"
+import ChaptersPage from "./features/academics/pages/ChaptersPage"
+import ExamsPage from "./features/academics/pages/ExamsPage"
+import AssignmentsPage from "./features/academics/pages/AssignmentsPage"
+import MarksViewerPage from "./features/academics/pages/MarksViewerPage"
+import PendingMarksPage from "./features/academics/pages/PendingMarksPage"
+import StudentReportPage from "./features/academics/pages/StudentReportPage"
+import SyllabusProgressPage from "./features/academics/pages/SyllabusProgressPage"
 
 
 const router = createBrowserRouter([
@@ -181,6 +189,20 @@ const router = createBrowserRouter([
       {
         path: "attendance",
         element: <AttendanceDashboard />
+      },
+      {
+        path: "academics",
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']} />,
+        children: [
+          { path: "subjects", element: <SubjectsPage /> },
+          { path: "chapters", element: <ChaptersPage /> },
+          { path: "exams", element: <ExamsPage /> },
+          { path: "assignments", element: <AssignmentsPage /> },
+          { path: "marks-viewer", element: <MarksViewerPage /> },
+          { path: "pending-marks", element: <PendingMarksPage /> },
+          { path: "student-report/:id", element: <StudentReportPage /> },
+          { path: "syllabus-progress", element: <SyllabusProgressPage /> },
+        ]
       },
       {
         path: "sessions",

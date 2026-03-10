@@ -28,6 +28,7 @@ import holidayRouter from './routes/holiday'
 import academicSessionRouter from './routes/academicSession'
 import designationRouter from './routes/designation'
 import enrollmentRouter from './routes/studentEnrollment'
+import academicRouter from './routes/academic'
 import sequelize from './config/database';
 import './models'; // Import for associations
 import cookieParser from "cookie-parser";
@@ -126,6 +127,7 @@ app.use('/api/holidays', holidayRouter)
 app.use('/api/sessions', academicSessionRouter)
 app.use('/api/designations', designationRouter)
 app.use('/api', enrollmentRouter)
+app.use('/api/academic', academicRouter)
 
 // Global error handler — must be the last middleware
 app.use(globalErrorHandler);
