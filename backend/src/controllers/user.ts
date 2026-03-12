@@ -52,6 +52,7 @@ export const changePassword = async (req: Request, res: Response) => {
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await User.findAll({
+      where: { schoolId: req.schoolId },
       attributes: { exclude: ['password'] },
       include: [
         {

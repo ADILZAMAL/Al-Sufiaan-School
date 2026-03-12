@@ -44,6 +44,8 @@ import MarksViewerPage from "./features/academics/pages/MarksViewerPage"
 import PendingMarksPage from "./features/academics/pages/PendingMarksPage"
 import StudentReportPage from "./features/academics/pages/StudentReportPage"
 import SyllabusProgressPage from "./features/academics/pages/SyllabusProgressPage"
+import OnboardSchool from "./features/general/pages/OnboardSchool"
+import OnboardSchoolDetail from "./features/general/pages/OnboardSchoolDetail"
 
 
 const router = createBrowserRouter([
@@ -74,6 +76,14 @@ const router = createBrowserRouter([
   {
     path:"/sign-in",
     element: <SignIn/>
+  },
+  {
+    path: "/onboard",
+    element: <OnboardSchool />
+  },
+  {
+    path: "/onboard/:schoolId",
+    element: <OnboardSchoolDetail />
   },
   {
     path: "/dashboard",

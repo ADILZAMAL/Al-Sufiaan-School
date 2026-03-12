@@ -52,7 +52,7 @@ export default function AssignmentsPage() {
 
   const { data: teachingStaff = [] } = useQuery(
     'teachingStaff',
-    () => staffApi.getAll(1, true, 'teaching'),
+    () => staffApi.getAll(true, 'teaching'),
     { staleTime: 5 * 60 * 1000 }
   );
 

@@ -34,7 +34,7 @@ const StaffManagement: React.FC = () => {
   const fetchStaffData = async () => {
     setIsLoading(true);
     try {
-      const data = await staffApi.getAll(1);
+      const data = await staffApi.getAll();
       setAllStaff(data);
     } catch (error: any) {
       setToast({ message: error.message || 'Failed to fetch staff data', type: 'ERROR' });

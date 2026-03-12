@@ -136,11 +136,8 @@ export const createStaff = async (req: Request, res: Response) => {
 
 export const getAllStaff = async (req: Request, res: Response) => {
     try {
-        const { schoolId, active, staffType } = req.query;
-
-        if (!schoolId) {
-            return sendError(res, 'School ID is required', 400);
-        }
+        const { active, staffType } = req.query;
+        const schoolId = req.schoolId;
 
         const whereClause: any = { schoolId };
 

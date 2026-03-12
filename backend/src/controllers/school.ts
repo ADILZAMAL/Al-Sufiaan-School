@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import School from '../models/School';
+import User from '../models/User';
+import bcrypt from 'bcryptjs';
 import { validationResult } from 'express-validator';
 import { sendError, sendSuccess } from '../utils/response';
 import logger from '../utils/logger';
@@ -9,6 +11,7 @@ export const onboardSchool = async (req: Request, res: Response) => {
   if (!errors.isEmpty()) {
     return sendError(res, 'Validation failed', 400, errors.array());
   }
+
   try {
     const school = await School.create(req.body);
     sendSuccess(res, school, 'School onboarded successfully', 201);
@@ -21,7 +24,6 @@ export const onboardSchool = async (req: Request, res: Response) => {
 export const getAllSchools = async (req: Request, res: Response) => {
   try {
     const schools = await School.findAll({
-      attributes: ['id', 'name', 'sid'],
       order: [['name', 'ASC']]
     });
     sendSuccess(res, schools, 'Schools fetched successfully');
@@ -79,17 +81,77 @@ export const updateSchool = async (req: Request, res: Response) => {
   }
 };
 
+export const createSuperAdmin = async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return sendError(res, 'Validation failed', 400, errors.array());
+  }
+
+  const { firstName, lastName, mobileNumber, adminPassword, schoolId } = req.body;
+
+  try {
+    const school = await School.findByPk(schoolId);
+    if (!school) {
+      return sendError(res, 'School not found', 404);
+    }
+
+    const existingSuperAdmin = await User.findOne({ where: { schoolId, role: 'SUPER_ADMIN' } });
+    if (existingSuperAdmin) {
+      return sendError(res, 'A super admin already exists for this school', 400);
+    }
+
+    const existing = await User.findOne({ where: { mobileNumber } });
+    if (existing) {
+      return sendError(res, 'User with this mobile number already exists', 400);
+    }
+
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const user = await User.create({
+      firstName,
+      lastName,
+      mobileNumber,
+      password: hashedPassword,
+      role: 'SUPER_ADMIN',
+      schoolId,
+    });
+
+    const userResponse = await User.findByPk(user.id, {
+      attributes: { exclude: ['password'] },
+    });
+
+    sendSuccess(res, userResponse, 'Super admin created successfully', 201);
+  } catch (error) {
+    logger.error('Error creating super admin', { error });
+    sendError(res, 'Something went wrong');
+  }
+};
+
+export const getSchoolSuperAdmin = async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    return sendError(res, 'Invalid Id', 400);
+  }
+
+  try {
+    const user = await User.findOne({
+      where: { schoolId: id, role: 'SUPER_ADMIN' },
+      attributes: { exclude: ['password'] },
+    });
+    sendSuccess(res, user, 'Super admin fetched successfully');
+  } catch (error) {
+    logger.error('Error fetching super admin', { error });
+    sendError(res, 'An error occurred while fetching the super admin');
+  }
+};
+
 export const getCurrentSchool = async (req: Request, res: Response) => {
   try {
-    // Get the first active school as the current school
-    const school = await School.findOne({
-      where: { active: true }
-    });
-    
+    const school = await School.findByPk(req.schoolId);
+
     if (!school) {
-      return sendError(res, 'No active school found', 404);
+      return sendError(res, 'School not found', 404);
     }
-    
+
     sendSuccess(res, school, 'Current school fetched successfully');
   } catch (error) {
     logger.error('Error fetching current school', { error });

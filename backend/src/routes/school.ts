@@ -1,11 +1,54 @@
-import express, { Router, Request, Response } from 'express';
-import { getSchoolById, getAllSchools, onboardSchool, updateSchool, getCurrentSchool } from '../controllers/school';
-import { check, body } from 'express-validator'
-const router: Router = express.Router()
+import express, { Router, Request, Response, NextFunction } from 'express';
+import { getSchoolById, getAllSchools, onboardSchool, updateSchool, getCurrentSchool, createSuperAdmin, getSchoolSuperAdmin } from '../controllers/school';
+import { check, body } from 'express-validator';
+import { sendError } from '../utils/response';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import verifyToken from '../middleware/auth';
+
+const router: Router = express.Router();
+
+// Validate onboard JWT from Authorization header
+const verifyOnboardToken = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return sendError(res, 'Onboard token required', 401);
+  try {
+    jwt.verify(token, process.env.ONBOARD_JWT_SECRET as string);
+    next();
+  } catch {
+    return sendError(res, 'Invalid or expired onboard token', 403);
+  }
+};
 
 router.get("/", getAllSchools)
-router.get("/current", getCurrentSchool)
-router.get("/:id",getSchoolById)
+router.get("/current", verifyToken, getCurrentSchool)
+router.get("/:id", getSchoolById)
+router.get("/:id/super-admin", getSchoolSuperAdmin)
+
+router.post("/verify-onboard", (req: Request, res: Response) => {
+  const { username, password } = req.body;
+  const expectedUser = process.env.ONBOARD_USERNAME ?? '';
+  const expectedPass = process.env.ONBOARD_PASSWORD ?? '';
+
+  const usernameMatch =
+    username?.length === expectedUser.length &&
+    crypto.timingSafeEqual(Buffer.from(username), Buffer.from(expectedUser));
+  const passwordMatch =
+    password?.length === expectedPass.length &&
+    crypto.timingSafeEqual(Buffer.from(password), Buffer.from(expectedPass));
+
+  if (!usernameMatch || !passwordMatch) {
+    return sendError(res, 'Invalid credentials', 403);
+  }
+
+  const token = jwt.sign(
+    { onboard: true },
+    process.env.ONBOARD_JWT_SECRET as string,
+    { expiresIn: '1h' }
+  );
+  return res.json({ success: true, data: { token }, message: 'Credentials verified' });
+});
 
 router.put("/:id", [
     check("name", "School Name is required").optional().isString(),
@@ -26,7 +69,15 @@ router.put("/:id", [
     body('admissionFee').optional().isFloat({ gt: 0 }).withMessage('Admission fee must be a positive number')
 ], updateSchool);
 
-router.post("/onboard", [
+router.post("/create-super-admin", verifyOnboardToken, [
+    check("firstName", "First name is required").isString(),
+    check("lastName", "Last name is required").isString(),
+    check("mobileNumber", "Valid 10-digit mobile number is required").matches(/^\d{10}$/),
+    check("adminPassword", "Password must be at least 6 characters").isLength({ min: 6 }),
+    check("schoolId", "School ID is required").isInt(),
+], createSuperAdmin);
+
+router.post("/onboard", verifyOnboardToken, [
     check("name", "School Name is required").isString(),
     check("street", "Street is required").isString(),
     check("city", "City is required").isString(),
@@ -39,4 +90,4 @@ router.post("/onboard", [
     check("sid", "SId with 3 or more character is required").isLength({min: 3})
 ], onboardSchool);
 
-export default router
+export default router;

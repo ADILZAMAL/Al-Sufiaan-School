@@ -15,10 +15,11 @@ export const staffApi = {
     return body.data;
   },
 
-  getAll: async (schoolId: number, active?: boolean, staffType?: StaffType): Promise<Staff[]> => {
-    let url = `${API_BASE_URL}/api/staff?schoolId=${schoolId}`;
-    if (active !== undefined) url += `&active=${active}`;
-    if (staffType) url += `&staffType=${staffType}`;
+  getAll: async (active?: boolean, staffType?: StaffType): Promise<Staff[]> => {
+    const params = new URLSearchParams();
+    if (active !== undefined) params.append('active', String(active));
+    if (staffType) params.append('staffType', staffType);
+    let url = `${API_BASE_URL}/api/staff?${params.toString()}`;
     const response = await fetch(url, { credentials: 'include' });
     const body = await response.json();
     if (!body.success) throw new Error(body.message || 'Failed to fetch staff');

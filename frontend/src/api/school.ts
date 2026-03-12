@@ -21,6 +21,13 @@ export interface School {
   updatedAt: string;
 }
 
+export const getAllSchools = async (): Promise<School[]> => {
+  const response = await fetch(`${API_BASE_URL}/api/schools`);
+  const body = await response.json();
+  if (!body.success) throw new Error(body.message || 'Failed to fetch schools');
+  return body.data as School[];
+};
+
 export const getSchoolById = async (id: number): Promise<School> => {
   const response = await fetch(`${API_BASE_URL}/api/schools/${id}`, {
     credentials: 'include',
@@ -45,6 +52,75 @@ export const getCurrentSchool = async (): Promise<School> => {
   }
 
   return body.data as School;
+};
+
+export interface OnboardSchoolData {
+  name: string;
+  email: string;
+  mobile: string;
+  sid: string;
+  udiceCode: string;
+  street: string;
+  city: string;
+  district: string;
+  state: string;
+  pincode: string;
+  username: string;
+  password: string;
+}
+
+export const verifyOnboardCredentials = async (username: string, password: string): Promise<string> => {
+  const response = await fetch(`${API_BASE_URL}/api/schools/verify-onboard`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const body = await response.json();
+  if (!body.success) throw new Error(body.message || 'Invalid credentials');
+  return body.data.token as string;
+};
+
+export const onboardSchool = async (token: string, data: Omit<OnboardSchoolData, 'username' | 'password'>): Promise<School> => {
+  const response = await fetch(`${API_BASE_URL}/api/schools/onboard`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+  const body = await response.json();
+  if (!body.success) throw new Error(body.message || 'Failed to onboard school');
+  return body.data as School;
+};
+
+export const createSuperAdmin = async (token: string, data: {
+  firstName: string;
+  lastName: string;
+  mobileNumber: string;
+  adminPassword: string;
+  schoolId: number;
+}): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/api/schools/create-super-admin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+  const body = await response.json();
+  if (!body.success) throw new Error(body.message || 'Failed to create super admin');
+};
+
+export interface SuperAdminUser {
+  id: number;
+  firstName: string;
+  lastName: string;
+  mobileNumber: string;
+  role: string;
+  createdAt: string;
+}
+
+export const getSchoolSuperAdmin = async (schoolId: number): Promise<SuperAdminUser | null> => {
+  const response = await fetch(`${API_BASE_URL}/api/schools/${schoolId}/super-admin`);
+  const body = await response.json();
+  if (!body.success) throw new Error(body.message || 'Failed to fetch super admin');
+  return body.data as SuperAdminUser | null;
 };
 
 export const updateSchool = async (id: number, schoolData: Partial<Omit<School, 'id' | 'createdAt' | 'updatedAt'>>): Promise<School> => {
