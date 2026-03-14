@@ -13,6 +13,12 @@ import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import PayslipListScreen from '../screens/PayslipListScreen';
 import PayslipDetailScreen from '../screens/PayslipDetailScreen';
 import LoadingScreen from '../screens/LoadingScreen';
+import MarksClassSelectionScreen from '../screens/MarksClassSelectionScreen';
+import MarksSectionSelectionScreen from '../screens/MarksSectionSelectionScreen';
+import MarksSubjectSelectionScreen from '../screens/MarksSubjectSelectionScreen';
+import MarksChapterSelectionScreen from '../screens/MarksChapterSelectionScreen';
+import MarksExamSelectionScreen from '../screens/MarksExamSelectionScreen';
+import MarksEntryScreen from '../screens/MarksEntryScreen';
 import SchoolLogo from '../../assets/school-logo.svg';
 
 export type RootStackParamList = {
@@ -27,6 +33,12 @@ export type RootStackParamList = {
   ChangePassword: undefined;
   PayslipList: undefined;
   PayslipDetail: { payslipId: number; monthName: string; year: number };
+  MarksClassSelection: undefined;
+  MarksSectionSelection: { classId: number; className: string; sessionId: number };
+  MarksSubjectSelection: { classId: number; className: string; sectionId: number; sectionName: string; sessionId: number };
+  MarksChapterSelection: { subjectId: number; subjectName: string; sectionId: number; sessionId: number; classId: number; sectionName: string };
+  MarksExamSelection: { chapterId: number; chapterName: string; subjectName: string; classId: number; sectionId: number };
+  MarksEntry: { examId: number; examName: string; totalMarks: number; passingMarks: number; classId: number; sectionId: number };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -129,6 +141,36 @@ const AppNavigator: React.FC = () => {
             options={({ route }) => ({
               title: `${route.params.monthName} ${route.params.year}`,
             })}
+          />
+          <Stack.Screen
+            name="MarksClassSelection"
+            component={MarksClassSelectionScreen}
+            options={{ title: 'Select Class' }}
+          />
+          <Stack.Screen
+            name="MarksSectionSelection"
+            component={MarksSectionSelectionScreen}
+            options={({ route }) => ({ title: `${route.params.className} — Select Section` })}
+          />
+          <Stack.Screen
+            name="MarksSubjectSelection"
+            component={MarksSubjectSelectionScreen}
+            options={({ route }) => ({ title: `${route.params.sectionName} — Subjects` })}
+          />
+          <Stack.Screen
+            name="MarksChapterSelection"
+            component={MarksChapterSelectionScreen}
+            options={({ route }) => ({ title: route.params.subjectName })}
+          />
+          <Stack.Screen
+            name="MarksExamSelection"
+            component={MarksExamSelectionScreen}
+            options={({ route }) => ({ title: route.params.chapterName })}
+          />
+          <Stack.Screen
+            name="MarksEntry"
+            component={MarksEntryScreen}
+            options={({ route }) => ({ title: `Enter Marks — ${route.params.examName}` })}
           />
         </>
       )}

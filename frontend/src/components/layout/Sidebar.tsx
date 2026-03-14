@@ -3,10 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { DASHBOARD_SIDEBAR_LINKS } from '../../lib/constants/index.tsx';
 import classNames from 'classnames';
 import { HiOutlineLogout, HiOutlineLockClosed, HiChevronDown } from 'react-icons/hi';
-import { useMutation, useQueryClient } from 'react-query';
+import { FaSchool } from 'react-icons/fa';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
 import * as apiClient from '../../features/auth/api';
 import { useAppContext } from '../../providers/AppContext';
 import ChangePasswordModal from '../../features/auth/components/ChangePasswordModal';
+import { getCurrentSchool } from '../../api/school';
 
 const Sidebar: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,6 +16,7 @@ const Sidebar: React.FC = () => {
     const navigate = useNavigate();
     const { showToast, isSidebarOpen } = useAppContext();
     const queryClient = useQueryClient();
+    const { data: school } = useQuery('currentSchool', getCurrentSchool, { retry: false });
 
     const mutation = useMutation(apiClient.signOut, {
         onSuccess: async () => {
@@ -36,14 +39,12 @@ const Sidebar: React.FC = () => {
                 "flex items-center gap-3 px-3 h-16 border-b border-slate-700/60 flex-shrink-0",
                 !isSidebarOpen && "justify-center"
             )}>
-                <img
-                    src="/img/school-logo.png"
-                    alt="Al Sufiaan School"
-                    className="w-8 h-8 flex-shrink-0 rounded-md object-contain"
-                />
+                {school?.logoUrl
+                    ? <img src={school.logoUrl} alt={school.name} className="w-8 h-8 flex-shrink-0 rounded-md object-cover" />
+                    : <FaSchool className="text-white text-xl flex-shrink-0" />}
                 {isSidebarOpen && (
                     <div className="leading-tight overflow-hidden">
-                        <p className="text-sm font-bold text-white whitespace-nowrap">Al Sufiaan</p>
+                        <p className="text-sm font-bold text-white whitespace-nowrap truncate">{school?.name ?? 'School'}</p>
                         <p className="text-xs text-slate-400 whitespace-nowrap">School Management</p>
                     </div>
                 )}

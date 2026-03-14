@@ -2,6 +2,11 @@ import School from './School';
 import User from './User';
 import Class from './Class';
 import Section from './Section';
+import Subject from './Subject';
+import TeacherSubjectAssignment from './TeacherSubjectAssignment';
+import Chapter from './Chapter';
+import Exam from './Exam';
+import StudentExamMark from './StudentExamMark';
 import Product from './Product';
 import Transaction from './Transaction';
 import Expense from './Expense';
@@ -177,6 +182,32 @@ Attendance.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 Holiday.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 Holiday.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 
+// Academic tracking associations
+AcademicSession.hasMany(Subject, { foreignKey: 'sessionId', as: 'subjects' });
+Subject.belongsTo(AcademicSession, { foreignKey: 'sessionId', as: 'session' });
+Class.hasMany(Subject, { foreignKey: 'classId', as: 'subjects' });
+Subject.belongsTo(Class, { foreignKey: 'classId', as: 'class' });
+
+Subject.hasMany(Chapter, { foreignKey: 'subjectId', as: 'chapters' });
+Chapter.belongsTo(Subject, { foreignKey: 'subjectId', as: 'subject' });
+
+Subject.hasMany(TeacherSubjectAssignment, { foreignKey: 'subjectId', as: 'assignments' });
+TeacherSubjectAssignment.belongsTo(Subject, { foreignKey: 'subjectId', as: 'subject' });
+TeacherSubjectAssignment.belongsTo(Staff, { foreignKey: 'staffId', as: 'teacher' });
+TeacherSubjectAssignment.belongsTo(Section, { foreignKey: 'sectionId', as: 'section' });
+TeacherSubjectAssignment.belongsTo(AcademicSession, { foreignKey: 'sessionId', as: 'session' });
+TeacherSubjectAssignment.belongsTo(User, { foreignKey: 'assignedBy', as: 'assignedByUser' });
+
+Chapter.hasMany(Exam, { foreignKey: 'chapterId', as: 'exams' });
+Exam.belongsTo(Chapter, { foreignKey: 'chapterId', as: 'chapter' });
+Chapter.belongsTo(Staff, { foreignKey: 'taughtBy', as: 'taughtByStaff' });
+
+Exam.hasMany(StudentExamMark, { foreignKey: 'examId', as: 'marks' });
+StudentExamMark.belongsTo(Exam, { foreignKey: 'examId', as: 'exam' });
+StudentExamMark.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+Student.hasMany(StudentExamMark, { foreignKey: 'studentId', as: 'examMarks' });
+StudentExamMark.belongsTo(User, { foreignKey: 'enteredBy', as: 'enteredByUser' });
+
 // AcademicSession associations
 AcademicSession.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 AcademicSession.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
@@ -196,4 +227,4 @@ StudentEnrollment.belongsTo(Section, { foreignKey: 'sectionId', as: 'section' })
 StudentEnrollment.belongsTo(User, { foreignKey: 'promotedBy', as: 'promoter' });
 Student.hasMany(StudentEnrollment, { foreignKey: 'studentId', as: 'enrollments' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, Staff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, ClassFeePricing, TransportationAreaPricing, Student, AcademicSession, StudentEnrollment, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday, Designation };
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, Staff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, ClassFeePricing, TransportationAreaPricing, Student, AcademicSession, StudentEnrollment, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday, Designation, Subject, TeacherSubjectAssignment, Chapter, Exam, StudentExamMark };

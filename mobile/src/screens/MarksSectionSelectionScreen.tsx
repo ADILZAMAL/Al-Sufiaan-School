@@ -1,0 +1,88 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View, Text, FlatList, TouchableOpacity, StyleSheet,
+} from 'react-native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useAuth } from '../context/AuthContext';
+import { sectionsApi } from '../api/sections';
+import { Section } from '../types';
+import { RootStackParamList } from '../navigation/AppNavigator';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
+
+type Nav = StackNavigationProp<RootStackParamList, 'MarksSectionSelection'>;
+type Route = RouteProp<RootStackParamList, 'MarksSectionSelection'>;
+
+const MarksSectionSelectionScreen: React.FC = () => {
+  const navigation = useNavigation<Nav>();
+  const route = useRoute<Route>();
+  const { classId, className, sessionId } = route.params;
+  const { logout } = useAuth();
+
+  const [sections, setSections] = useState<Section[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { loadSections(); }, []);
+
+  const loadSections = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await sectionsApi.getSectionsByClass(classId);
+      setSections(data);
+    } catch (err: any) {
+      if (err.response?.status === 401) { await logout(); return; }
+      setError(err.response?.data?.message || 'Failed to load sections');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage message={error} onRetry={loadSections} />;
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={sections}
+        keyExtractor={item => item.id.toString()}
+        contentContainerStyle={styles.list}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.item}
+            onPress={() => navigation.navigate('MarksSubjectSelection', {
+              classId, className, sectionId: item.id, sectionName: item.name, sessionId,
+            })}
+          >
+            <Text style={styles.name}>{item.name}</Text>
+            <Text style={styles.arrow}>→</Text>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>No sections found</Text>
+          </View>
+        }
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f3f4f6' },
+  list: { padding: 15 },
+  item: {
+    backgroundColor: '#fff', padding: 20, marginBottom: 10, borderRadius: 8,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
+  },
+  name: { fontSize: 18, fontWeight: '600', color: '#1f2937' },
+  arrow: { fontSize: 24, color: '#3b82f6' },
+  empty: { padding: 40, alignItems: 'center' },
+  emptyText: { fontSize: 16, color: '#6b7280' },
+});
+
+export default MarksSectionSelectionScreen;

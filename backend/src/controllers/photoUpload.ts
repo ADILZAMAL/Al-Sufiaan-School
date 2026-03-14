@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response';
-import cloudinary, { staffPhotoUploadOptions } from '../config/cloudinary';
+import cloudinary, { staffPhotoUploadOptions, schoolLogoUploadOptions } from '../config/cloudinary';
 import { UploadApiResponse } from 'cloudinary';
 import logger from '../utils/logger';
+import sequelize from '../config/database';
 
 // Helper function to upload a single image to Cloudinary
 const uploadImageToCloudinary = async (
@@ -134,5 +135,51 @@ export const uploadStudentPhotos = async (req: Request, res: Response) => {
     } catch (error: any) {
         logger.error('Error uploading student photos to Cloudinary', { error });
         return sendError(res, 'Failed to upload student photos', 500);
+    }
+};
+
+export const uploadSchoolLogo = async (req: Request, res: Response) => {
+    try {
+        if (!req.file) {
+            return sendError(res, 'No logo file uploaded', 400);
+        }
+
+        // Determine school ID: from JWT token, explicit body param, or next auto-increment (new onboarding)
+        let schoolId: number;
+        if (req.schoolId) {
+            schoolId = parseInt(req.schoolId);
+        } else if (req.body.schoolId) {
+            schoolId = parseInt(req.body.schoolId);
+        } else {
+            const [rows] = await sequelize.query(
+                `SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Schools'`
+            );
+            schoolId = (rows as any)[0].AUTO_INCREMENT;
+        }
+
+        return new Promise((resolve) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                {
+                    folder: schoolLogoUploadOptions.folder,
+                    public_id: String(schoolId),
+                    overwrite: true,
+                    resource_type: 'image',
+                    quality: 'auto',
+                    transformation: schoolLogoUploadOptions.transformation,
+                },
+                (error, result) => {
+                    if (error || !result) {
+                        logger.error('Error uploading school logo to Cloudinary', { error });
+                        resolve(sendError(res, 'Failed to upload school logo', 500));
+                    } else {
+                        resolve(sendSuccess(res, { logoUrl: result.secure_url }, 'School logo uploaded successfully', 201));
+                    }
+                }
+            );
+            uploadStream.end(req.file!.buffer);
+        });
+    } catch (error: any) {
+        logger.error('Error uploading school logo to Cloudinary', { error });
+        return sendError(res, 'Failed to upload school logo', 500);
     }
 };

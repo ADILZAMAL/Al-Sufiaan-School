@@ -9,6 +9,7 @@ type ExpenseTableProps = {
   expenses: Expense[];
   isLoading: boolean;
   error: any;
+  isAdmin: boolean;
   onEdit: (expense: Expense) => void;
   onDelete: (expense: Expense) => void;
 };
@@ -27,6 +28,7 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
   expenses,
   isLoading,
   error,
+  isAdmin,
   onEdit,
   onDelete,
 }) => {
@@ -106,12 +108,16 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                   </span>
                 </td>
                 <td className="py-4 px-6 whitespace-nowrap">
-                  <span className="text-sm font-semibold text-gray-800">
-                    ₹{Number(expense.amount).toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </span>
+                  {expense.isPayslipPayment && !isAdmin ? (
+                    <span className="text-sm font-semibold text-gray-400 tracking-widest">₹ ••••••</span>
+                  ) : (
+                    <span className="text-sm font-semibold text-gray-800">
+                      ₹{Number(expense.amount).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  )}
                 </td>
                 <td className="py-4 px-6 whitespace-nowrap">
                   <span className="text-sm text-gray-700">

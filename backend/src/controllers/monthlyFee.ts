@@ -569,7 +569,7 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
     const offset = limitNum ? (pageNum - 1) * limitNum : 0;
 
     // Build where clause for filters
-    const whereClause: any = {};
+    const whereClause: any = { schoolId: req.schoolId };
 
     if (fromDate || toDate) {
       whereClause.paymentDate = {};

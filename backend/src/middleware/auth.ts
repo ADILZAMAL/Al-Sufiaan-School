@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import logger from '../utils/logger';
+import { sendError } from '../utils/response';
 
 declare global {
   namespace Express {
@@ -66,6 +67,18 @@ export const requireRole = (allowedRoles: ('SUPER_ADMIN' | 'ADMIN' | 'CASHIER' |
 
     next();
   };
+};
+
+export const verifyOnboardToken = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return sendError(res, 'Onboard token required', 401);
+  try {
+    jwt.verify(token, process.env.ONBOARD_JWT_SECRET as string);
+    next();
+  } catch {
+    return sendError(res, 'Invalid or expired onboard token', 403);
+  }
 };
 
 export default verifyToken;

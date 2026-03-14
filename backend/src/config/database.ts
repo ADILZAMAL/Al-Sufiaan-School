@@ -26,6 +26,11 @@ import {initStudentFeePaymentModel} from "../models/StudentFeePayment"
 import {initAttendanceModel} from "../models/Attendance"
 import {initHolidayModel} from "../models/Holiday"
 import {initDesignationModel} from "../models/Designation"
+import {initSubjectModel} from "../models/Subject"
+import {initTeacherSubjectAssignmentModel} from "../models/TeacherSubjectAssignment"
+import {initChapterModel} from "../models/Chapter"
+import {initExamModel} from "../models/Exam"
+import {initStudentExamMarkModel} from "../models/StudentExamMark"
 import "dotenv/config";
 import { getRequestId } from '../utils/context';
 
@@ -75,6 +80,11 @@ initStudentFeePaymentModel(sequelize);
 initAttendanceModel(sequelize);
 initHolidayModel(sequelize);
 initDesignationModel(sequelize);
+initSubjectModel(sequelize);
+initTeacherSubjectAssignmentModel(sequelize);
+initChapterModel(sequelize);
+initExamModel(sequelize);
+initStudentExamMarkModel(sequelize);
 //Sync the Model with the database
 sequelize.sync()
     .then(() => {

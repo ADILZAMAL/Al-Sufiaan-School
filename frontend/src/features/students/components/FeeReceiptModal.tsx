@@ -432,22 +432,26 @@ const Receipt: React.FC<ReceiptProps> = ({
   return (
     <div className="receipt relative bg-white border border-gray-300 rounded-lg p-4 shadow-md">
       {/* Watermark */}
-      <div className="watermark absolute inset-0 flex items-center justify-center pointer-events-none opacity-5">
-        <img
-          src="/img/school-logo.svg"
-          alt="Watermark"
-          className="w-64 h-64 object-contain"
-        />
-      </div>
+      {school.logoUrl && (
+        <div className="watermark absolute inset-0 flex items-center justify-center pointer-events-none opacity-5">
+          <img
+            src={school.logoUrl}
+            alt="Watermark"
+            className="w-64 h-64 object-contain"
+          />
+        </div>
+      )}
 
       {/* Header */}
       <div className="relative z-10 border-b-2 border-gray-800 pb-2 mb-2">
         <div className="flex items-center justify-center gap-4">
-          <img
-            src="/img/school-logo.svg"
-            alt="School Logo"
-            className="h-16 w-auto"
-          />
+          {school.logoUrl && (
+            <img
+              src={school.logoUrl}
+              alt="School Logo"
+              className="h-16 w-auto"
+            />
+          )}
           <div className="text-xs text-left">
             <h1 className="text-lg font-bold text-gray-900 uppercase mb-1">{school.name}</h1>
             <p className="text-gray-600 mb-1">{school.city}, {school.district}, {school.state} - {school.pincode}</p>

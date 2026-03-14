@@ -16,7 +16,7 @@ export const generateAdmissionNumber = async (schoolId: number): Promise<string>
       where: {
         schoolId: schoolId,
         admissionNumber: {
-          [Op.like]: `ALS${currentYear}%` // Updated to search for ALSYYYY%
+          [Op.like]: `TIS${currentYear}%` // Updated to search for ALSYYYY%
         }
       },
       order: [['admissionNumber', 'DESC']]
@@ -30,7 +30,7 @@ export const generateAdmissionNumber = async (schoolId: number): Promise<string>
       nextNumber = lastNumber + 1;
     }
     
-    return `ALS${currentYear}${nextNumber.toString().padStart(4, '0')}`; // Updated format
+    return `TIS${currentYear}${nextNumber.toString().padStart(4, '0')}`; // Updated format
   } catch (error) {
     // Fallback to timestamp-based number
     const timestamp = Date.now().toString().slice(-4);
