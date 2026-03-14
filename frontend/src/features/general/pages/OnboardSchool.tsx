@@ -6,13 +6,14 @@ import {
   FaUser, FaLock, FaSpinner, FaEye, FaEyeSlash,
   FaSchool, FaEnvelope, FaPhone, FaMapMarkerAlt,
   FaArrowLeft, FaCheckCircle, FaPlus, FaTimes, FaSignOutAlt,
-  FaIdCard, FaBuilding,
+  FaIdCard, FaBuilding, FaImage,
 } from "react-icons/fa";
 import { useAppContext } from "../../../providers/AppContext";
 import {
   getAllSchools,
   verifyOnboardCredentials,
   onboardSchool,
+  uploadSchoolLogo,
   OnboardSchoolData,
   School,
 } from "../../../api/school";
@@ -63,8 +64,10 @@ const SchoolCard = ({ school }: { school: School }) => {
   >
     <div className="flex items-start justify-between mb-4">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-          <FaSchool className="text-blue-600 text-sm" />
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden ${school.logoUrl ? '' : 'bg-blue-100'}`}>
+          {school.logoUrl
+            ? <img src={school.logoUrl} alt={school.name} className="w-10 h-10 object-contain" />
+            : <FaSchool className="text-blue-600 text-sm" />}
         </div>
         <div>
           <h3 className="font-semibold text-gray-900 text-sm leading-tight">{school.name}</h3>
@@ -117,9 +120,13 @@ const OnboardModal = ({
   onSuccess: () => void;
 }) => {
   const { showToast } = useAppContext();
-  const [step, setStep] = useState<1 | 2>(1);
+  const [token, setToken] = useState<string | null>(() => getOnboardCookie());
+  const [step, setStep] = useState<1 | 2>(() => getOnboardCookie() ? 2 : 1);
   const [showPassword, setShowPassword] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [uploadedLogoUrl, setUploadedLogoUrl] = useState<string | null>(null);
 
   const { register: reg1, formState: { errors: err1 }, handleSubmit: submit1 } =
     useForm<CredentialsFormData>();
@@ -134,8 +141,29 @@ const OnboardModal = ({
     }
   );
 
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+    setLogoUploading(true);
+    try {
+      const result = await uploadSchoolLogo(token!, file);
+      setUploadedLogoUrl(result.logoUrl);
+    } catch (err: any) {
+      showToast({ message: err.message || 'Failed to upload logo', type: 'ERROR' });
+      setLogoFile(null);
+      setLogoPreview(null);
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   const onboardMutation = useMutation(
-    (schoolData: SchoolFormData) => onboardSchool(token!, schoolData),
+    (schoolData: SchoolFormData) => onboardSchool(token!, {
+      ...schoolData,
+      ...(uploadedLogoUrl && { logoUrl: uploadedLogoUrl }),
+    }),
     {
       onSuccess: () => {
         showToast({ message: "School onboarded successfully!", type: "SUCCESS" });
@@ -266,6 +294,36 @@ const OnboardModal = ({
                 </div>
               </div>
 
+              {/* Logo Upload */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <FaImage className="text-blue-500" /> School Logo
+                </p>
+                <label className="flex items-center gap-4 cursor-pointer">
+                  <div className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 bg-gray-50">
+                    {logoPreview
+                      ? <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                      : logoUploading
+                        ? <FaSpinner className="animate-spin text-gray-400" />
+                        : <FaImage className="text-gray-300 text-xl" />}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-gray-600">
+                      {logoUploading ? 'Uploading…' : logoFile ? logoFile.name : 'Choose a logo image'}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">PNG, JPG, WebP, SVG · Max 5MB</p>
+                    {uploadedLogoUrl && <p className="text-xs text-green-600 mt-0.5 flex items-center gap-1"><FaCheckCircle />Uploaded</p>}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
+                    className="hidden"
+                    onChange={handleLogoChange}
+                    disabled={logoUploading}
+                  />
+                </label>
+              </div>
+
               {/* Contact */}
               <div className="space-y-3">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -317,8 +375,8 @@ const OnboardModal = ({
                 </div>
               </div>
 
-              <button type="submit" disabled={onboardMutation.isLoading}
-                className={`w-full py-2.5 px-4 text-white text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors ${onboardMutation.isLoading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}>
+              <button type="submit" disabled={onboardMutation.isLoading || logoUploading}
+                className={`w-full py-2.5 px-4 text-white text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors ${onboardMutation.isLoading || logoUploading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}>
                 {onboardMutation.isLoading
                   ? <><FaSpinner className="animate-spin" />Onboarding…</>
                   : <><FaCheckCircle />Onboard School</>}
@@ -356,7 +414,7 @@ const CredentialsGate = ({ onVerified }: { onVerified: () => void }) => {
         <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-white/5 rounded-full" />
         <div className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-md">
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 shadow-xl">
-            <img src="/img/school-logo.png" alt="Al-Sufiaan School" className="w-20 h-20 object-contain" />
+            <FaSchool className="text-white text-5xl" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-white">Al-Sufiaan School</h1>
@@ -369,7 +427,7 @@ const CredentialsGate = ({ onVerified }: { onVerified: () => void }) => {
       {/* Right form panel */}
       <div className="flex flex-col items-center justify-center w-full lg:w-1/2 px-6 py-12">
         <div className="flex lg:hidden flex-col items-center mb-8 gap-3">
-          <img src="/img/school-logo.png" alt="Al-Sufiaan School" className="w-14 h-14 object-contain" />
+          <FaSchool className="text-blue-600 text-4xl" />
           <span className="text-lg font-bold text-gray-800">Al-Sufiaan School</span>
         </div>
 
@@ -447,7 +505,7 @@ const OnboardSchool = () => {
       <div className="bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/img/school-logo.png" alt="Al-Sufiaan School" className="w-9 h-9 object-contain" />
+            <FaSchool className="text-blue-600 text-2xl" />
             <div>
               <h1 className="text-base font-bold text-gray-900 leading-tight">Al-Sufiaan School</h1>
               <p className="text-xs text-gray-500">School Onboarding Portal</p>

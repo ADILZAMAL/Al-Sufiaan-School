@@ -20,4 +20,14 @@ export const staffPhotoUploadOptions = {
     quality: 'auto'
 };
 
+// Upload options for school logos
+export const schoolLogoUploadOptions = {
+    folder: 'al-sufiaan-school/school-logos',
+    use_filename: false,
+    overwrite: true,
+    resource_type: 'image' as const,
+    quality: 'auto',
+    transformation: [{ width: 400, height: 400, crop: 'limit' as const }]
+};
+
 export default cloudinary;

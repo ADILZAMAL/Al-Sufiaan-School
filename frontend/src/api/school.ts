@@ -17,6 +17,7 @@ export interface School {
   hostelFee?: number | null;
   admissionFee?: number | null;
   dayboardingFee?: number | null;
+  logoUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -121,6 +122,33 @@ export const getSchoolSuperAdmin = async (schoolId: number): Promise<SuperAdminU
   const body = await response.json();
   if (!body.success) throw new Error(body.message || 'Failed to fetch super admin');
   return body.data as SuperAdminUser | null;
+};
+
+export const uploadSchoolLogo = async (token: string, file: File, schoolId?: number): Promise<{ logoUrl: string }> => {
+  const formData = new FormData();
+  formData.append('photo', file);
+  if (schoolId !== undefined) formData.append('schoolId', String(schoolId));
+  const response = await fetch(`${API_BASE_URL}/api/photos/upload-school-logo`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData,
+  });
+  const body = await response.json();
+  if (!body.success) throw new Error(body.message || 'Failed to upload school logo');
+  return body.data as { logoUrl: string };
+};
+
+export const updateSchoolLogo = async (file: File): Promise<{ logoUrl: string }> => {
+  const formData = new FormData();
+  formData.append('photo', file);
+  const response = await fetch(`${API_BASE_URL}/api/photos/upload-school-logo`, {
+    method: 'PUT',
+    credentials: 'include',
+    body: formData,
+  });
+  const body = await response.json();
+  if (!body.success) throw new Error(body.message || 'Failed to update school logo');
+  return body.data as { logoUrl: string };
 };
 
 export const updateSchool = async (id: number, schoolData: Partial<Omit<School, 'id' | 'createdAt' | 'updatedAt'>>): Promise<School> => {

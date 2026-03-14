@@ -3,12 +3,12 @@ import { Request } from 'express';
 
 // File filter to allow only images
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
+
     if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error('Invalid file type. Only JPEG, PNG, and WebP images are allowed.'));
+        cb(new Error('Invalid file type. Only JPEG, PNG, WebP, and SVG images are allowed.'));
     }
 };
 

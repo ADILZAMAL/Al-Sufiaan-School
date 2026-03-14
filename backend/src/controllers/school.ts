@@ -71,9 +71,8 @@ export const updateSchool = async (req: Request, res: Response) => {
       return sendError(res, 'School not found', 404);
     }
 
-    // Update the school with provided data
     await school.update(req.body);
-    
+
     sendSuccess(res, school, 'School updated successfully');
   } catch (error) {
     logger.error('Error updating school', { error });

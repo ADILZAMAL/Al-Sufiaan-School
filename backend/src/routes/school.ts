@@ -1,25 +1,12 @@
-import express, { Router, Request, Response, NextFunction } from 'express';
+import express, { Router, Request, Response } from 'express';
 import { getSchoolById, getAllSchools, onboardSchool, updateSchool, getCurrentSchool, createSuperAdmin, getSchoolSuperAdmin } from '../controllers/school';
 import { check, body } from 'express-validator';
 import { sendError } from '../utils/response';
-import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import verifyToken from '../middleware/auth';
+import jwt from 'jsonwebtoken';
+import verifyToken, { verifyOnboardToken } from '../middleware/auth';
 
 const router: Router = express.Router();
-
-// Validate onboard JWT from Authorization header
-const verifyOnboardToken = (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token) return sendError(res, 'Onboard token required', 401);
-  try {
-    jwt.verify(token, process.env.ONBOARD_JWT_SECRET as string);
-    next();
-  } catch {
-    return sendError(res, 'Invalid or expired onboard token', 403);
-  }
-};
 
 router.get("/", getAllSchools)
 router.get("/current", verifyToken, getCurrentSchool)
@@ -65,8 +52,10 @@ router.put("/:id", [
     body('paymentModes').optional().isArray().withMessage('Payment modes must be an array'),
     body('paymentModes').optional().notEmpty().withMessage('Payment modes cannot be empty'),
     body('paymentModes.*').optional().isString().withMessage('Each payment mode must be a string'),
-    body('hostelFee').optional().isFloat({ gt: 0 }).withMessage('Hostel fee must be a positive number'),
-    body('admissionFee').optional().isFloat({ gt: 0 }).withMessage('Admission fee must be a positive number')
+    body('hostelFee').optional({ nullable: true }).isFloat({ gt: 0 }).withMessage('Hostel fee must be a positive number'),
+    body('admissionFee').optional({ nullable: true }).isFloat({ gt: 0 }).withMessage('Admission fee must be a positive number'),
+    body('dayboardingFee').optional({ nullable: true }).isFloat({ gt: 0 }).withMessage('Dayboarding fee must be a positive number'),
+    body('logoUrl').optional({ nullable: true }).isURL().withMessage('Logo URL must be a valid URL'),
 ], updateSchool);
 
 router.post("/create-super-admin", verifyOnboardToken, [
@@ -87,7 +76,8 @@ router.post("/onboard", verifyOnboardToken, [
     check("mobile", "Mobile is required").isString(),
     check("udiceCode", "Udice Code is required").isString(),
     check("email", "Email is required").isEmail(),
-    check("sid", "SId with 3 or more character is required").isLength({min: 3})
+    check("sid", "SId with 3 or more character is required").isLength({min: 3}),
+    body('logoUrl').optional({ nullable: true }).isURL().withMessage('Logo URL must be a valid URL'),
 ], onboardSchool);
 
 export default router;

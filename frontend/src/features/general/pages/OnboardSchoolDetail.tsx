@@ -6,10 +6,32 @@ import {
   FaUser, FaLock, FaSpinner, FaEye, FaEyeSlash,
   FaSchool, FaEnvelope, FaPhone, FaMapMarkerAlt,
   FaArrowLeft, FaCheckCircle, FaTimes, FaBuilding,
-  FaIdCard, FaUserShield, FaSignOutAlt,
+  FaIdCard, FaUserShield, FaSignOutAlt, FaEdit, FaImage,
 } from "react-icons/fa";
 import { useAppContext } from "../../../providers/AppContext";
-import { getSchoolById, verifyOnboardCredentials, createSuperAdmin, getSchoolSuperAdmin, School, SuperAdminUser } from "../../../api/school";
+import { getSchoolById, verifyOnboardCredentials, createSuperAdmin, getSchoolSuperAdmin, updateSchool, uploadSchoolLogo, School, SuperAdminUser } from "../../../api/school";
+
+interface CredentialsFormData {
+  username: string;
+  password: string;
+}
+
+interface EditSchoolFormData {
+  name: string;
+  email: string;
+  mobile: string;
+  sid: string;
+  udiceCode: string;
+  street: string;
+  city: string;
+  district: string;
+  state: string;
+  pincode: string;
+  active: boolean;
+  admissionFee?: number;
+  hostelFee?: number;
+  dayboardingFee?: number;
+}
 
 interface SuperAdminFormData {
   firstName: string;
@@ -277,15 +299,237 @@ const SuperAdminCard = ({ admin }: { admin: SuperAdminUser }) => (
   </div>
 );
 
+// ── Edit School Modal ─────────────────────────────────────────────
+const EditSchoolModal = ({
+  school,
+  onClose,
+  onSuccess,
+}: {
+  school: School;
+  onClose: () => void;
+  onSuccess: (updated: School) => void;
+}) => {
+  const { showToast } = useAppContext();
+  const token = getOnboardCookie();
+
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(school.logoUrl ?? null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [uploadedLogoUrl, setUploadedLogoUrl] = useState<string | null>(school.logoUrl ?? null);
+
+  const { register, formState: { errors }, handleSubmit } = useForm<EditSchoolFormData>({
+    defaultValues: {
+      name: school.name,
+      email: school.email,
+      mobile: school.mobile,
+      sid: school.sid,
+      udiceCode: school.udiceCode,
+      street: school.street,
+      city: school.city,
+      district: school.district,
+      state: school.state,
+      pincode: school.pincode,
+      active: school.active,
+      admissionFee: school.admissionFee ?? undefined,
+      hostelFee: school.hostelFee ?? undefined,
+      dayboardingFee: school.dayboardingFee ?? undefined,
+    },
+  });
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+    setLogoUploading(true);
+    try {
+      const result = await uploadSchoolLogo(token!, file, school.id);
+      setUploadedLogoUrl(result.logoUrl);
+    } catch (err: any) {
+      showToast({ message: err.message || 'Failed to upload logo', type: 'ERROR' });
+      setLogoFile(null);
+      setLogoPreview(school.logoUrl ?? null);
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const updateMutation = useMutation(
+    (data: EditSchoolFormData) =>
+      updateSchool(school.id, {
+        ...data,
+        admissionFee: isNaN(data.admissionFee as number) ? null : data.admissionFee,
+        hostelFee: isNaN(data.hostelFee as number) ? null : data.hostelFee,
+        dayboardingFee: isNaN(data.dayboardingFee as number) ? null : data.dayboardingFee,
+        logoUrl: uploadedLogoUrl ?? undefined,
+      }),
+    {
+      onSuccess: (updated) => {
+        showToast({ message: 'School updated successfully!', type: 'SUCCESS' });
+        onSuccess(updated);
+      },
+      onError: (err: Error) => showToast({ message: err.message, type: 'ERROR' }),
+    }
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Edit School</h2>
+            <p className="text-xs text-gray-500 mt-0.5">{school.name}</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <FaTimes />
+          </button>
+        </div>
+
+        <div className="px-6 py-5">
+          <form className="space-y-5" onSubmit={handleSubmit((d) => updateMutation.mutate(d))}>
+            {/* School Info */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <FaSchool className="text-blue-500" /> School Info
+              </p>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-600">School Name <span className="text-red-500">*</span></label>
+                <input type="text" className={inputCls(!!errors.name)}
+                  {...register("name", { required: "School name is required" })} />
+                {errors.name && <p className="text-red-500 text-xs">{errors.name.message}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-600">SID <span className="text-red-500">*</span></label>
+                  <input type="text" className={inputCls(!!errors.sid)}
+                    {...register("sid", { required: "SID is required", minLength: { value: 3, message: "Min 3 chars" } })} />
+                  {errors.sid && <p className="text-red-500 text-xs">{errors.sid.message}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-600">UDICE Code <span className="text-red-500">*</span></label>
+                  <input type="text" className={inputCls(!!errors.udiceCode)}
+                    {...register("udiceCode", { required: "UDICE code is required" })} />
+                  {errors.udiceCode && <p className="text-red-500 text-xs">{errors.udiceCode.message}</p>}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-medium text-gray-600">Active</label>
+                <input type="checkbox" className="w-4 h-4 accent-blue-600" {...register("active")} />
+              </div>
+            </div>
+
+            {/* Logo */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <FaImage className="text-blue-500" /> Logo
+              </p>
+              <label className="flex items-center gap-4 cursor-pointer">
+                <div className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 bg-gray-50">
+                  {logoPreview
+                    ? <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+                    : logoUploading
+                      ? <FaSpinner className="animate-spin text-gray-400" />
+                      : <FaImage className="text-gray-300 text-xl" />}
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-gray-600">
+                    {logoUploading ? 'Uploading…' : logoFile ? logoFile.name : 'Click to change logo'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">PNG, JPG, WebP, SVG · Max 5MB</p>
+                  {uploadedLogoUrl && uploadedLogoUrl !== school.logoUrl && (
+                    <p className="text-xs text-green-600 mt-0.5 flex items-center gap-1"><FaCheckCircle /> Uploaded</p>
+                  )}
+                </div>
+                <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml" className="hidden"
+                  onChange={handleLogoChange} disabled={logoUploading} />
+              </label>
+            </div>
+
+            {/* Contact */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <FaEnvelope className="text-blue-500" /> Contact
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-600">Email <span className="text-red-500">*</span></label>
+                  <input type="email" className={inputCls(!!errors.email)}
+                    {...register("email", { required: "Email is required" })} />
+                  {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-600">Mobile <span className="text-red-500">*</span></label>
+                  <input type="tel" className={inputCls(!!errors.mobile)}
+                    {...register("mobile", { required: "Mobile is required" })} />
+                  {errors.mobile && <p className="text-red-500 text-xs">{errors.mobile.message}</p>}
+                </div>
+              </div>
+            </div>
+
+            {/* Address */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <FaMapMarkerAlt className="text-blue-500" /> Address
+              </p>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-600">Street <span className="text-red-500">*</span></label>
+                <input type="text" className={inputCls(!!errors.street)}
+                  {...register("street", { required: "Street is required" })} />
+                {errors.street && <p className="text-red-500 text-xs">{errors.street.message}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {(["city", "district", "state", "pincode"] as const).map((field) => (
+                  <div key={field} className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-600 capitalize">{field} <span className="text-red-500">*</span></label>
+                    <input type="text" className={inputCls(!!errors[field])}
+                      {...register(field, { required: `${field} is required` })} />
+                    {errors[field] && <p className="text-red-500 text-xs">{errors[field]?.message}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Fees */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Fees (optional)</p>
+              <div className="grid grid-cols-3 gap-3">
+                {([
+                  { name: "admissionFee", label: "Admission" },
+                  { name: "hostelFee", label: "Hostel" },
+                  { name: "dayboardingFee", label: "Dayboarding" },
+                ] as const).map(({ name, label }) => (
+                  <div key={name} className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-600">{label} (₹)</label>
+                    <input type="number" min="0" step="0.01" placeholder="0.00" className={inputCls()}
+                      {...register(name, { valueAsNumber: true })} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button type="submit" disabled={updateMutation.isLoading || logoUploading}
+              className={`w-full py-2.5 px-4 text-white text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors ${updateMutation.isLoading || logoUploading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}>
+              {updateMutation.isLoading
+                ? <><FaSpinner className="animate-spin" />Saving…</>
+                : <><FaCheckCircle />Save Changes</>}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Main Detail Page ──────────────────────────────────────────────
 const OnboardSchoolDetail = () => {
   const { schoolId } = useParams<{ schoolId: string }>();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const [verified, setVerified] = useState(() => !!getOnboardCookie());
 
-  const { data: school, isLoading, isError } = useQuery<School>(
+  const { data: school, isLoading, isError, refetch: refetchSchool } = useQuery<School>(
     ["school", schoolId],
     () => getSchoolById(Number(schoolId)),
     { enabled: !!schoolId && verified, retry: 1 }
@@ -316,7 +560,11 @@ const OnboardSchoolDetail = () => {
               <FaArrowLeft className="text-sm" />
             </button>
             <div className="flex items-center gap-3">
-              <img src="/img/school-logo.png" alt="Al-Sufiaan School" className="w-8 h-8 object-contain" />
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 ${school?.logoUrl ? '' : 'bg-blue-100'}`}>
+                {school?.logoUrl
+                  ? <img src={school.logoUrl} alt={school.name} className="w-full h-full object-contain" />
+                  : <FaSchool className="text-blue-600 text-sm" />}
+              </div>
               <div>
                 <h1 className="text-base font-bold text-gray-900 leading-tight">
                   {isLoading ? "Loading…" : school?.name ?? "School Detail"}
@@ -326,6 +574,15 @@ const OnboardSchoolDetail = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {school && (
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg transition-colors"
+              >
+                <FaEdit className="text-xs" />
+                Edit
+              </button>
+            )}
             {school && !hasSuperAdmin && (
               <button
                 onClick={() => setShowModal(true)}
@@ -369,8 +626,10 @@ const OnboardSchoolDetail = () => {
             {/* School identity */}
             <div className="lg:col-span-1 space-y-4">
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-4">
-                  <FaSchool className="text-blue-600 text-2xl" />
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 overflow-hidden ${school.logoUrl ? '' : 'bg-blue-100'}`}>
+                  {school.logoUrl
+                    ? <img src={school.logoUrl} alt={school.name} className="w-full h-full object-contain" />
+                    : <FaSchool className="text-blue-600 text-2xl" />}
                 </div>
                 <h2 className="font-bold text-gray-900 text-lg leading-tight">{school.name}</h2>
                 <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
@@ -472,6 +731,14 @@ const OnboardSchoolDetail = () => {
           school={school}
           onClose={() => setShowModal(false)}
           onSuccess={() => { setShowModal(false); refetchAdmin(); }}
+        />
+      )}
+
+      {showEditModal && school && (
+        <EditSchoolModal
+          school={school}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={() => { setShowEditModal(false); refetchSchool(); }}
         />
       )}
     </div>
