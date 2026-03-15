@@ -161,6 +161,40 @@ export interface PhotoUploadResponse {
   };
 }
 
+export interface AcademicSession {
+  id: number;
+  name: string;
+  isActive: boolean;
+}
+
+export interface AcademicSubject {
+  id: number;
+  name: string;
+}
+
+export interface AcademicChapter {
+  id: number;
+  name: string;
+  orderNumber: number;
+  isTaught: boolean;
+  taughtOn: string | null;
+}
+
+export interface AcademicExam {
+  id: number;
+  name: string;
+  totalMarks: number;
+  passingMarks: number;
+  examDate: string | null;
+}
+
+export interface ExamMark {
+  id: number;
+  studentId: number;
+  marksObtained: number | null;
+  isAbsent: boolean;
+}
+
 export interface Holiday {
   id: number;
   name: string;

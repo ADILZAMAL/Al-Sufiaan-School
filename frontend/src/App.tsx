@@ -36,6 +36,16 @@ import Holidays from "./features/attendance/pages/Holidays"
 import AttendanceDashboard from "./features/attendance/pages/AttendanceDashboard"
 import SessionManagement from "./features/sessions/pages/SessionManagement"
 import StudentPromotion from "./features/sessions/pages/StudentPromotion"
+import SubjectsPage from "./features/academics/pages/SubjectsPage"
+import ChaptersPage from "./features/academics/pages/ChaptersPage"
+import ExamsPage from "./features/academics/pages/ExamsPage"
+import AssignmentsPage from "./features/academics/pages/AssignmentsPage"
+import MarksViewerPage from "./features/academics/pages/MarksViewerPage"
+import PendingMarksPage from "./features/academics/pages/PendingMarksPage"
+import StudentReportPage from "./features/academics/pages/StudentReportPage"
+import SyllabusProgressPage from "./features/academics/pages/SyllabusProgressPage"
+import OnboardSchool from "./features/general/pages/OnboardSchool"
+import OnboardSchoolDetail from "./features/general/pages/OnboardSchoolDetail"
 
 
 const router = createBrowserRouter([
@@ -66,6 +76,14 @@ const router = createBrowserRouter([
   {
     path:"/sign-in",
     element: <SignIn/>
+  },
+  {
+    path: "/onboard",
+    element: <OnboardSchool />
+  },
+  {
+    path: "/onboard/:schoolId",
+    element: <OnboardSchoolDetail />
   },
   {
     path: "/dashboard",
@@ -119,19 +137,13 @@ const router = createBrowserRouter([
       },
       {
         path: "staff",
-        element: <StaffManagement />
-      },
-      {
-        path: "staff/add",
-        element: <AddStaff />
-      },
-      {
-        path: "staff/view/:id",
-        element: <ViewStaffDetails />
-      },
-      {
-        path: "staff/edit/:id",
-        element: <EditStaffDetails />
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']} />,
+        children: [
+          { index: true, element: <StaffManagement /> },
+          { path: "add", element: <AddStaff /> },
+          { path: "view/:id", element: <ViewStaffDetails /> },
+          { path: "edit/:id", element: <EditStaffDetails /> },
+        ]
       },
       {
         path: "fee",
@@ -187,6 +199,20 @@ const router = createBrowserRouter([
       {
         path: "attendance",
         element: <AttendanceDashboard />
+      },
+      {
+        path: "academics",
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']} />,
+        children: [
+          { path: "subjects", element: <SubjectsPage /> },
+          { path: "chapters", element: <ChaptersPage /> },
+          { path: "exams", element: <ExamsPage /> },
+          { path: "assignments", element: <AssignmentsPage /> },
+          { path: "marks-viewer", element: <MarksViewerPage /> },
+          { path: "pending-marks", element: <PendingMarksPage /> },
+          { path: "student-report/:id", element: <StudentReportPage /> },
+          { path: "syllabus-progress", element: <SyllabusProgressPage /> },
+        ]
       },
       {
         path: "sessions",

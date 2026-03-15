@@ -160,6 +160,13 @@ const ViewStudentProfile: React.FC = () => {
             </div>
             <div className="flex items-center space-x-3">
               <button
+                onClick={() => navigate(`/dashboard/academics/student-report/${id}`)}
+                className="flex items-center space-x-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+              >
+                <FiBookOpen className="h-4 w-4" />
+                <span>Academic Report</span>
+              </button>
+              <button
                 onClick={() => setIsAdmissionFormOpen(true)}
                 className="flex items-center space-x-2 px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
               >

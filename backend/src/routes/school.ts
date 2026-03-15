@@ -1,11 +1,41 @@
 import express, { Router, Request, Response } from 'express';
-import { getSchoolById, getAllSchools, onboardSchool, updateSchool, getCurrentSchool } from '../controllers/school';
-import { check, body } from 'express-validator'
-const router: Router = express.Router()
+import { getSchoolById, getAllSchools, onboardSchool, updateSchool, getCurrentSchool, createSuperAdmin, getSchoolSuperAdmin } from '../controllers/school';
+import { check, body } from 'express-validator';
+import { sendError } from '../utils/response';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import verifyToken, { verifyOnboardToken } from '../middleware/auth';
+
+const router: Router = express.Router();
 
 router.get("/", getAllSchools)
-router.get("/current", getCurrentSchool)
-router.get("/:id",getSchoolById)
+router.get("/current", verifyToken, getCurrentSchool)
+router.get("/:id", getSchoolById)
+router.get("/:id/super-admin", getSchoolSuperAdmin)
+
+router.post("/verify-onboard", (req: Request, res: Response) => {
+  const { username, password } = req.body;
+  const expectedUser = process.env.ONBOARD_USERNAME ?? '';
+  const expectedPass = process.env.ONBOARD_PASSWORD ?? '';
+
+  const usernameMatch =
+    username?.length === expectedUser.length &&
+    crypto.timingSafeEqual(Buffer.from(username), Buffer.from(expectedUser));
+  const passwordMatch =
+    password?.length === expectedPass.length &&
+    crypto.timingSafeEqual(Buffer.from(password), Buffer.from(expectedPass));
+
+  if (!usernameMatch || !passwordMatch) {
+    return sendError(res, 'Invalid credentials', 403);
+  }
+
+  const token = jwt.sign(
+    { onboard: true },
+    process.env.ONBOARD_JWT_SECRET as string,
+    { expiresIn: '1h' }
+  );
+  return res.json({ success: true, data: { token }, message: 'Credentials verified' });
+});
 
 router.put("/:id", [
     check("name", "School Name is required").optional().isString(),
@@ -22,11 +52,21 @@ router.put("/:id", [
     body('paymentModes').optional().isArray().withMessage('Payment modes must be an array'),
     body('paymentModes').optional().notEmpty().withMessage('Payment modes cannot be empty'),
     body('paymentModes.*').optional().isString().withMessage('Each payment mode must be a string'),
-    body('hostelFee').optional().isFloat({ gt: 0 }).withMessage('Hostel fee must be a positive number'),
-    body('admissionFee').optional().isFloat({ gt: 0 }).withMessage('Admission fee must be a positive number')
+    body('hostelFee').optional({ nullable: true }).isFloat({ gt: 0 }).withMessage('Hostel fee must be a positive number'),
+    body('admissionFee').optional({ nullable: true }).isFloat({ gt: 0 }).withMessage('Admission fee must be a positive number'),
+    body('dayboardingFee').optional({ nullable: true }).isFloat({ gt: 0 }).withMessage('Dayboarding fee must be a positive number'),
+    body('logoUrl').optional({ nullable: true }).isURL().withMessage('Logo URL must be a valid URL'),
 ], updateSchool);
 
-router.post("/onboard", [
+router.post("/create-super-admin", verifyOnboardToken, [
+    check("firstName", "First name is required").isString(),
+    check("lastName", "Last name is required").isString(),
+    check("mobileNumber", "Valid 10-digit mobile number is required").matches(/^\d{10}$/),
+    check("adminPassword", "Password must be at least 6 characters").isLength({ min: 6 }),
+    check("schoolId", "School ID is required").isInt(),
+], createSuperAdmin);
+
+router.post("/onboard", verifyOnboardToken, [
     check("name", "School Name is required").isString(),
     check("street", "Street is required").isString(),
     check("city", "City is required").isString(),
@@ -36,7 +76,8 @@ router.post("/onboard", [
     check("mobile", "Mobile is required").isString(),
     check("udiceCode", "Udice Code is required").isString(),
     check("email", "Email is required").isEmail(),
-    check("sid", "SId with 3 or more character is required").isLength({min: 3})
+    check("sid", "SId with 3 or more character is required").isLength({min: 3}),
+    body('logoUrl').optional({ nullable: true }).isURL().withMessage('Logo URL must be a valid URL'),
 ], onboardSchool);
 
-export default router
+export default router;

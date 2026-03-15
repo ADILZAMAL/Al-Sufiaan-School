@@ -4,6 +4,7 @@ import * as apiClient from "../../../api";
 import { ExpenseType } from "../../../api";
 import { FaPlus } from "react-icons/fa";
 import { FiTrendingDown, FiList, FiArrowUp, FiTag } from "react-icons/fi";
+import { useAppContext } from "../../../providers/AppContext";
 import {
   ExpenseByCategoryPieChart,
   TotalExpensesByCategoryBarChart,
@@ -47,6 +48,8 @@ const formatCurrency = (amount: number) =>
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const ExpenseDashboard: React.FC = () => {
+  const { userRole } = useAppContext();
+  const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -193,6 +196,7 @@ const ExpenseDashboard: React.FC = () => {
           expenses={sortedExpenses}
           isLoading={isLoading}
           error={error}
+          isAdmin={isAdmin}
           onEdit={(expense) => {
             setSelectedExpense(expense);
             setIsEditModalOpen(true);

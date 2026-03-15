@@ -25,7 +25,8 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const body = await response.json();
   
   if (!body.success) {
-    const validationMsg = body.error && Object.values(body.error).find((v: unknown) => typeof v === 'object' && v !== null && 'msg' in v)?.msg as string | undefined;
+    const foundError = body.error && Object.values(body.error).find((v: unknown) => typeof v === 'object' && v !== null && 'msg' in v);
+    const validationMsg = foundError ? (foundError as { msg: string }).msg : undefined;
     throw new Error(validationMsg || body.message || 'API request failed');
   }
   

@@ -79,6 +79,19 @@ const HomeScreen: React.FC = () => {
 
           <TouchableOpacity
             style={styles.card}
+            onPress={() => navigation.navigate('MarksClassSelection')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.cardIcon}>✏️</Text>
+            <View style={styles.cardText}>
+              <Text style={styles.cardTitle}>Enter Marks</Text>
+              <Text style={styles.cardSubtitle}>Record exam marks for your students</Text>
+            </View>
+            <Text style={styles.cardArrow}>→</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.card}
             onPress={() => navigation.navigate('ChangePassword')}
             activeOpacity={0.85}
           >
