@@ -20,10 +20,10 @@ router.post("/verify-onboard", (req: Request, res: Response) => {
 
   const usernameMatch =
     username?.length === expectedUser.length &&
-    crypto.timingSafeEqual(Buffer.from(username), Buffer.from(expectedUser));
+    crypto.timingSafeEqual(Buffer.from(username) as unknown as Uint8Array, Buffer.from(expectedUser) as unknown as Uint8Array);
   const passwordMatch =
     password?.length === expectedPass.length &&
-    crypto.timingSafeEqual(Buffer.from(password), Buffer.from(expectedPass));
+    crypto.timingSafeEqual(Buffer.from(password) as unknown as Uint8Array, Buffer.from(expectedPass) as unknown as Uint8Array);
 
   if (!usernameMatch || !passwordMatch) {
     return sendError(res, 'Invalid credentials', 403);
