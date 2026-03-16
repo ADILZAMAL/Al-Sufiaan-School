@@ -29,6 +29,8 @@ import StudentFeePayment from './StudentFeePayment';
 import Attendance from './Attendance';
 import Holiday from './Holiday';
 import Designation from './Designation';
+import FeeHead from './FeeHead';
+import FeeHeadClassPricing from './FeeHeadClassPricing';
 
 // School associations
 School.hasMany(User, { foreignKey: 'schoolId', as: 'users' });
@@ -48,6 +50,11 @@ School.hasMany(Student, { foreignKey: 'schoolId', as: 'students' });
 School.hasMany(Attendance, { foreignKey: 'schoolId', as: 'attendances' });
 School.hasMany(Holiday, { foreignKey: 'schoolId', as: 'holidays' });
 School.hasMany(AcademicSession, { foreignKey: 'schoolId', as: 'academicSessions' });
+School.hasMany(FeeHead, { foreignKey: 'schoolId', as: 'feeHeads' });
+FeeHead.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+FeeHead.hasMany(FeeHeadClassPricing, { foreignKey: 'feeHeadId', as: 'classPricing' });
+FeeHeadClassPricing.belongsTo(FeeHead, { foreignKey: 'feeHeadId', as: 'feeHead' });
+FeeHeadClassPricing.belongsTo(Class, { foreignKey: 'classId', as: 'class' });
 
 // User associations
 User.belongsTo(School, { foreignKey: 'schoolId', as: 'School' });
@@ -227,4 +234,4 @@ StudentEnrollment.belongsTo(Section, { foreignKey: 'sectionId', as: 'section' })
 StudentEnrollment.belongsTo(User, { foreignKey: 'promotedBy', as: 'promoter' });
 Student.hasMany(StudentEnrollment, { foreignKey: 'studentId', as: 'enrollments' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, Staff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, ClassFeePricing, TransportationAreaPricing, Student, AcademicSession, StudentEnrollment, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday, Designation, Subject, TeacherSubjectAssignment, Chapter, Exam, StudentExamMark };
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, Staff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, ClassFeePricing, TransportationAreaPricing, Student, AcademicSession, StudentEnrollment, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday, Designation, Subject, TeacherSubjectAssignment, Chapter, Exam, StudentExamMark, FeeHead, FeeHeadClassPricing };

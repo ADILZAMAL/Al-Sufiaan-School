@@ -141,6 +141,17 @@ export const classesApi = {
     }
     return body.data;
   },
+  getBySession: async (sessionId: number): Promise<any[]> => {
+    const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
+    const response = await fetch(`${API_BASE_URL}/api/classes?sessionId=${sessionId}`, {
+      credentials: "include"
+    });
+    const body = await response.json();
+    if (!body.success) {
+      throw new Error(body.error.message);
+    }
+    return body.data;
+  },
 };
 
 // Utility functions for common operations

@@ -22,6 +22,7 @@ import AddStaff from "./features/staff/pages/AddStaff"
 import ViewStaffDetails from "./features/staff/pages/ViewStaffDetails"
 import EditStaffDetails from "./features/staff/pages/EditStaffDetails"
 import ClassFeePricing from "./features/fees/pages/ClassFeePricing"
+import FeeHeads from "./features/fees/pages/FeeHeads"
 import FeeLayout from "./features/fees/pages/FeeLayout"
 import TransportationAreaPricing from "./features/transportation/pages/TransportationAreaPricing"
 import IncomingPayments from "./features/fees/pages/IncomingPayments"
@@ -160,6 +161,10 @@ const router = createBrowserRouter([
           {
             path: "class-pricing",
             element: <ClassFeePricing />
+          },
+          {
+            path: "fee-heads",
+            element: <FeeHeads />
           },
           {
             path: "transportation-pricing",

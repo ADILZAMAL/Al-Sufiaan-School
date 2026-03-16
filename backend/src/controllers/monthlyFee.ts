@@ -10,6 +10,8 @@ import StudentFeePayment from "../models/StudentFeePayment";
 import User from "../models/User";
 import AcademicSession from "../models/AcademicSession";
 import StudentEnrollment from "../models/StudentEnrollment";
+import FeeHead from "../models/FeeHead";
+import FeeHeadClassPricing from "../models/FeeHeadClassPricing";
 import { Op } from "sequelize";
 import logger from '../utils/logger';
 
@@ -22,6 +24,11 @@ const MONTH_NAMES = [
 interface GenerateFeeRequest {
   month: number;
   calendarYear: number;
+  // New-style fee selection
+  feeHeadIds?: number[];
+  customAmounts?: { [feeHeadId: string]: number };
+  notes?: { [feeHeadId: string]: string };
+  // Legacy flags (backward compat)
   hostel?: boolean;
   newAdmission?: boolean;
   transportationAreaId?: number;
@@ -33,7 +40,7 @@ interface GenerateFeeRequest {
 export const generateMonthlyFee = async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
-    const { month, calendarYear, hostel = false, transportationAreaId, discount = 0, discountReason, newAdmission = false, dayboarding = false }: GenerateFeeRequest = req.body;
+    const { month, calendarYear, feeHeadIds, customAmounts, notes, hostel = false, transportationAreaId, discount = 0, discountReason, newAdmission = false, dayboarding = false }: GenerateFeeRequest = req.body;
     const userId = parseInt(req.userId);
 
     // Validate inputs
@@ -106,11 +113,8 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
     // 3️⃣ Calculate fee items based on student's enrollment class
     const feeItems: StudentMonthlyFeeItemCreationAttributes[] = await calculateFeeItems(
       enrollment.classId,
-      hostel,
-      transportationAreaId,
-      newAdmission,
-      dayboarding,
-      school
+      student.schoolId,
+      { feeHeadIds, customAmounts, notes, transportationAreaId, hostel, newAdmission, dayboarding, school }
     );
 
     if (feeItems.length === 0) {
@@ -146,7 +150,10 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
     // 7️⃣ Create StudentMonthlyFeeItems with bulk insert
     const feeItemsToCreate = feeItems.map(item => ({
       studentMonthlyFeeId: monthlyFee.id,
-      feeType: item.feeType,
+      feeType: item.feeType ?? null,
+      feeHeadId: item.feeHeadId ?? null,
+      feeHeadName: item.feeHeadName ?? null,
+      note: item.note ?? null,
       amount: item.amount,
     }));
 
@@ -158,7 +165,7 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
         {
           model: StudentMonthlyFeeItem,
           as: 'feeItems',
-          attributes: ['id', 'feeType', 'amount']
+          attributes: ['id', 'feeType', 'feeHeadId', 'feeHeadName', 'note', 'amount']
         },
       ],
     });
@@ -170,79 +177,160 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
   }
 };
 
+interface CalculateFeeOptions {
+  feeHeadIds?: number[];
+  customAmounts?: { [feeHeadId: string]: number };
+  notes?: { [feeHeadId: string]: string };
+  transportationAreaId?: number;
+  hostel?: boolean;
+  newAdmission?: boolean;
+  dayboarding?: boolean;
+  school?: School;
+}
+
 async function calculateFeeItems(
   classId: number,
-  hostel: boolean,
-  transportationAreaId?: number,
-  newAdmission?: boolean,
-  dayboarding?: boolean,
-  school?: School
+  schoolId: number,
+  options: CalculateFeeOptions
 ): Promise<StudentMonthlyFeeItemCreationAttributes[]> {
-  const feeItems: StudentMonthlyFeeItemCreationAttributes[] = [];
+  const { feeHeadIds, customAmounts = {}, notes = {}, transportationAreaId, hostel, newAdmission, dayboarding, school } = options;
 
   try {
-    // 1. Tuition Fee (always included)
-    const classFeePricing = await ClassFeePricing.findOne({
-      where: { classId },
+    // Try new FeeHead-based system first
+    const schoolFeeHeads = await FeeHead.findAll({
+      where: { schoolId, isActive: true },
+      order: [['displayOrder', 'ASC']],
     });
 
-    if (classFeePricing && classFeePricing.amount) {
-      feeItems.push({
-        feeType: FeeItemType.TUITION_FEE,
-        amount: parseFloat(classFeePricing.amount.toString())
+    if (schoolFeeHeads.length > 0) {
+      return await calculateFeeItemsFromHeads(classId, schoolFeeHeads, {
+        feeHeadIds,
+        customAmounts,
+        notes,
+        transportationAreaId,
+        hostel,
+        newAdmission,
+        dayboarding,
       });
     }
 
-    // 2. Hostel Fee (if hostel is true)
-    if (hostel) {
-      if (!school || !school.hostelFee || school.hostelFee <= 0) {
-        throw new Error('Please configure hostel fee in School Settings first');
-      }
-      feeItems.push({
-        feeType: FeeItemType.HOSTEL_FEE,
-        amount: parseFloat(school.hostelFee.toString()),
-      });
-    }
-
-    // 3. Transportation Fee (if transportationAreaId is provided)
-    if (transportationAreaId) {
-      const transportPricing = await TransportationAreaPricing.findByPk(transportationAreaId);
-
-      if (transportPricing && transportPricing.price) {
-        feeItems.push({
-          feeType: FeeItemType.TRANSPORT_FEE,
-          amount: parseFloat(transportPricing.price.toString()),
-        });
-      }
-    }
-
-    // 4. New Admission Fee (if newAdmission is true)
-    if (newAdmission) {
-      if (!school || !school.admissionFee || school.admissionFee <= 0) {
-        throw new Error('Please configure admission fee in School Settings first');
-      }
-      feeItems.push({
-        feeType: FeeItemType.ADMISSION_FEE,
-        amount: parseFloat(school.admissionFee.toString()),
-      });
-    }
-
-    // 5. Dayboarding Fee (if dayboarding is true)
-    if (dayboarding) {
-      if (!school || !school.dayboardingFee || school.dayboardingFee <= 0) {
-        throw new Error('Please configure dayboarding fee in School Settings first');
-      }
-      feeItems.push({
-        feeType: FeeItemType.DAYBOARDING_FEE,
-        amount: parseFloat(school.dayboardingFee.toString()),
-      });
-    }
-
-    return feeItems;
+    // Legacy fallback: no FeeHeads configured yet
+    return await calculateFeeItemsLegacy(classId, { hostel, transportationAreaId, newAdmission, dayboarding, school });
   } catch (error) {
     logger.error("Error calculating fee items:", { error });
     throw error;
   }
+}
+
+async function calculateFeeItemsFromHeads(
+  classId: number,
+  feeHeads: FeeHead[],
+  options: CalculateFeeOptions
+): Promise<StudentMonthlyFeeItemCreationAttributes[]> {
+  const { feeHeadIds, customAmounts = {}, notes = {}, transportationAreaId, hostel, newAdmission, dayboarding } = options;
+  const isNewStyle = Array.isArray(feeHeadIds);
+  const feeItems: StudentMonthlyFeeItemCreationAttributes[] = [];
+
+  for (const feeHead of feeHeads) {
+    const shouldInclude =
+      feeHead.applicability === 'AUTO' ||
+      (isNewStyle
+        ? feeHeadIds!.includes(feeHead.id)
+        : isLegacyIncluded(feeHead, { hostel, newAdmission, dayboarding, transportationAreaId }));
+
+    if (!shouldInclude) continue;
+
+    let amount: number;
+
+    switch (feeHead.pricingType) {
+      case 'FLAT': {
+        if (!feeHead.flatAmount) continue;
+        amount = parseFloat(feeHead.flatAmount.toString());
+        break;
+      }
+      case 'PER_CLASS': {
+        const pricing = await FeeHeadClassPricing.findOne({ where: { feeHeadId: feeHead.id, classId } });
+        if (!pricing) continue;
+        amount = parseFloat(pricing.amount.toString());
+        break;
+      }
+      case 'AREA_BASED': {
+        if (!transportationAreaId) continue;
+        const transport = await TransportationAreaPricing.findByPk(transportationAreaId);
+        if (!transport) continue;
+        amount = parseFloat(transport.price.toString());
+        break;
+      }
+      case 'CUSTOM': {
+        const customAmount = customAmounts[feeHead.id.toString()];
+        if (customAmount === undefined) continue;
+        amount = customAmount;
+        break;
+      }
+      default:
+        continue;
+    }
+
+    feeItems.push({
+      feeType: feeHead.legacyType ? (feeHead.legacyType as FeeItemType) : null,
+      feeHeadId: feeHead.id,
+      feeHeadName: feeHead.name,
+      note: notes[feeHead.id.toString()] ?? null,
+      amount,
+    });
+  }
+
+  return feeItems;
+}
+
+function isLegacyIncluded(
+  feeHead: FeeHead,
+  options: { hostel?: boolean; newAdmission?: boolean; dayboarding?: boolean; transportationAreaId?: number }
+): boolean {
+  switch (feeHead.legacyType) {
+    case 'HOSTEL_FEE': return !!options.hostel;
+    case 'TRANSPORT_FEE': return !!options.transportationAreaId;
+    case 'ADMISSION_FEE': return !!options.newAdmission;
+    case 'DAYBOARDING_FEE': return !!options.dayboarding;
+    default: return false;
+  }
+}
+
+async function calculateFeeItemsLegacy(
+  classId: number,
+  options: { hostel?: boolean; transportationAreaId?: number; newAdmission?: boolean; dayboarding?: boolean; school?: School }
+): Promise<StudentMonthlyFeeItemCreationAttributes[]> {
+  const { hostel, transportationAreaId, newAdmission, dayboarding, school } = options;
+  const feeItems: StudentMonthlyFeeItemCreationAttributes[] = [];
+
+  const classFeePricing = await ClassFeePricing.findOne({ where: { classId } });
+  if (classFeePricing && classFeePricing.amount) {
+    feeItems.push({ feeType: FeeItemType.TUITION_FEE, amount: parseFloat(classFeePricing.amount.toString()) });
+  }
+
+  if (hostel) {
+    if (!school || !school.hostelFee || school.hostelFee <= 0) throw new Error('Please configure hostel fee in School Settings first');
+    feeItems.push({ feeType: FeeItemType.HOSTEL_FEE, amount: parseFloat(school.hostelFee.toString()) });
+  }
+
+  if (transportationAreaId) {
+    const transport = await TransportationAreaPricing.findByPk(transportationAreaId);
+    if (transport && transport.price) {
+      feeItems.push({ feeType: FeeItemType.TRANSPORT_FEE, amount: parseFloat(transport.price.toString()) });
+    }
+  }
+
+  if (newAdmission) {
+    if (!school || !school.admissionFee || school.admissionFee <= 0) throw new Error('Please configure admission fee in School Settings first');
+    feeItems.push({ feeType: FeeItemType.ADMISSION_FEE, amount: parseFloat(school.admissionFee.toString()) });
+  }
+
+  if (dayboarding) {
+    if (!school || !school.dayboardingFee || school.dayboardingFee <= 0) throw new Error('Please configure dayboarding fee in School Settings first');
+    feeItems.push({ feeType: FeeItemType.DAYBOARDING_FEE, amount: parseFloat(school.dayboardingFee.toString()) });
+  }
+
+  return feeItems;
 }
 
 // Helper function to generate timeline from admission
@@ -315,7 +403,7 @@ export async function getStudentFeeTimeline(studentId: number) {
       {
         model: StudentMonthlyFeeItem,
         as: 'feeItems',
-        attributes: ['feeType', 'amount'],
+        attributes: ['feeType', 'feeHeadId', 'feeHeadName', 'note', 'amount'],
       },
       {
         model: StudentFeePayment,
@@ -369,6 +457,9 @@ export async function getStudentFeeTimeline(studentId: number) {
     // Extract fee items as array
     const feeItemsArray = fee.feeItems?.map((item: any) => ({
       feeType: item.feeType,
+      feeHeadId: item.feeHeadId,
+      feeHeadName: item.feeHeadName,
+      note: item.note,
       amount: Number(item.amount),
     })) || [];
 
@@ -720,7 +811,7 @@ export async function verifyPaymentController(req: Request, res: Response) {
 export async function regenerateMonthlyFee(req: Request, res: Response) {
   try {
     const { studentId, monthlyFeeId } = req.params;
-    const { month, calendarYear, hostel = false, transportationAreaId, discount = 0, discountReason, newAdmission = false, dayboarding = false }: GenerateFeeRequest = req.body;
+    const { month, calendarYear, feeHeadIds, customAmounts, notes, hostel = false, transportationAreaId, discount = 0, discountReason, newAdmission = false, dayboarding = false }: GenerateFeeRequest = req.body;
     const userId = parseInt(req.userId);
 
     // Validate inputs
@@ -796,11 +887,8 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
     // Recalculate fee items based on enrollment class
     const feeItems: StudentMonthlyFeeItemCreationAttributes[] = await calculateFeeItems(
       regenEnrollment.classId,
-      hostel,
-      transportationAreaId,
-      newAdmission,
-      dayboarding,
-      school
+      student.schoolId,
+      { feeHeadIds, customAmounts, notes, transportationAreaId, hostel, newAdmission, dayboarding, school }
     );
 
     if (feeItems.length === 0) {
@@ -839,7 +927,10 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
     // Create new StudentMonthlyFeeItems
     const feeItemsToCreate = feeItems.map(item => ({
       studentMonthlyFeeId: parseInt(monthlyFeeId),
-      feeType: item.feeType,
+      feeType: item.feeType ?? null,
+      feeHeadId: item.feeHeadId ?? null,
+      feeHeadName: item.feeHeadName ?? null,
+      note: item.note ?? null,
       amount: item.amount,
     }));
 
@@ -851,7 +942,7 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
         {
           model: StudentMonthlyFeeItem,
           as: 'feeItems',
-          attributes: ['id', 'feeType', 'amount']
+          attributes: ['id', 'feeType', 'feeHeadId', 'feeHeadName', 'note', 'amount']
         },
       ],
     });

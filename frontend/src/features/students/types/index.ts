@@ -184,12 +184,16 @@ export interface UpdatePaymentReminderRequest {
 export interface RegenerateMonthlyFeeRequest {
   month: number;
   calendarYear: number;
-  hostel?: boolean;
+  feeHeadIds?: number[];
+  customAmounts?: Record<number, number>;
+  notes?: Record<number, string>;
   transportationAreaId?: number;
-  dayboarding?: boolean;
-  newAdmission?: boolean;
   discount?: number;
   discountReason?: string;
+  // Legacy compat — kept for backward compatibility with old-style generation
+  hostel?: boolean;
+  dayboarding?: boolean;
+  newAdmission?: boolean;
 }
 
 // Enhanced Student Form Data with better type safety

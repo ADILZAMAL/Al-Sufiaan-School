@@ -80,6 +80,12 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				label: 'Students With Dues',
 				path: 'fee/students-with-dues',
 				icon: <HiOutlineUsers />
+			},
+			{
+				key: 'fee-heads',
+				label: 'Fee Heads',
+				path: 'fee/fee-heads',
+				icon: <HiOutlineClipboardList />
 			}
 		]
 	},

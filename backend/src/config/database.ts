@@ -2,7 +2,7 @@ import {Sequelize} from 'sequelize'
 import logger from '../utils/logger';
 import School, {initSchoolModel} from '../models/School';
 import {initUserModel} from '../models/User';
-import Class from '../models/Class'
+import {initClassModel} from '../models/Class';
 import {initSectionModel} from '../models/Section'
 import {initProductModel} from '../models/Product'
 import {initTransactionModel} from '../models/Transaction'
@@ -31,6 +31,8 @@ import {initTeacherSubjectAssignmentModel} from "../models/TeacherSubjectAssignm
 import {initChapterModel} from "../models/Chapter"
 import {initExamModel} from "../models/Exam"
 import {initStudentExamMarkModel} from "../models/StudentExamMark"
+import {initFeeHeadModel} from '../models/FeeHead';
+import {initFeeHeadClassPricingModel} from '../models/FeeHeadClassPricing';
 import "dotenv/config";
 import { getRequestId } from '../utils/context';
 
@@ -51,12 +53,10 @@ const sequelize = new Sequelize(process.env.DB_NAME || '', process.env.DB_USER |
         },
 });
 
-// Class.init(sequelize)
-// console.log(Class)
-
 initSchoolModel(sequelize)
 initUserModel(sequelize)
-// initClassModel(sequelize)
+initAcademicSessionModel(sequelize)
+initClassModel(sequelize)
 initSectionModel(sequelize)
 initProductModel(sequelize)
 initTransactionModel(sequelize)
@@ -72,7 +72,6 @@ initVendorPaymentModel(sequelize);
 initClassFeePricingModel(sequelize);
 initTransportationAreaPricingModel(sequelize);
 initStudentModel(sequelize);
-initAcademicSessionModel(sequelize);
 initStudentEnrollmentModel(sequelize);
 initStudentMonthlyFeeModel(sequelize);
 initStudentMonthlyFeeItemModel(sequelize);
@@ -85,6 +84,8 @@ initTeacherSubjectAssignmentModel(sequelize);
 initChapterModel(sequelize);
 initExamModel(sequelize);
 initStudentExamMarkModel(sequelize);
+initFeeHeadModel(sequelize);
+initFeeHeadClassPricingModel(sequelize);
 //Sync the Model with the database
 sequelize.sync()
     .then(() => {

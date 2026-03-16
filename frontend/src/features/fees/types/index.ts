@@ -26,6 +26,76 @@ export const PRICING_TYPE_COLORS = {
   'Area-based': 'bg-orange-100 text-orange-800'
 } as const;
 
+// Fee Head Types
+export interface FeeHead {
+  id: number;
+  schoolId: number;
+  name: string;
+  description: string | null;
+  frequency: 'MONTHLY' | 'ONE_TIME';
+  pricingType: 'FLAT' | 'PER_CLASS' | 'AREA_BASED' | 'CUSTOM';
+  applicability: 'AUTO' | 'OPT_IN';
+  flatAmount: number | null;
+  isActive: boolean;
+  displayOrder: number;
+  legacyType: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FeeHeadClassPricingItem {
+  id: number;
+  feeHeadId: number;
+  classId: number;
+  schoolId: number;
+  amount: number;
+  isActive: boolean;
+  class?: { id: number; name: string };
+}
+
+export interface CreateFeeHeadRequest {
+  name: string;
+  description?: string;
+  frequency: 'MONTHLY' | 'ONE_TIME';
+  pricingType: 'FLAT' | 'PER_CLASS' | 'AREA_BASED' | 'CUSTOM';
+  applicability: 'AUTO' | 'OPT_IN';
+  flatAmount?: number;
+  displayOrder?: number;
+}
+
+export interface UpdateFeeHeadRequest {
+  name?: string;
+  description?: string;
+  frequency?: 'MONTHLY' | 'ONE_TIME';
+  pricingType?: 'FLAT' | 'PER_CLASS' | 'AREA_BASED' | 'CUSTOM';
+  applicability?: 'AUTO' | 'OPT_IN';
+  flatAmount?: number;
+  isActive?: boolean;
+  displayOrder?: number;
+}
+
+export interface BulkUpsertClassPricingRequest {
+  pricingData: Array<{ classId: number; amount: number }>;
+}
+
+export interface FeeHeadResponse {
+  success: boolean;
+  data: FeeHead | FeeHead[];
+  message: string;
+}
+
+export interface FeeHeadClassPricingResponse {
+  success: boolean;
+  data: FeeHeadClassPricingItem[];
+  message: string;
+}
+
+export interface FeeHeadBulkUpsertResponse {
+  success: boolean;
+  data: Array<{ action: 'created' | 'updated'; classId: number }>;
+  message: string;
+}
+
 // Class Fee Pricing Types
 export interface ClassFeePricing {
   id: number;

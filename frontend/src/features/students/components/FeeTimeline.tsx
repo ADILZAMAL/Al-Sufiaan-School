@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { FiClock, FiCheckCircle, FiAlertCircle, FiMinusCircle, FiPlus, FiChevronDown, FiChevronRight, FiFileText, FiRefreshCw, FiXCircle } from 'react-icons/fi';
 import { generateMonthlyFee, collectFeePayment, regenerateMonthlyFee } from '../api';
 import GenerateFeeModal from './GenerateFeeModal';
@@ -9,7 +9,12 @@ import { School } from '../../../api/school';
 interface FeeItem {
   feeType: string;
   amount: number;
+  feeHeadId?: number | null;
+  feeHeadName?: string | null;
+  note?: string | null;
 }
+
+type FeeHeadCol = { key: string; label: string; feeHeadId?: number; feeType?: string };
 
 interface PaymentDetail {
   id: number;
@@ -79,6 +84,24 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
   const [collectingPayment, setCollectingPayment] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
+  const feeHeadCols = useMemo<FeeHeadCol[]>(() => {
+    const map = new Map<string, FeeHeadCol>();
+    for (const entry of timeline) {
+      for (const item of (entry.feeItems || [])) {
+        const key = item.feeHeadId ? `fh_${item.feeHeadId}` : `ft_${item.feeType}`;
+        if (!map.has(key)) {
+          map.set(key, {
+            key,
+            label: item.feeHeadName || item.feeType || 'Fee',
+            feeHeadId: item.feeHeadId ?? undefined,
+            feeType: item.feeType ?? undefined,
+          });
+        }
+      }
+    }
+    return Array.from(map.values());
+  }, [timeline]);
+
   const toggleRow = (key: string) => {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(key)) {
@@ -123,9 +146,11 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
     }
   };
 
-  const getFeeItemAmount = (feeItems: FeeItem[] | null | undefined, feeType: string): number => {
+  const getFeeItemAmount = (feeItems: FeeItem[] | null | undefined, col: FeeHeadCol): number => {
     if (!feeItems) return 0;
-    const item = feeItems.find(item => item.feeType === feeType);
+    const item = col.feeHeadId
+      ? feeItems.find((i) => i.feeHeadId === col.feeHeadId)
+      : feeItems.find((i) => i.feeType === col.feeType);
     return item ? item.amount : 0;
   };
 
@@ -218,21 +243,11 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Month/Year
               </th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                Tuition
-              </th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                Hostel
-              </th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                Transport
-              </th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                Admn
-              </th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                Dayboard
-              </th>
+              {feeHeadCols.map((col) => (
+                <th key={col.key} className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  {col.label}
+                </th>
+              ))}
               <th className="px-4 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Total
               </th>
@@ -300,7 +315,7 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                     
                     {entry.status === 'not_generated' ? (
                       <>
-                        <td colSpan={10} className="px-4 py-3 text-center">
+                        <td colSpan={feeHeadCols.length + 5} className="px-4 py-3 text-center">
                           {studentActive ? (
                             <button
                               onClick={(e) => {
@@ -328,31 +343,13 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                       </>
                     ) : (
                       <>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">
-                          <span className="text-sm text-gray-900">
-                            {formatCurrency(getFeeItemAmount(entry.feeItems, 'TUITION_FEE'))}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">
-                          <span className="text-sm text-gray-900">
-                            {formatCurrency(getFeeItemAmount(entry.feeItems, 'HOSTEL_FEE'))}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">
-                          <span className="text-sm text-gray-900">
-                            {formatCurrency(getFeeItemAmount(entry.feeItems, 'TRANSPORT_FEE'))}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">
-                          <span className="text-sm text-gray-900">
-                            {formatCurrency(getFeeItemAmount(entry.feeItems, 'ADMISSION_FEE'))}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">
-                          <span className="text-sm text-gray-900">
-                            {formatCurrency(getFeeItemAmount(entry.feeItems, 'DAYBOARDING_FEE'))}
-                          </span>
-                        </td>
+                        {feeHeadCols.map((col) => (
+                          <td key={col.key} className="px-4 py-3 text-right whitespace-nowrap">
+                            <span className="text-sm text-gray-900">
+                              {formatCurrency(getFeeItemAmount(entry.feeItems, col))}
+                            </span>
+                          </td>
+                        ))}
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           <span className="text-sm font-semibold text-gray-900">
                             {formatCurrency(entry.totalConfiguredAmount)}
@@ -425,7 +422,7 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
                   {/* Payment History Row (Expandable) */}
                   {isExpanded && hasPayments && (
                     <tr className="bg-gray-50">
-                      <td colSpan={12} className="px-4 py-3">
+                      <td colSpan={feeHeadCols.length + 8} className="px-4 py-3">
                         <div className="ml-6">
                           <h4 className="text-sm font-semibold text-gray-700 mb-2">Payment History</h4>
                           <div className="overflow-x-auto">
@@ -501,7 +498,6 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
           calendarYear={selectedEntry.calendarYear}
           label={selectedEntry.label}
           loading={generatingFee}
-          studentDayboarding={student?.dayboarding}
         />
       )}
 

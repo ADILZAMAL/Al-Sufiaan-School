@@ -5,6 +5,9 @@ import { School } from '../../../api/school';
 interface FeeItem {
   feeType: string;
   amount: number;
+  feeHeadId?: number | null;
+  feeHeadName?: string | null;
+  note?: string | null;
 }
 
 interface PaymentDetail {
@@ -532,7 +535,12 @@ const Receipt: React.FC<ReceiptProps> = ({
               {feeItems && feeItems.length > 0 ? (
                 feeItems.map((item, index) => (
                   <tr key={index} className="border-t border-gray-200">
-                    <td className="px-3 py-2 text-gray-900">{getFeeItemLabel(item.feeType)}</td>
+                    <td className="px-3 py-2 text-gray-900">
+                      {item.feeHeadName || getFeeItemLabel(item.feeType)}
+                      {item.note && (
+                        <div className="text-xs text-gray-500 mt-0.5 italic">{item.note}</div>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-right text-gray-900">
                       {formatCurrency(item.amount)}
                     </td>

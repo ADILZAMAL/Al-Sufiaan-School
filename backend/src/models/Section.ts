@@ -1,5 +1,4 @@
 import { Model, Sequelize, DataTypes } from 'sequelize';
-import sequelize from '../config/database';
 import Class from './Class';
 import School from './School';
 

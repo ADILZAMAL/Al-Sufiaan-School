@@ -246,11 +246,16 @@ export const studentApi = {
   generateMonthlyFee: async (studentId: number, feeData: {
     month: number;
     calendarYear: number;
-    hostel?: boolean;
-    newAdmission?: boolean;
+    feeHeadIds?: number[];
+    customAmounts?: Record<number, number>;
+    notes?: Record<number, string>;
     transportationAreaId?: number;
     discount?: number;
     discountReason?: string;
+    // Legacy compat
+    hostel?: boolean;
+    newAdmission?: boolean;
+    dayboarding?: boolean;
   }): Promise<{
     success: boolean;
     message: string;
