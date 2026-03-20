@@ -69,6 +69,10 @@ const ViewStudentProfile: React.FC = () => {
 
   const feeTimeline = feeTimelineData?.data || [];
 
+  const totalDue = feeTimeline.reduce((sum: number, entry: any) => {
+    return sum + (entry.dueAmount && entry.dueAmount > 0 ? Number(entry.dueAmount) : 0);
+  }, 0);
+
   // Fetch transportation area if student has one
   const { data: transportationArea } = useQuery({
     queryKey: ['transportationArea', student?.areaTransportationId],
@@ -237,6 +241,14 @@ const ViewStudentProfile: React.FC = () => {
                   <span className="font-medium text-gray-700">Roll No:</span>
                   <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 rounded-md font-semibold">{student.enrollments?.[0]?.rollNumber ?? student.rollNumber ?? 'N/A'}</span>
                 </div>
+                {!timelineLoading && (
+                  <div className="flex items-center">
+                    <span className="font-medium text-gray-700">Total Due:</span>
+                    <span className={`ml-2 px-2 py-1 rounded-md font-semibold ${totalDue > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                      ₹{totalDue.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="mt-3 text-sm text-gray-500">
                 Gender: <span className="font-medium">{student.gender}</span> | 
