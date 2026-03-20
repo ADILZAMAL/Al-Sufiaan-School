@@ -128,7 +128,7 @@ const FeeReceiptModal: React.FC<FeeReceiptModalProps> = ({
           .mb-4 { margin-bottom: 3px; }
           .mt-2 { margin-top: 2px; }
           .mt-4 { margin-top: 3px; }
-          .mt-6 { margin-top: 5px; }
+          .mt-6 { margin-top: 28px; }
           .my-2 { margin-top: 2px; margin-bottom: 2px; }
           .my-4 { margin-top: 3px; margin-bottom: 3px; }
           .my-6 { margin-top: 5px; margin-bottom: 5px; }
@@ -179,6 +179,7 @@ const FeeReceiptModal: React.FC<FeeReceiptModalProps> = ({
           .table { width: 100%; border-collapse: collapse; }
           .w-full { width: 100%; }
           .h-16 { height: 40px; }
+          .h-20 { height: 80px; }
           .h-px { height: 1px; }
           .w-auto { width: auto; }
           .mr-2 { margin-right: 6px; }
@@ -424,18 +425,31 @@ const Receipt: React.FC<ReceiptProps> = ({
 
       {/* Header */}
       <div className="relative z-10 border-b-2 border-gray-800 pb-2 mb-2">
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-8">
           {school.logoUrl && (
             <img
               src={school.logoUrl}
               alt="School Logo"
-              className="h-16 w-auto"
+              className="h-20 w-auto"
             />
           )}
-          <div className="text-xs text-left">
-            <h1 className="text-lg font-bold text-gray-900 uppercase mb-1">{school.name}</h1>
-            <p className="text-gray-600 mb-1">{school.city}, {school.district}, {school.state} - {school.pincode}</p>
-            <p className="text-gray-600">Phone: {school.mobile} | Email: {school.email}</p>
+          <div className="text-sm text-left">
+            <h1 className="text-2xl font-bold text-gray-900 uppercase" style={{marginBottom: 0}}>{school.name}</h1>
+            <div className="text-gray-600">{school.city}, {school.district}, {school.state} - {school.pincode}</div>
+            <div className="flex items-center gap-4 text-gray-600">
+              <span className="flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{flexShrink: 0}}>
+                  <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.24 1.01l-2.21 2.2z"/>
+                </svg>
+                {school.mobile?.startsWith('91') && school.mobile.length === 12 ? `+91 ${school.mobile.slice(2)}` : school.mobile}
+              </span>
+              <span className="flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{flexShrink: 0}}>
+                  <path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                </svg>
+                {school.email}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -595,13 +609,13 @@ const Receipt: React.FC<ReceiptProps> = ({
             <span className="font-bold text-green-700">{formatCurrency(totalPaid)}</span>
           </div>
           {dueAmount > 0 && (
-            <div className="flex justify-between items-center text-sm mt-1">
+            <div className="flex justify-between items-center text-sm mt-2">
               <span className="text-gray-600 font-medium">Due Amount:</span>
               <span className="font-bold text-red-600">{formatCurrency(dueAmount)}</span>
             </div>
           )}
           {dueAmount === 0 && (
-            <div className="flex justify-between items-center text-sm mt-1">
+            <div className="flex justify-between items-center text-sm mt-2">
               <span className="text-gray-600 font-medium">Status:</span>
               <span className="font-bold text-green-600">Fully Paid</span>
             </div>
@@ -610,7 +624,7 @@ const Receipt: React.FC<ReceiptProps> = ({
       </div>
 
       {/* Signature Section */}
-      <div className="relative z-10">
+      <div className="relative z-10 mt-6">
         <div className="grid grid-cols-2 gap-8">
           <div>
             <p className="text-sm text-gray-600 mb-8">Receiver Signature</p>

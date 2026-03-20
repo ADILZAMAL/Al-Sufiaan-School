@@ -10,6 +10,7 @@ import StudentFeePayment from "../models/StudentFeePayment";
 import User from "../models/User";
 import AcademicSession from "../models/AcademicSession";
 import StudentEnrollment from "../models/StudentEnrollment";
+import Class from "../models/Class";
 import FeeHead from "../models/FeeHead";
 import FeeHeadClassPricing from "../models/FeeHeadClassPricing";
 import { Op } from "sequelize";
@@ -706,52 +707,62 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
       ...(limitNum !== null && { limit: limitNum, offset }),
     });
 
-    // Fetch class information for each payment via enrollment
-    const paymentData = await Promise.all(
-      payments.map(async (pmt: any) => {
-        const sessionId = (pmt.studentMonthlyFee as any)?.sessionId;
-        let className = 'N/A';
-        let classId: number | undefined;
+    // Batch fetch class info for all payments (avoids N+1 queries)
+    const studentIds = [...new Set(payments.map((p: any) => p.studentId))];
+    const sessionIds = [...new Set(payments.map((p: any) => (p.studentMonthlyFee as any)?.sessionId).filter(Boolean))];
 
-        if (sessionId) {
-          const enrollment = await StudentEnrollment.findOne({
-            where: { studentId: pmt.studentId, sessionId },
-            include: [{ association: 'class', attributes: ['id', 'name'] }],
-          });
-          if (enrollment) {
-            className = (enrollment as any).class?.name || 'N/A';
-            classId = (enrollment as any).class?.id;
-          }
-        }
+    const enrollments = studentIds.length && sessionIds.length
+      ? await StudentEnrollment.findAll({
+          where: {
+            studentId: { [Op.in]: studentIds },
+            sessionId: { [Op.in]: sessionIds },
+          },
+          include: [{ model: Class, as: 'class', attributes: ['id', 'name'] }],
+        })
+      : [];
 
-        return {
-          id: pmt.id,
-          studentId: pmt.studentId,
-          studentName: `${pmt.student.firstName} ${pmt.student.lastName}`,
-          admissionNumber: pmt.student.admissionNumber,
-          className,
-          classId,
-          month: pmt.studentMonthlyFee?.month,
-          year: pmt.studentMonthlyFee?.calendarYear,
-          amountPaid: Number(pmt.amountPaid),
-          paymentDate: pmt.paymentDate,
-          paymentMode: pmt.paymentMode,
-          referenceNumber: pmt.referenceNumber,
-          receivedBy: pmt.receiver
-            ? `${pmt.receiver.firstName} ${pmt.receiver.lastName}`
-            : 'Unknown',
-          receiverId: pmt.receivedBy,
-          remarks: pmt.remarks,
-          verified: pmt.verified,
-          verifiedBy: pmt.verifier
-            ? `${pmt.verifier.firstName} ${pmt.verifier.lastName}`
-            : null,
-          verifiedByUserId: pmt.verifiedBy,
-          createdAt: pmt.createdAt,
-          updatedAt: pmt.updatedAt,
-        };
-      })
-    );
+    const enrollmentMap = new Map<string, { className: string; classId: number | undefined }>();
+    for (const enrollment of enrollments) {
+      const key = `${(enrollment as any).studentId}-${(enrollment as any).sessionId}`;
+      enrollmentMap.set(key, {
+        className: (enrollment as any).class?.name || 'N/A',
+        classId: (enrollment as any).class?.id,
+      });
+    }
+
+    const paymentData = payments.map((pmt: any) => {
+      const sessionId = (pmt.studentMonthlyFee as any)?.sessionId;
+      const enrollmentInfo = sessionId
+        ? (enrollmentMap.get(`${pmt.studentId}-${sessionId}`) ?? { className: 'N/A', classId: undefined })
+        : { className: 'N/A', classId: undefined };
+
+      return {
+        id: pmt.id,
+        studentId: pmt.studentId,
+        studentName: `${pmt.student.firstName} ${pmt.student.lastName}`,
+        admissionNumber: pmt.student.admissionNumber,
+        className: enrollmentInfo.className,
+        classId: enrollmentInfo.classId,
+        month: pmt.studentMonthlyFee?.month,
+        year: pmt.studentMonthlyFee?.calendarYear,
+        amountPaid: Number(pmt.amountPaid),
+        paymentDate: pmt.paymentDate,
+        paymentMode: pmt.paymentMode,
+        referenceNumber: pmt.referenceNumber,
+        receivedBy: pmt.receiver
+          ? `${pmt.receiver.firstName} ${pmt.receiver.lastName}`
+          : 'Unknown',
+        receiverId: pmt.receivedBy,
+        remarks: pmt.remarks,
+        verified: pmt.verified,
+        verifiedBy: pmt.verifier
+          ? `${pmt.verifier.firstName} ${pmt.verifier.lastName}`
+          : null,
+        verifiedByUserId: pmt.verifiedBy,
+        createdAt: pmt.createdAt,
+        updatedAt: pmt.updatedAt,
+      };
+    });
 
     return sendSuccess(res, {
       payments: paymentData,

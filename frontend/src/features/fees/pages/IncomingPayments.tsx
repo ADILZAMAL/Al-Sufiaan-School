@@ -111,7 +111,7 @@ export default function IncomingPayments() {
       setVerifyingPayment(paymentId);
       await verifyPayment(paymentId);
       showToast({ message: 'Payment verified successfully!', type: 'SUCCESS' });
-      loadPayments();
+      setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, verified: true } : p));
     } catch (err) {
       showToast({
         message: err instanceof Error ? err.message : 'Failed to verify payment',
