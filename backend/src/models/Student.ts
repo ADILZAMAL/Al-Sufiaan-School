@@ -165,9 +165,11 @@ Student.init(
       type: DataTypes.DATEONLY,
       allowNull: false,
       validate: {
-        isBefore: {
-          args: new Date().toISOString().split('T')[0],
-          msg: 'Date of birth must be in the past',
+        isInThePast(value: string) {
+          const today = new Date().toISOString().split('T')[0];
+          if (value >= today) {
+            throw new Error('Date of birth must be in the past');
+          }
         },
       },
     },

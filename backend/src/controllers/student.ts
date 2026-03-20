@@ -219,8 +219,12 @@ export const createStudent = async (req: Request, res: Response) => {
     });
 
     return sendSuccess(res, createdStudent, 'Student created successfully', 201);
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Error creating student', { error });
+    if (error?.name === 'SequelizeValidationError') {
+      const message = error.errors?.[0]?.message ?? 'Validation failed';
+      return sendError(res, message, 400);
+    }
     return sendError(res, 'Failed to create student', 500);
   }
 };

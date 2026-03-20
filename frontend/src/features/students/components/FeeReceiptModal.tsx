@@ -77,10 +77,10 @@ const FeeReceiptModal: React.FC<FeeReceiptModalProps> = ({
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Fee Receipt #${payment.id}</title>
+        <title>Fee_Receipt_${student.firstName}_${student.lastName}_${month.replace(/\s+/g, '_')}_${payment.id}</title>
         <style>
           @page {
-            size: A4;
+            size: A5;
             margin: 0;
           }
           * {
@@ -88,7 +88,7 @@ const FeeReceiptModal: React.FC<FeeReceiptModalProps> = ({
           }
           body {
             margin: 0;
-            padding: 8mm 10mm;
+            padding: 6mm 8mm;
             font-family: Arial, sans-serif;
             background: white;
           }
@@ -283,33 +283,12 @@ const FeeReceiptModal: React.FC<FeeReceiptModalProps> = ({
                 discountReason={discountReason}
                 student={student}
                 school={school}
-                copyLabel="Parent Copy"
                 formatDate={formatDate}
                 formatCurrency={formatCurrency}
                 getFeeItemLabel={getFeeItemLabel}
                 allPayments={allPayments}
               />
 
-              {/* Spacer */}
-              <div className="my-20"></div>
-
-              {/* Receipt 2 - School Copy */}
-              <Receipt
-                payment={payment}
-                month={month}
-                feeItems={feeItems}
-                totalConfiguredAmount={totalConfiguredAmount}
-                totalAdjustment={totalAdjustment}
-                totalPayableAmount={totalPayableAmount}
-                discountReason={discountReason}
-                student={student}
-                school={school}
-                copyLabel="School Copy"
-                formatDate={formatDate}
-                formatCurrency={formatCurrency}
-                getFeeItemLabel={getFeeItemLabel}
-                allPayments={allPayments}
-              />
             </div>
           </div>
         </div>
@@ -319,8 +298,8 @@ const FeeReceiptModal: React.FC<FeeReceiptModalProps> = ({
       <style>{`
         @media print {
           @page {
-            size: A4;
-            margin: 12mm;
+            size: A5;
+            margin: 8mm;
           }
           
           /* Hide everything except receipt */
@@ -406,7 +385,6 @@ interface ReceiptProps {
   discountReason?: string | null;
   student: StudentInfo;
   school: School;
-  copyLabel: string;
   formatDate: (date: Date) => string;
   formatCurrency: (amount: number) => string;
   getFeeItemLabel: (feeType: string) => string;
@@ -423,7 +401,6 @@ const Receipt: React.FC<ReceiptProps> = ({
   discountReason,
   student,
   school,
-  copyLabel,
   formatDate,
   formatCurrency,
   getFeeItemLabel,
@@ -472,7 +449,6 @@ const Receipt: React.FC<ReceiptProps> = ({
           </div>
           <div className="flex-1 text-center">
             <span className="font-bold text-gray-900 uppercase tracking-wide">Fee Receipt</span>
-            <span className="text-gray-600 ml-1">({copyLabel})</span>
           </div>
           <div className="flex-1 text-right">
             <span className="text-gray-500">Date:</span>
