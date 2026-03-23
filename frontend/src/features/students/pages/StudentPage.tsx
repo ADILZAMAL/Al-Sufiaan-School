@@ -128,7 +128,9 @@ const StudentPage: React.FC = () => {
       !searchTerm ||
       student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.fatherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.phone.toLowerCase().includes(searchTerm.toLowerCase());
 
     const enrollment = getEnrollment(student);
     const matchesClass = selectedClassId === null || enrollment?.classId === selectedClassId;
@@ -261,7 +263,7 @@ const StudentPage: React.FC = () => {
               <FaSearch className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search by name or admission number..."
+                placeholder="Search by name, father name, phone or admission number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"

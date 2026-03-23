@@ -84,6 +84,10 @@ export default function StudentPromotion() {
   const handleOpenPromote = (enrollment: StudentEnrollment) => {
     setPromotingEnrollment(enrollment);
     resetModal();
+    const activeSession = sessions.find((s) => s.isActive && s.id !== enrollment.sessionId);
+    if (activeSession) {
+      setTargetSessionId(activeSession.id);
+    }
   };
 
   const handlePromoteSubmit = (e: React.FormEvent) => {
@@ -234,7 +238,7 @@ export default function StudentPromotion() {
                 <tr key={enrollment.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-gray-900">
-                      {enrollment.student?.name ?? `Student #${enrollment.studentId}`}
+                      {enrollment.student ? `${enrollment.student.firstName} ${enrollment.student.lastName}` : `Student #${enrollment.studentId}`}
                     </div>
                     {enrollment.student?.admissionNumber && (
                       <div className="text-xs text-gray-500">{enrollment.student.admissionNumber}</div>
@@ -270,7 +274,7 @@ export default function StudentPromotion() {
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold mb-1 text-gray-800">Promote Student</h2>
             <p className="text-sm text-gray-500 mb-4">
-              {promotingEnrollment.student?.name ?? `Student #${promotingEnrollment.studentId}`}
+              {promotingEnrollment.student ? `${promotingEnrollment.student.firstName} ${promotingEnrollment.student.lastName}` : `Student #${promotingEnrollment.studentId}`}
             </p>
 
             <form onSubmit={handlePromoteSubmit} className="space-y-4">
