@@ -165,7 +165,7 @@ async function seedFeeHeads(): Promise<void> {
             }
 
             const flatAmount = 'flatAmountField' in def && def.flatAmountField
-                ? (school[def.flatAmountField] ?? null)
+                ? ((school as any)[def.flatAmountField] ?? null)
                 : (def.flatAmount ?? null);
 
             await FeeHead.create({

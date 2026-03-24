@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { feeHeadApi } from '../api/feeHead';
-import { classesApi } from '../api/classFeePricing';
+import { fetchClasses, ClassType } from '../../class/api';
 import { FeeHeadClassPricingItem } from '../types';
 import { academicSessionApi } from '../../sessions/api';
 import { AcademicSession } from '../../sessions/types';
@@ -19,9 +19,9 @@ const ClassPricingPanel: React.FC<Props> = ({ feeHeadId, colSpan }) => {
     academicSessionApi.getActiveSession
   );
 
-  const { data: classes = [], isLoading: classesLoading } = useQuery(
+  const { data: classes = [], isLoading: classesLoading } = useQuery<ClassType[]>(
     ['allClasses', activeSession?.id],
-    () => activeSession ? classesApi.getBySession(activeSession.id) : Promise.resolve([]),
+    () => activeSession ? fetchClasses(activeSession.id) : Promise.resolve([]),
     { enabled: !!activeSession, staleTime: 5 * 60 * 1000 }
   );
 

@@ -19,7 +19,6 @@ import payslipRouter from './routes/payslip'
 import vendorRouter from './routes/vendor'
 import vendorBillRouter from './routes/vendorBill'
 import vendorPaymentRouter from './routes/vendorPayment'
-import classFeePricingRouter from './routes/classFeePricing'
 import transportationAreaPricingRouter from './routes/transportationAreaPricing'
 import studentRouter from './routes/student'
 import monthlyFeeRouter from './routes/monthlyFee'
@@ -119,7 +118,6 @@ app.use('/api/payslips', payslipRouter)
 app.use('/api/vendors', vendorRouter)
 app.use('/api/vendor-bills', vendorBillRouter)
 app.use('/api/vendor-payments', vendorPaymentRouter)
-app.use('/api/class-fee-pricing', classFeePricingRouter)
 app.use('/api/transportation-area-pricing', transportationAreaPricingRouter)
 app.use('/api/students', studentRouter)
 app.use('/api/fees', monthlyFeeRouter)

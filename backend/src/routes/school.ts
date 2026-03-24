@@ -52,9 +52,6 @@ router.put("/:id", [
     body('paymentModes').optional().isArray().withMessage('Payment modes must be an array'),
     body('paymentModes').optional().notEmpty().withMessage('Payment modes cannot be empty'),
     body('paymentModes.*').optional().isString().withMessage('Each payment mode must be a string'),
-    body('hostelFee').optional({ nullable: true }).isFloat({ gt: 0 }).withMessage('Hostel fee must be a positive number'),
-    body('admissionFee').optional({ nullable: true }).isFloat({ gt: 0 }).withMessage('Admission fee must be a positive number'),
-    body('dayboardingFee').optional({ nullable: true }).isFloat({ gt: 0 }).withMessage('Dayboarding fee must be a positive number'),
     body('logoUrl').optional({ nullable: true }).isURL().withMessage('Logo URL must be a valid URL'),
 ], updateSchool);
 

@@ -5,13 +5,11 @@ import { useAppContext } from '../../../providers/AppContext';
 import { HiCheck, HiPlus, HiX, HiOutlineExclamation } from 'react-icons/hi';
 import {
   FaPlus, FaEdit, FaTrash, FaTimes, FaBuilding, FaMapMarkerAlt,
-  FaCreditCard, FaPhone, FaBus, FaTags, FaMoneyBillWave,
+  FaCreditCard, FaPhone, FaBus, FaTags,
   FaCheckCircle, FaTimesCircle, FaBriefcase
 } from 'react-icons/fa';
 import { designationApi } from '../../designations/api/designation';
 import { Designation } from '../../designations/types';
-import { useClassFeePricingManager } from '../../fees/hooks/useClassFeePricing';
-import { CreateClassFeePricingRequest } from '../../fees/types';
 import { useTransportationAreaPricingManager } from '../../transportation/hooks/useTransportationAreaPricing';
 import { CreateTransportationAreaPricingRequest, UpdateTransportationAreaPricingRequest } from '../../transportation/types';
 import * as apiClient from '../../../api';
@@ -25,11 +23,10 @@ interface ExpenseCategory {
   updatedAt: string;
 }
 
-type TabId = 'school' | 'tuition' | 'transportation' | 'expenses' | 'designations';
+type TabId = 'school' | 'transportation' | 'expenses' | 'designations';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'school', label: 'School Info', icon: FaBuilding },
-  { id: 'tuition', label: 'Tuition Fees', icon: FaMoneyBillWave },
   { id: 'transportation', label: 'Transportation', icon: FaBus },
   { id: 'expenses', label: 'Expense Categories', icon: FaTags },
   { id: 'designations', label: 'Designations', icon: FaBriefcase },
@@ -64,24 +61,6 @@ const SchoolSettings: React.FC = () => {
   const [designationForm, setDesignationForm] = useState({ name: '', description: '' });
   const [isSavingDesignation, setIsSavingDesignation] = useState(false);
   const [isDeletingDesignation, setIsDeletingDesignation] = useState(false);
-
-  // Class Fee Pricing hooks
-  const {
-    classFeePricing,
-    classes,
-    isLoading: isLoadingPricing,
-    createPricing,
-    isCreating,
-    createError,
-    utils
-  } = useClassFeePricingManager();
-
-  const [showPricingForm, setShowPricingForm] = useState(false);
-  const [pricingFormData, setPricingFormData] = useState({
-    classId: '',
-    amount: '',
-    academicYear: utils.getCurrentAcademicYear()
-  });
 
   // Transportation Area Pricing hooks
   const {
@@ -309,24 +288,6 @@ const SchoolSettings: React.FC = () => {
     }
   };
 
-  const handlePricingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const data: CreateClassFeePricingRequest = {
-      classId: parseInt(pricingFormData.classId),
-      amount: parseFloat(pricingFormData.amount),
-      academicYear: pricingFormData.academicYear
-    };
-    createPricing(data, {
-      onSuccess: () => {
-        setShowPricingForm(false);
-        setPricingFormData({ classId: '', amount: '', academicYear: utils.getCurrentAcademicYear() });
-        showToast({ message: 'Class pricing created successfully!', type: 'SUCCESS' });
-      },
-      onError: (error: any) => {
-        showToast({ message: error.message || 'Failed to create class pricing', type: 'ERROR' });
-      }
-    });
-  };
 
   const handleTransportationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -643,36 +604,6 @@ const SchoolSettings: React.FC = () => {
                 </div>
               </div>
 
-              {/* Fee Structure */}
-              <div>
-                <p className={sectionLabelClass}>
-                  <span className="inline-flex items-center gap-1.5"><FaMoneyBillWave />Fee Structure</span>
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    { name: 'hostelFee', label: 'Hostel Fee', hint: 'Leave empty if no hostel facility' },
-                    { name: 'admissionFee', label: 'Admission Fee', hint: 'One-time fee for new students' },
-                    { name: 'dayboardingFee', label: 'Dayboarding Fee', hint: 'For students opting in' },
-                  ].map(({ name, label, hint }) => (
-                    <div key={name}>
-                      <label className={labelClass}>{label} (₹)</label>
-                      <div className="relative">
-                        <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm pointer-events-none">₹</span>
-                        <input
-                          type="number"
-                          name={name}
-                          value={(formData as any)[name] || ''}
-                          onChange={handleChange}
-                          disabled={!isEditing}
-                          placeholder="—"
-                          className={`${inputClass} pl-7`}
-                        />
-                      </div>
-                      <p className="mt-1 text-xs text-gray-400">{hint}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </form>
 
             <div className="px-6 py-3 border-t border-gray-100 bg-gray-50">
@@ -684,145 +615,6 @@ const SchoolSettings: React.FC = () => {
         )}
 
         {/* ── Tuition Fees Tab ── */}
-        {activeTab === 'tuition' && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <FaMoneyBillWave className="text-emerald-600 text-sm" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-900">Class Tuition Fee Pricing</h2>
-                  <p className="text-xs text-gray-400">Set monthly tuition fees by class and academic year</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowPricingForm(!showPricingForm)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
-                  showPricingForm
-                    ? 'text-gray-600 hover:bg-gray-100'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {showPricingForm
-                  ? <><FaTimes className="text-xs" /> Cancel</>
-                  : <><FaPlus className="text-xs" /> Add Pricing</>
-                }
-              </button>
-            </div>
-
-            {/* Add Pricing Form */}
-            {showPricingForm && (
-              <div className="px-6 py-5 border-b border-gray-100 bg-gray-50">
-                <p className={sectionLabelClass}>New Tuition Fee Entry</p>
-
-                {!!createError && (
-                  <div className="mb-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
-                    <HiOutlineExclamation className="text-red-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-red-700">{createError instanceof Error ? createError.message : String(createError)}</p>
-                  </div>
-                )}
-
-                <form onSubmit={handlePricingSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                  <div>
-                    <label className={labelClass}>Class</label>
-                    <select
-                      value={pricingFormData.classId}
-                      onChange={(e) => setPricingFormData({ ...pricingFormData, classId: e.target.value })}
-                      className={inputClass}
-                      required
-                    >
-                      <option value="">Select Class</option>
-                      {classes.map((cls) => (
-                        <option key={cls.id} value={cls.id}>{cls.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelClass}>Amount (₹)</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm pointer-events-none">₹</span>
-                      <input
-                        type="number"
-                        value={pricingFormData.amount}
-                        onChange={(e) => setPricingFormData({ ...pricingFormData, amount: e.target.value })}
-                        className={`${inputClass} pl-7`}
-                        placeholder="Enter amount"
-                        min="0"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className={labelClass}>Academic Year</label>
-                    <select
-                      value={pricingFormData.academicYear}
-                      onChange={(e) => setPricingFormData({ ...pricingFormData, academicYear: e.target.value })}
-                      className={inputClass}
-                      required
-                    >
-                      {utils.generateAcademicYears().map((year) => (
-                        <option key={year.value} value={year.value}>{year.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="md:col-span-3 flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={isCreating}
-                      className="px-5 py-2.5 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                    >
-                      {isCreating ? 'Creating…' : 'Create Pricing'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {isLoadingPricing ? (
-              <div className="py-12 flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-              </div>
-            ) : classFeePricing.length === 0 ? (
-              <div className="py-16 text-center">
-                <FaMoneyBillWave className="mx-auto text-3xl text-gray-200 mb-3" />
-                <p className="text-sm text-gray-400">No tuition fee pricing configured yet</p>
-                <p className="text-xs text-gray-300 mt-1">Click "Add Pricing" above to get started</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-100">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      {['Class', 'Fee Type', 'Amount', 'Academic Year', 'Status'].map(h => (
-                        <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {classFeePricing.map((pricing) => (
-                      <tr key={pricing.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{pricing.class?.name || 'Unknown Class'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">Tuition Fee</td>
-                        <td className="px-6 py-4 text-sm font-semibold text-gray-900">{utils.formatAmount(pricing.amount)}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{pricing.academicYear}</td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full ${
-                            pricing.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                          }`}>
-                            {pricing.isActive ? <FaCheckCircle className="text-xs" /> : <FaTimesCircle className="text-xs" />}
-                            {pricing.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* ── Transportation Tab ── */}
         {activeTab === 'transportation' && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">

@@ -15,7 +15,6 @@ import {initExpenseCategoryModel} from '../models/ExpenseCategory';
 import {initVendorModel} from '../models/Vendor';
 import {initVendorBillModel} from '../models/VendorBill';
 import {initVendorPaymentModel} from '../models/VendorPayment';
-import {initClassFeePricingModel} from '../models/ClassFeePricing';
 import {initTransportationAreaPricingModel} from '../models/TransportationAreaPricing';
 import {initStudentModel} from "../models/Student"
 import {initAcademicSessionModel} from "../models/AcademicSession"
@@ -69,7 +68,6 @@ initPayslipPaymentModel(sequelize);
 initVendorModel(sequelize);
 initVendorBillModel(sequelize);
 initVendorPaymentModel(sequelize);
-initClassFeePricingModel(sequelize);
 initTransportationAreaPricingModel(sequelize);
 initStudentModel(sequelize);
 initStudentEnrollmentModel(sequelize);

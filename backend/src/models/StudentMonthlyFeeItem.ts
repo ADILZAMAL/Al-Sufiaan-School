@@ -12,7 +12,7 @@ export enum FeeItemType {
 
 export interface StudentMonthlyFeeItemCreationAttributes {
   feeType?: FeeItemType | null;
-  feeHeadId?: number | null;
+  feeHeadId: number;
   feeHeadName?: string | null;
   note?: string | null;
   amount: number;
@@ -22,7 +22,7 @@ class StudentMonthlyFeeItem extends Model {
     public id!: number;
     public studentMonthlyFeeId!: number;
     public feeType!: FeeItemType | null;
-    public feeHeadId!: number | null;
+    public feeHeadId!: number;
     public feeHeadName!: string | null;
     public note!: string | null;
     public amount!: number;
@@ -52,7 +52,7 @@ export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
       },
       feeHeadId: {
         type: DataTypes.INTEGER,
-        allowNull: true,
+        allowNull: false,
       },
       feeHeadName: {
         type: DataTypes.STRING(100),

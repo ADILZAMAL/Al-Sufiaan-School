@@ -28,9 +28,6 @@ interface EditSchoolFormData {
   state: string;
   pincode: string;
   active: boolean;
-  admissionFee?: number;
-  hostelFee?: number;
-  dayboardingFee?: number;
 }
 
 interface SuperAdminFormData {
@@ -330,9 +327,6 @@ const EditSchoolModal = ({
       state: school.state,
       pincode: school.pincode,
       active: school.active,
-      admissionFee: school.admissionFee ?? undefined,
-      hostelFee: school.hostelFee ?? undefined,
-      dayboardingFee: school.dayboardingFee ?? undefined,
     },
   });
 
@@ -358,9 +352,6 @@ const EditSchoolModal = ({
     (data: EditSchoolFormData) =>
       updateSchool(school.id, {
         ...data,
-        admissionFee: isNaN(data.admissionFee as number) ? null : data.admissionFee,
-        hostelFee: isNaN(data.hostelFee as number) ? null : data.hostelFee,
-        dayboardingFee: isNaN(data.dayboardingFee as number) ? null : data.dayboardingFee,
         logoUrl: uploadedLogoUrl ?? undefined,
       }),
     {
@@ -484,24 +475,6 @@ const EditSchoolModal = ({
                     <input type="text" className={inputCls(!!errors[field])}
                       {...register(field, { required: `${field} is required` })} />
                     {errors[field] && <p className="text-red-500 text-xs">{errors[field]?.message}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Fees */}
-            <div className="space-y-3">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Fees (optional)</p>
-              <div className="grid grid-cols-3 gap-3">
-                {([
-                  { name: "admissionFee", label: "Admission" },
-                  { name: "hostelFee", label: "Hostel" },
-                  { name: "dayboardingFee", label: "Dayboarding" },
-                ] as const).map(({ name, label }) => (
-                  <div key={name} className="space-y-1.5">
-                    <label className="text-xs font-medium text-gray-600">{label} (₹)</label>
-                    <input type="number" min="0" step="0.01" placeholder="0.00" className={inputCls()}
-                      {...register(name, { valueAsNumber: true })} />
                   </div>
                 ))}
               </div>
@@ -668,32 +641,6 @@ const OnboardSchoolDetail = () => {
                   <InfoRow icon={FaIdCard} label="School ID" value={school.sid} />
                 </div>
 
-                {/* Optional fees */}
-                {(school.admissionFee || school.hostelFee || school.dayboardingFee) && (
-                  <>
-                    <h3 className="text-sm font-bold text-gray-700 mt-6 mb-2">Fee Structure</h3>
-                    <div className="grid grid-cols-3 gap-3">
-                      {school.admissionFee && (
-                        <div className="bg-gray-50 rounded-xl p-3 text-center">
-                          <p className="text-xs text-gray-500">Admission</p>
-                          <p className="font-semibold text-gray-800 text-sm mt-0.5">₹{school.admissionFee}</p>
-                        </div>
-                      )}
-                      {school.hostelFee && (
-                        <div className="bg-gray-50 rounded-xl p-3 text-center">
-                          <p className="text-xs text-gray-500">Hostel</p>
-                          <p className="font-semibold text-gray-800 text-sm mt-0.5">₹{school.hostelFee}</p>
-                        </div>
-                      )}
-                      {school.dayboardingFee && (
-                        <div className="bg-gray-50 rounded-xl p-3 text-center">
-                          <p className="text-xs text-gray-500">Dayboarding</p>
-                          <p className="font-semibold text-gray-800 text-sm mt-0.5">₹{school.dayboardingFee}</p>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
               </div>
 
               {/* Super Admin section */}
