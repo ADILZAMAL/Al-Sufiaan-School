@@ -614,7 +614,6 @@ const SchoolSettings: React.FC = () => {
           </div>
         )}
 
-        {/* ── Tuition Fees Tab ── */}
         {/* ── Transportation Tab ── */}
         {activeTab === 'transportation' && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">

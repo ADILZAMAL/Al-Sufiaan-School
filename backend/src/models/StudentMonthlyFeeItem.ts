@@ -16,6 +16,7 @@ export interface StudentMonthlyFeeItemCreationAttributes {
   feeHeadName?: string | null;
   note?: string | null;
   amount: number;
+  transportationAreaId?: number | null;
 }
 
 class StudentMonthlyFeeItem extends Model {
@@ -26,6 +27,7 @@ class StudentMonthlyFeeItem extends Model {
     public feeHeadName!: string | null;
     public note!: string | null;
     public amount!: number;
+    public transportationAreaId!: number | null;
 }
 
 export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
@@ -65,6 +67,10 @@ export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
       amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
+      },
+      transportationAreaId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       }
     },
     {

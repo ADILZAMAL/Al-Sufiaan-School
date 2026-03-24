@@ -139,6 +139,7 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
       feeHeadName: item.feeHeadName ?? null,
       note: item.note ?? null,
       amount: item.amount,
+      transportationAreaId: item.transportationAreaId ?? null,
     }));
 
     await StudentMonthlyFeeItem.bulkCreate(feeItemsToCreate);
@@ -209,6 +210,7 @@ async function calculateFeeItemsFromHeads(
     if (!shouldInclude) continue;
 
     let amount: number;
+    let itemTransportationAreaId: number | null = null;
 
     switch (feeHead.pricingType) {
       case 'FLAT': {
@@ -227,6 +229,7 @@ async function calculateFeeItemsFromHeads(
         const transport = await TransportationAreaPricing.findByPk(transportationAreaId);
         if (!transport) continue;
         amount = parseFloat(transport.price.toString());
+        itemTransportationAreaId = transportationAreaId;
         break;
       }
       case 'CUSTOM': {
@@ -245,6 +248,7 @@ async function calculateFeeItemsFromHeads(
       feeHeadName: feeHead.name,
       note: notes[feeHead.id.toString()] ?? null,
       amount,
+      transportationAreaId: itemTransportationAreaId,
     });
   }
 
@@ -321,7 +325,7 @@ export async function getStudentFeeTimeline(studentId: number) {
       {
         model: StudentMonthlyFeeItem,
         as: 'feeItems',
-        attributes: ['feeType', 'feeHeadId', 'feeHeadName', 'note', 'amount'],
+        attributes: ['feeType', 'feeHeadId', 'feeHeadName', 'note', 'amount', 'transportationAreaId'],
       },
       {
         model: StudentFeePayment,
@@ -379,6 +383,7 @@ export async function getStudentFeeTimeline(studentId: number) {
       feeHeadName: item.feeHeadName,
       note: item.note,
       amount: Number(item.amount),
+      transportationAreaId: item.transportationAreaId ?? null,
     })) || [];
 
     // Format payment details
@@ -849,6 +854,7 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
       feeHeadName: item.feeHeadName ?? null,
       note: item.note ?? null,
       amount: item.amount,
+      transportationAreaId: item.transportationAreaId ?? null,
     }));
 
     await StudentMonthlyFeeItem.bulkCreate(feeItemsToCreate);
@@ -868,6 +874,43 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
   } catch (error) {
     logger.error("Error regenerating monthly fee:", { error });
     return sendError(res, "Failed to regenerate monthly fee", 500);
+  }
+}
+
+// Get the most recently generated fee for a student (used to pre-populate fee generation form)
+export async function getLastGeneratedFee(req: Request, res: Response) {
+  try {
+    const { studentId } = req.params;
+
+    const fee = await StudentMonthlyFee.findOne({
+      where: { studentId: parseInt(studentId), schoolId: 1 },
+      order: [['calendarYear', 'DESC'], ['month', 'DESC']],
+      include: [
+        {
+          model: StudentMonthlyFeeItem,
+          as: 'feeItems',
+          attributes: ['feeHeadId', 'feeHeadName', 'feeType', 'amount', 'note', 'transportationAreaId'],
+        },
+      ],
+    });
+
+    if (!fee) {
+      return sendSuccess(res, null, "No generated fee found");
+    }
+
+    return sendSuccess(res, {
+      feeItems: fee.feeItems?.map((item: any) => ({
+        feeHeadId: item.feeHeadId,
+        amount: Number(item.amount),
+        note: item.note ?? null,
+        transportationAreaId: item.transportationAreaId ?? null,
+      })) ?? [],
+      totalAdjustment: Number(fee.totalAdjustment),
+      discountReason: fee.discountReason ?? null,
+    });
+  } catch (error) {
+    logger.error("Error fetching last generated fee:", { error });
+    return sendError(res, "Failed to fetch last generated fee", 500);
   }
 }
 

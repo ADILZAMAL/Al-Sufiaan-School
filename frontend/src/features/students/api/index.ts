@@ -296,6 +296,16 @@ export const studentApi = {
     });
   },
 
+  // Get last generated fee for a student (used to pre-populate fee generation form)
+  getLastGeneratedFee: async (studentId: number): Promise<{
+    feeItems: { feeHeadId: number; amount: number; note: string | null; transportationAreaId: number | null }[];
+    totalAdjustment: number;
+    discountReason: string | null;
+  } | null> => {
+    const body = await apiRequest(`/students/${studentId}/fees/last-generated`);
+    return body.data;
+  },
+
   // Get students with payment reminders
   getStudentsWithPaymentReminders: async (): Promise<Student[]> => {
     const body = await apiRequest('/students/payment-reminders');
@@ -332,6 +342,7 @@ export const getStudentFeeTimeline = studentApi.getStudentFeeTimeline;
 export const generateMonthlyFee = studentApi.generateMonthlyFee;
 export const collectFeePayment = studentApi.collectFeePayment;
 export const regenerateMonthlyFee = studentApi.regenerateMonthlyFee;
+export const getLastGeneratedFee = studentApi.getLastGeneratedFee;
 export const getStudentsWithPaymentReminders = studentApi.getStudentsWithPaymentReminders;
 export const updatePaymentReminder = studentApi.updatePaymentReminder;
 export const markStudentLeftSchool = studentApi.markLeftSchool;

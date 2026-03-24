@@ -3,11 +3,25 @@ import { FiX, FiTruck, FiLock } from 'react-icons/fi';
 import { transportationAreaPricingApi } from '../../transportation/api/transportationAreaPricing';
 import { feeHeadApi } from '../../fees/api/feeHead';
 import { FeeHead } from '../../fees/types';
+import { getLastGeneratedFee } from '../api';
 
 interface TransportationArea {
   id: number;
   areaName: string;
   price: number;
+}
+
+interface PrefillFeeItem {
+  feeHeadId?: number | null;
+  amount: number;
+  note?: string | null;
+  transportationAreaId?: number | null;
+}
+
+interface PrefillEntry {
+  feeItems?: PrefillFeeItem[] | null;
+  totalAdjustment?: number;
+  discountReason?: string | null;
 }
 
 interface GenerateFeeModalProps {
@@ -27,6 +41,8 @@ interface GenerateFeeModalProps {
   calendarYear: number;
   label: string;
   loading?: boolean;
+  studentId: number;
+  prefillEntry?: PrefillEntry | null;
 }
 
 const GenerateFeeModal: React.FC<GenerateFeeModalProps> = ({
@@ -37,6 +53,8 @@ const GenerateFeeModal: React.FC<GenerateFeeModalProps> = ({
   calendarYear,
   label,
   loading = false,
+  studentId,
+  prefillEntry,
 }) => {
   const [feeHeads, setFeeHeads] = useState<FeeHead[]>([]);
   const [loadingHeads, setLoadingHeads] = useState(false);
@@ -69,16 +87,60 @@ const GenerateFeeModal: React.FC<GenerateFeeModalProps> = ({
     }
   }, [isOpen]);
 
+  const populateFromPrevious = (
+    heads: FeeHead[],
+    areas: TransportationArea[],
+    source: PrefillEntry
+  ) => {
+    const items = source.feeItems ?? [];
+    const optInHeads = heads.filter((h) => h.applicability === 'OPT_IN');
+    const newSelectedIds = new Set<number>();
+    const newCustomAmounts: Record<number, string> = {};
+    const newNotes: Record<number, string> = {};
+    const newAreaByHead: Record<number, number> = {};
+
+    for (const head of optInHeads) {
+      const item = items.find((i) => i.feeHeadId === head.id);
+      if (!item) continue;
+      newSelectedIds.add(head.id);
+      if (head.pricingType === 'CUSTOM') {
+        newCustomAmounts[head.id] = String(item.amount);
+        if (item.note) newNotes[head.id] = item.note;
+      }
+      if (head.pricingType === 'AREA_BASED' && item.transportationAreaId) {
+        newAreaByHead[head.id] = item.transportationAreaId;
+      }
+    }
+
+    setSelectedIds(newSelectedIds);
+    setCustomAmounts(newCustomAmounts);
+    setNotes(newNotes);
+    setAreaByHead(newAreaByHead);
+    if (source.totalAdjustment && source.totalAdjustment > 0) {
+      setDiscount(source.totalAdjustment);
+      setDiscountReason(source.discountReason ?? '');
+    }
+  };
+
   const fetchData = async () => {
     setLoadingHeads(true);
     setLoadingAreas(true);
     try {
-      const [heads, areasResponse] = await Promise.all([
+      const requests: [Promise<FeeHead[]>, Promise<any>, Promise<any> | undefined] = [
         feeHeadApi.getAll(),
         transportationAreaPricingApi.getAll(),
-      ]);
-      setFeeHeads(heads.filter((h) => h.isActive));
-      setTransportationAreas(areasResponse.transportationAreaPricing || []);
+        prefillEntry === undefined ? getLastGeneratedFee(studentId) : Promise.resolve(undefined),
+      ];
+      const [heads, areasResponse, lastFee] = await Promise.all(requests);
+      const activeHeads = heads.filter((h) => h.isActive);
+      const areas: TransportationArea[] = areasResponse.transportationAreaPricing || [];
+      setFeeHeads(activeHeads);
+      setTransportationAreas(areas);
+
+      const source: PrefillEntry | null = prefillEntry ?? lastFee ?? null;
+      if (source?.feeItems?.length) {
+        populateFromPrevious(activeHeads, areas, source);
+      }
     } catch (err) {
       setError('Failed to load fee data');
     } finally {

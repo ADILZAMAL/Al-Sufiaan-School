@@ -14,7 +14,7 @@ import {
   updatePaymentReminder,
   markStudentLeftSchool
 } from '../controllers/student';
-import { generateMonthlyFee, getStudentFeeTimelineController, collectFeePaymentController, regenerateMonthlyFee } from '../controllers/monthlyFee';
+import { generateMonthlyFee, getStudentFeeTimelineController, collectFeePaymentController, regenerateMonthlyFee, getLastGeneratedFee } from '../controllers/monthlyFee';
 
 const router = Router();
 
@@ -241,6 +241,13 @@ router.get(
   '/:studentId/fees/timeline',
   verifyToken,
   getStudentFeeTimelineController
+)
+
+// Get last generated fee (for pre-populating generate fee form)
+router.get(
+  '/:studentId/fees/last-generated',
+  verifyToken,
+  getLastGeneratedFee
 )
 
 // Collect fee payment

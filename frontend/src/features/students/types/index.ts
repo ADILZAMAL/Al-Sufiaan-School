@@ -190,10 +190,6 @@ export interface RegenerateMonthlyFeeRequest {
   transportationAreaId?: number;
   discount?: number;
   discountReason?: string;
-  // Legacy compat — kept for backward compatibility with old-style generation
-  hostel?: boolean;
-  dayboarding?: boolean;
-  newAdmission?: boolean;
 }
 
 // Enhanced Student Form Data with better type safety

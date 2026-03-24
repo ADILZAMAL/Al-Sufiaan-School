@@ -12,6 +12,7 @@ interface FeeItem {
   feeHeadId?: number | null;
   feeHeadName?: string | null;
   note?: string | null;
+  transportationAreaId?: number | null;
 }
 
 type FeeHeadCol = { key: string; label: string; feeHeadId?: number; feeType?: string };
@@ -498,6 +499,8 @@ const FeeTimeline: React.FC<FeeTimelineProps> = ({
           calendarYear={selectedEntry.calendarYear}
           label={selectedEntry.label}
           loading={generatingFee}
+          studentId={studentId}
+          prefillEntry={selectedEntry.status !== 'not_generated' ? selectedEntry : undefined}
         />
       )}
 
