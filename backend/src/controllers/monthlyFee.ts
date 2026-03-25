@@ -202,6 +202,23 @@ async function calculateFeeItemsFromHeads(
   const { feeHeadIds, customAmounts = {}, notes = {}, transportationAreaId } = options;
   const feeItems: StudentMonthlyFeeItemCreationAttributes[] = [];
 
+  // Pre-fetch all PER_CLASS pricing in one query
+  const perClassFeeHeadIds = feeHeads
+    .filter(fh => fh.pricingType === 'PER_CLASS')
+    .map(fh => fh.id);
+  const classPricings = perClassFeeHeadIds.length > 0
+    ? await FeeHeadClassPricing.findAll({ where: { feeHeadId: perClassFeeHeadIds, classId } })
+    : [];
+  const classPricingMap = new Map(
+    classPricings.map(p => [p.feeHeadId, parseFloat(p.amount.toString())])
+  );
+
+  // Pre-fetch transportation area pricing once if needed
+  const hasAreaBased = feeHeads.some(fh => fh.pricingType === 'AREA_BASED');
+  const transportPricing = (hasAreaBased && transportationAreaId)
+    ? await TransportationAreaPricing.findByPk(transportationAreaId)
+    : null;
+
   for (const feeHead of feeHeads) {
     const shouldInclude =
       feeHead.applicability === 'AUTO' ||
@@ -219,17 +236,15 @@ async function calculateFeeItemsFromHeads(
         break;
       }
       case 'PER_CLASS': {
-        const pricing = await FeeHeadClassPricing.findOne({ where: { feeHeadId: feeHead.id, classId } });
-        if (!pricing) continue;
-        amount = parseFloat(pricing.amount.toString());
+        const classAmount = classPricingMap.get(feeHead.id);
+        if (classAmount === undefined) continue;
+        amount = classAmount;
         break;
       }
       case 'AREA_BASED': {
-        if (!transportationAreaId) continue;
-        const transport = await TransportationAreaPricing.findByPk(transportationAreaId);
-        if (!transport) continue;
-        amount = parseFloat(transport.price.toString());
-        itemTransportationAreaId = transportationAreaId;
+        if (!transportPricing) continue;
+        amount = parseFloat(transportPricing.price.toString());
+        itemTransportationAreaId = transportationAreaId!;
         break;
       }
       case 'CUSTOM': {

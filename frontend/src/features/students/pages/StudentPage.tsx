@@ -124,13 +124,14 @@ const StudentPage: React.FC = () => {
   };
 
   const filteredStudents = students.filter(student => {
+    const term = searchTerm.toLowerCase();
+    const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
     const matchesSearch =
       !searchTerm ||
-      student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.fatherName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.phone.toLowerCase().includes(searchTerm.toLowerCase());
+      fullName.includes(term) ||
+      student.admissionNumber.toLowerCase().includes(term) ||
+      student.fatherName.toLowerCase().includes(term) ||
+      student.phone.toLowerCase().includes(term);
 
     const enrollment = getEnrollment(student);
     const matchesClass = selectedClassId === null || enrollment?.classId === selectedClassId;

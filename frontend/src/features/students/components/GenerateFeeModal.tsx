@@ -396,10 +396,10 @@ const GenerateFeeModal: React.FC<GenerateFeeModalProps> = ({
               </label>
               <div className="relative">
                 <input
-                  type="number"
-                  value={discount}
+                  type="text"
+                  inputMode="decimal"
+                  value={discount === 0 ? '' : discount}
                   onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                  min="0"
                   className="block w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                   disabled={loading}
