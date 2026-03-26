@@ -479,13 +479,13 @@ const AdmissionFormContent: React.FC<AdmissionFormContentProps> = ({
           <div className="flex items-center">
             <span className="font-semibold text-gray-600">Class:</span>
             <span className="ml-2 font-semibold text-gray-900">
-              {student.class.name}
+              {student.enrollments?.[0]?.class?.name || student.class?.name || 'N/A'}
             </span>
           </div>
           <div className="flex items-center">
             <span className="font-semibold text-gray-600">Section:</span>
             <span className="ml-2 font-semibold text-gray-900">
-              {student.section.name}
+              {student.enrollments?.[0]?.section?.name || student.section?.name || 'N/A'}
             </span>
           </div>
           <div className="flex items-center">

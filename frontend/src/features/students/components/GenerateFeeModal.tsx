@@ -89,7 +89,6 @@ const GenerateFeeModal: React.FC<GenerateFeeModalProps> = ({
 
   const populateFromPrevious = (
     heads: FeeHead[],
-    areas: TransportationArea[],
     source: PrefillEntry
   ) => {
     const items = source.feeItems ?? [];
@@ -139,7 +138,7 @@ const GenerateFeeModal: React.FC<GenerateFeeModalProps> = ({
 
       const source: PrefillEntry | null = prefillEntry ?? lastFee ?? null;
       if (source?.feeItems?.length) {
-        populateFromPrevious(activeHeads, areas, source);
+        populateFromPrevious(activeHeads, source);
       }
     } catch (err) {
       setError('Failed to load fee data');
