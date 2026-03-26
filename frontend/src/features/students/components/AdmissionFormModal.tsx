@@ -51,17 +51,17 @@ const AdmissionFormModal: React.FC<AdmissionFormModalProps> = ({
           }
           body {
             margin: 0;
-            padding: 8mm;
+            padding: 6mm;
             font-family: Arial, Helvetica, sans-serif;
             background: white;
             color: #111827;
-            font-size: 11px;
-            line-height: 1.4;
+            font-size: 10px;
+            line-height: 1.35;
           }
           .admission-form {
             background: white;
             border: 3px solid #1e40af;
-            padding: 12px;
+            padding: 8px;
             margin-bottom: 6px;
             position: relative;
             page-break-inside: avoid;
@@ -86,11 +86,13 @@ const AdmissionFormModal: React.FC<AdmissionFormModalProps> = ({
           .relative { position: relative; }
           .z-10 { z-index: 10; }
           .flex { display: flex; }
+          .flex-shrink-0 { flex-shrink: 0; }
           .items-center { align-items: center; }
           .justify-center { justify-content: center; }
           .justify-between { justify-content: space-between; }
           .flex-1 { flex: 1; }
           .grid { display: grid; }
+          .grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
           .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
           .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
           .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
@@ -111,26 +113,29 @@ const AdmissionFormModal: React.FC<AdmissionFormModalProps> = ({
           .text-lg { font-size: 14px; }
           .text-xl { font-size: 18px; }
           .text-2xl { font-size: 22px; }
-          .mb-1 { margin-bottom: 3px; }
-          .mb-2 { margin-bottom: 5px; }
-          .mb-3 { margin-bottom: 8px; }
-          .mb-4 { margin-bottom: 10px; }
-          .mb-6 { margin-bottom: 15px; }
-          .mb-8 { margin-bottom: 20px; }
-          .mt-2 { margin-top: 5px; }
-          .mt-4 { margin-top: 10px; }
-          .mt-6 { margin-top: 15px; }
-          .my-4 { margin-top: 10px; margin-bottom: 10px; }
-          .p-2 { padding: 4px; }
-          .p-3 { padding: 6px; }
-          .p-4 { padding: 8px; }
-          .p-6 { padding: 12px; }
-          .px-2 { padding-left: 4px; padding-right: 4px; }
-          .px-3 { padding-left: 6px; padding-right: 6px; }
-          .px-4 { padding-left: 8px; padding-right: 8px; }
-          .py-1 { padding-top: 3px; padding-bottom: 3px; }
-          .py-2 { padding-top: 5px; padding-bottom: 5px; }
-          .py-3 { padding-top: 8px; padding-bottom: 8px; }
+          .mb-1 { margin-bottom: 2px; }
+          .mb-2 { margin-bottom: 4px; }
+          .mb-3 { margin-bottom: 6px; }
+          .mb-4 { margin-bottom: 8px; }
+          .mb-6 { margin-bottom: 10px; }
+          .mb-8 { margin-bottom: 14px; }
+          .mb-16 { margin-bottom: 40px; }
+          .mb-20 { margin-bottom: 40px; }
+          .mt-2 { margin-top: 4px; }
+          .mt-4 { margin-top: 8px; }
+          .mt-6 { margin-top: 10px; }
+          .my-4 { margin-top: 8px; margin-bottom: 8px; }
+          .p-2 { padding: 3px; }
+          .p-3 { padding: 5px; }
+          .p-4 { padding: 6px; }
+          .p-6 { padding: 10px; }
+          .px-2 { padding-left: 3px; padding-right: 3px; }
+          .px-3 { padding-left: 5px; padding-right: 5px; }
+          .px-4 { padding-left: 6px; padding-right: 6px; }
+          .px-8 { padding-left: 14px; padding-right: 14px; }
+          .py-1 { padding-top: 2px; padding-bottom: 2px; }
+          .py-2 { padding-top: 4px; padding-bottom: 4px; }
+          .py-3 { padding-top: 6px; padding-bottom: 6px; }
           .border { border: 1px solid #d1d5db; }
           .border-2 { border: 3px solid #1e40af; }
           .border-b { border-bottom: 1px solid #d1d5db; }
@@ -157,16 +162,17 @@ const AdmissionFormModal: React.FC<AdmissionFormModalProps> = ({
           .text-blue-700 { color: #1d4ed8; }
           .text-blue-600 { color: #2563eb; }
           .text-green-700 { color: #15803d; }
-          .h-24 { height: 64px; }
-          .w-24 { width: 64px; }
-          .h-28 { height: 72px; }
-          .w-28 { width: 72px; }
-          .h-36 { height: 92px; }
-          .w-36 { width: 92px; }
-          .h-32 { height: 85px; }
-          .w-32 { width: 85px; }
-          .h-40 { height: 105px; }
-          .w-40 { width: 105px; }
+          .h-24 { height: 58px; }
+          .w-24 { width: 58px; }
+          .h-28 { height: 68px; }
+          .w-28 { width: 68px; }
+          .h-36 { height: 80px; }
+          .w-36 { width: 80px; }
+          .h-32 { height: 75px; }
+          .w-32 { width: 75px; }
+          .h-40 { height: 95px; }
+          .w-40 { width: 95px; }
+          .h-16 { height: 42px; }
           .w-auto { width: auto; }
           .object-cover { object-fit: cover; }
           .object-contain { object-fit: contain; }
@@ -240,24 +246,14 @@ const AdmissionFormModal: React.FC<AdmissionFormModalProps> = ({
           {/* Admission Form Container - Print Area */}
           <div className="p-4 print:p-0">
             <div id="admission-form-print-area" className="print-container flex flex-col min-h-screen">
-              {/* Admission Form 1 - Parent Copy */}
+              {/* Admission Form */}
               <AdmissionFormContent
                 student={student}
                 school={school}
-                copyLabel="Parent Copy"
+                copyLabel=""
                 formatDateOnly={formatDateOnly}
               />
 
-              {/* Spacer */}
-              <div className="my-20"></div>
-
-              {/* Admission Form 2 - School Copy */}
-              <AdmissionFormContent
-                student={student}
-                school={school}
-                copyLabel="School Copy"
-                formatDateOnly={formatDateOnly}
-              />
             </div>
           </div>
         </div>
@@ -384,7 +380,7 @@ const AdmissionFormContent: React.FC<AdmissionFormContentProps> = ({
       {/* Form Title */}
       <div className="relative z-10 text-center mb-4">
         <h2 className="text-xl font-semibold text-gray-900 uppercase border-b border-gray-400 py-3 inline-block px-8">
-          Admission Form ({copyLabel})
+          Admission Form{copyLabel ? ` (${copyLabel})` : ''}
         </h2>
       </div>
 
@@ -419,10 +415,10 @@ const AdmissionFormContent: React.FC<AdmissionFormContentProps> = ({
                 <img
                   src={student.studentPhoto}
                   alt={`${student.firstName} ${student.lastName}`}
-                  className="w-28 h-36 object-cover rounded-lg shadow-md"
+                  className="w-24 h-32 object-cover rounded-lg shadow-md"
                 />
               ) : (
-                <div className="w-28 h-36 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-3xl font-bold border-2 border-blue-800">
+                <div className="w-24 h-32 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-3xl font-bold border-2 border-blue-800">
                   {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
                 </div>
               )}
@@ -475,7 +471,7 @@ const AdmissionFormContent: React.FC<AdmissionFormContentProps> = ({
         <h3 className="text-base font-semibold text-gray-900 mb-3 uppercase border-b border-gray-400 pb-2">
           Academic Information
         </h3>
-        <div className="grid grid-cols-4 gap-3 text-sm">
+        <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="flex items-center">
             <span className="font-semibold text-gray-600">Class:</span>
             <span className="ml-2 font-semibold text-gray-900">
@@ -497,7 +493,7 @@ const AdmissionFormContent: React.FC<AdmissionFormContentProps> = ({
           <div className="flex items-center">
             <span className="font-semibold text-gray-600">Academic Year:</span>
             <span className="ml-2 font-semibold text-gray-900">
-              2024-2025
+              {student.enrollments?.[0]?.session?.name || 'N/A'}
             </span>
           </div>
         </div>
@@ -527,17 +523,19 @@ const AdmissionFormContent: React.FC<AdmissionFormContentProps> = ({
               </span>
             </div>
           </div>
-          <div className="flex items-center">
-            <span className="font-semibold text-gray-600 w-20">City:</span>
-            <span className="ml-2 font-semibold text-gray-900">{student.city}</span>
-          </div>
-          <div className="flex items-center">
-            <span className="font-semibold text-gray-600 w-20">State:</span>
-            <span className="ml-2 font-semibold text-gray-900">{student.state}</span>
-          </div>
-          <div className="col-span-2 flex items-center">
-            <span className="font-semibold text-gray-600 w-20">Pincode:</span>
-            <span className="ml-2 font-semibold text-gray-900">{student.pincode}</span>
+          <div className="col-span-2 grid grid-cols-3 gap-3">
+            <div className="flex items-center">
+              <span className="font-semibold text-gray-600 w-20">City:</span>
+              <span className="ml-2 font-semibold text-gray-900">{student.city}</span>
+            </div>
+            <div className="flex items-center">
+              <span className="font-semibold text-gray-600 w-20">State:</span>
+              <span className="ml-2 font-semibold text-gray-900">{student.state}</span>
+            </div>
+            <div className="flex items-center">
+              <span className="font-semibold text-gray-600 w-20">Pincode:</span>
+              <span className="ml-2 font-semibold text-gray-900">{student.pincode}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -548,87 +546,90 @@ const AdmissionFormContent: React.FC<AdmissionFormContentProps> = ({
           Parent / Guardian Information
         </h3>
 
-        {/* Father */}
-        <div className="mb-4 p-4 rounded-lg border border-gray-300 bg-white">
-          <h4 className="text-sm font-bold text-gray-900 mb-3 uppercase">
-            Father Details
-          </h4>
-          <div className="flex items-start gap-4">
-            <div className="flex-1 grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center">
-                <span className="font-semibold text-gray-600 w-24">Name:</span>
-                <span className="ml-2 font-semibold text-gray-900 capitalize">
-                  {student.fatherName}
-                </span>
-              </div>
-              <div className="flex items-center">
-                <span className="font-semibold text-gray-600 w-24">Occupation:</span>
-                <span className="ml-2 font-semibold text-gray-900">
-                  {student.fatherOccupation || 'N/A'}
-                </span>
-              </div>
-              <div className="flex items-center">
-                <span className="font-semibold text-gray-600 w-24">Phone:</span>
-                <span className="ml-2 font-semibold text-gray-900">
-                  {student.fatherPhone || 'N/A'}
-                </span>
-              </div>
-              {student.fatherAadharNumber && (
+        {/* Father + Mother side by side */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          {/* Father */}
+          <div className="p-3 rounded-lg border border-gray-300 bg-white">
+            <h4 className="text-sm font-bold text-gray-900 mb-2 uppercase">
+              Father Details
+            </h4>
+            <div className="flex items-start gap-3">
+              <div className="flex-1 grid grid-cols-1 gap-2 text-sm">
                 <div className="flex items-center">
-                  <span className="font-semibold text-gray-600 w-24">Aadhaar:</span>
-                  <span className="ml-2 font-semibold text-gray-900">
-                    {student.fatherAadharNumber}
+                  <span className="font-semibold text-gray-600 w-28 flex-shrink-0">Name:</span>
+                  <span className="ml-2 font-semibold text-gray-900 capitalize">
+                    {student.fatherName}
                   </span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-semibold text-gray-600 w-28 flex-shrink-0">Occupation:</span>
+                  <span className="ml-2 font-semibold text-gray-900">
+                    {student.fatherOccupation || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-semibold text-gray-600 w-28 flex-shrink-0">Phone:</span>
+                  <span className="ml-2 font-semibold text-gray-900">
+                    {student.fatherPhone || 'N/A'}
+                  </span>
+                </div>
+                {student.fatherAadharNumber && (
+                  <div className="flex items-center">
+                    <span className="font-semibold text-gray-600 w-28 flex-shrink-0">Aadhaar:</span>
+                    <span className="ml-2 font-semibold text-gray-900">
+                      {student.fatherAadharNumber}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {student.fatherPhoto && (
+                <div className="flex-shrink-0">
+                  <img
+                    src={student.fatherPhoto}
+                    alt="Father"
+                    className="w-24 h-24 object-cover rounded-lg shadow-md"
+                  />
                 </div>
               )}
             </div>
-            {student.fatherPhoto && (
-              <div className="flex-shrink-0">
-                <img
-                  src={student.fatherPhoto}
-                  alt="Father"
-                  className="w-24 h-24 object-cover rounded-lg shadow-md"
-                />
-              </div>
-            )}
           </div>
-        </div>
 
-        {/* Mother */}
-        <div className="mb-4 p-4 rounded-lg border border-gray-300 bg-white">
-          <h4 className="text-sm font-bold text-gray-900 mb-3 uppercase">
-            Mother Details
-          </h4>
-          <div className="flex items-start gap-4">
-            <div className="flex-1 grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center">
-                <span className="font-semibold text-gray-600 w-24">Name:</span>
-                <span className="ml-2 font-semibold text-gray-900 capitalize">
-                  {student.motherName}
-                </span>
+          {/* Mother */}
+          <div className="p-3 rounded-lg border border-gray-300 bg-white">
+            <h4 className="text-sm font-bold text-gray-900 mb-2 uppercase">
+              Mother Details
+            </h4>
+            <div className="flex items-start gap-3">
+              <div className="flex-1 grid grid-cols-1 gap-2 text-sm">
+                <div className="flex items-center">
+                  <span className="font-semibold text-gray-600 w-28 flex-shrink-0">Name:</span>
+                  <span className="ml-2 font-semibold text-gray-900 capitalize">
+                    {student.motherName}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-semibold text-gray-600 w-28 flex-shrink-0">Occupation:</span>
+                  <span className="ml-2 font-semibold text-gray-900">
+                    {student.motherOccupation || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span className="font-semibold text-gray-600 w-28 flex-shrink-0">Phone:</span>
+                  <span className="ml-2 font-semibold text-gray-900">
+                    {student.motherPhone || 'N/A'}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center">
-                <span className="font-semibold text-gray-600 w-24">Occupation:</span>
-                <span className="ml-2 font-semibold text-gray-900">
-                  {student.motherOccupation || 'N/A'}
-                </span>
-              </div>
-              <div className="flex items-center">
-                <span className="font-semibold text-gray-600 w-24">Phone:</span>
-                <span className="ml-2 font-semibold text-gray-900">
-                  {student.motherPhone || 'N/A'}
-                </span>
-              </div>
+              {student.motherPhoto && (
+                <div className="flex-shrink-0">
+                  <img
+                    src={student.motherPhoto}
+                    alt="Mother"
+                    className="w-24 h-24 object-cover rounded-lg shadow-md"
+                  />
+                </div>
+              )}
             </div>
-            {student.motherPhoto && (
-              <div className="flex-shrink-0">
-                <img
-                  src={student.motherPhoto}
-                  alt="Mother"
-                  className="w-24 h-24 object-cover rounded-lg shadow-md"
-                />
-              </div>
-            )}
           </div>
         </div>
 
