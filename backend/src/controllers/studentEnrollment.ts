@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Op } from 'sequelize';
 import { StudentEnrollment, AcademicSession, Student, Class, Section, Attendance, StudentMonthlyFee } from '../models';
 import { sendSuccess, sendError } from '../utils/response';
 import logger from '../utils/logger';
@@ -8,7 +9,7 @@ import logger from '../utils/logger';
 export const getEnrollments = async (req: Request, res: Response) => {
     try {
         const { sessionId } = req.params;
-        const { classId, sectionId } = req.query;
+        const { classId, sectionId, excludePromoted } = req.query;
         const schoolId = parseInt(req.schoolId);
 
         // Verify session belongs to school
@@ -22,6 +23,24 @@ export const getEnrollments = async (req: Request, res: Response) => {
         const where: Record<string, unknown> = { sessionId: session.id };
         if (classId) where.classId = parseInt(classId as string);
         if (sectionId) where.sectionId = parseInt(sectionId as string);
+
+        // If excludePromoted=true and this is not the active session, exclude students
+        // who already have an enrollment in the active session (already promoted)
+        if (excludePromoted === 'true' && !session.isActive) {
+            const activeSession = await AcademicSession.findOne({
+                where: { schoolId, isActive: true },
+            });
+            if (activeSession) {
+                const activeEnrollments = await StudentEnrollment.findAll({
+                    where: { sessionId: activeSession.id },
+                    attributes: ['studentId'],
+                });
+                const alreadyPromotedIds = activeEnrollments.map((e: any) => e.studentId);
+                if (alreadyPromotedIds.length > 0) {
+                    where.studentId = { [Op.notIn]: alreadyPromotedIds };
+                }
+            }
+        }
 
         const enrollments = await StudentEnrollment.findAll({
             where,

@@ -54,10 +54,11 @@ export const academicSessionApi = {
 };
 
 export const enrollmentApi = {
-  getEnrollments: async (sessionId: number, filters?: { classId?: number; sectionId?: number }): Promise<StudentEnrollment[]> => {
+  getEnrollments: async (sessionId: number, filters?: { classId?: number; sectionId?: number; excludePromoted?: boolean }): Promise<StudentEnrollment[]> => {
     const params = new URLSearchParams();
     if (filters?.classId) params.append('classId', filters.classId.toString());
     if (filters?.sectionId) params.append('sectionId', filters.sectionId.toString());
+    if (filters?.excludePromoted) params.append('excludePromoted', 'true');
     const body = await req(`/api/sessions/${sessionId}/enrollments?${params.toString()}`);
     return body.data;
   },
