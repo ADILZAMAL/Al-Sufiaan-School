@@ -237,12 +237,27 @@ export default function StudentPromotion() {
               {enrollments.map((enrollment) => (
                 <tr key={enrollment.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">
-                      {enrollment.student ? `${enrollment.student.firstName} ${enrollment.student.lastName}` : `Student #${enrollment.studentId}`}
+                    <div className="flex items-center gap-3">
+                      {enrollment.student?.studentPhoto ? (
+                        <img
+                          src={enrollment.student.studentPhoto}
+                          alt={enrollment.student ? `${enrollment.student.firstName} ${enrollment.student.lastName}` : ''}
+                          className="h-9 w-9 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-gray-500 text-sm font-medium">
+                          {enrollment.student ? enrollment.student.firstName.charAt(0).toUpperCase() : '?'}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {enrollment.student ? `${enrollment.student.firstName} ${enrollment.student.lastName}` : `Student #${enrollment.studentId}`}
+                        </div>
+                        {enrollment.student?.admissionNumber && (
+                          <div className="text-xs text-gray-500">{enrollment.student.admissionNumber}</div>
+                        )}
+                      </div>
                     </div>
-                    {enrollment.student?.admissionNumber && (
-                      <div className="text-xs text-gray-500">{enrollment.student.admissionNumber}</div>
-                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {enrollment.class?.name ?? '-'}

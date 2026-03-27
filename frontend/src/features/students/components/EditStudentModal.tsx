@@ -6,6 +6,7 @@ import { Student, UpdateStudentRequest, Gender, Religion, BloodGroup, StudentFor
 import PhotoUpload from '../../../components/common/PhotoUpload';
 import { enrollmentApi } from '../../sessions/api';
 import { UpdateEnrollmentRequest } from '../../sessions/types';
+import { fetchClasses as fetchClassesBySession } from '../../class/api';
 
 interface PhotoFile {
   file: File;
@@ -162,13 +163,10 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
 
   const fetchClasses = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/api/classes`, {
-        credentials: 'include',
-      });
-      const data = await response.json();
-      if (data.success) {
-        setClasses(data.data);
-      }
+      const activeEnrollment = student.enrollments?.find(e => e.session?.isActive);
+      const sessionId = activeEnrollment?.sessionId;
+      const data = await fetchClassesBySession(sessionId);
+      setClasses(data);
     } catch (error) {
       showToast({ message: 'Failed to fetch classes', type: "ERROR" });
     }
@@ -398,11 +396,11 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
           <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Academic Information</h3>
-              {!showEnrollmentEditor && student.enrollments && student.enrollments.length > 0 && (
+              {!showEnrollmentEditor && student.enrollments && student.enrollments.some(e => e.session?.isActive) && (
                 <button
                   type="button"
                   onClick={() => {
-                    const e = student.enrollments![0];
+                    const e = student.enrollments!.find(e => e.session?.isActive) ?? student.enrollments![0];
                     setEnrollmentEdit({ classId: e.classId, sectionId: e.sectionId, rollNumber: e.rollNumber || '' });
                     setShowEnrollmentEditor(true);
                   }}
@@ -413,7 +411,7 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
               )}
             </div>
             {(() => {
-              const enrollment = student.enrollments?.[0];
+              const enrollment = student.enrollments?.find(e => e.session?.isActive) ?? student.enrollments?.[0];
               const enrollClass = enrollment?.class;
               const enrollSection = enrollment?.section;
               const enrollRoll = enrollment?.rollNumber;
@@ -483,7 +481,7 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
                     type="button"
                     disabled={savingEnrollment || !enrollmentEdit.classId || !enrollmentEdit.sectionId}
                     onClick={async () => {
-                      const enrollment = student.enrollments?.[0];
+                      const enrollment = student.enrollments?.find(e => e.session?.isActive) ?? student.enrollments?.[0];
                       if (!enrollment) return;
                       setSavingEnrollment(true);
                       try {
