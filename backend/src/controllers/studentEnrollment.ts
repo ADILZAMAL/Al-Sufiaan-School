@@ -47,9 +47,8 @@ export const getEnrollments = async (req: Request, res: Response) => {
             include: [
                 {
                     association: 'student',
-                    attributes: ['id', 'firstName', 'lastName', 'admissionNumber', 'active'],
+                    attributes: ['id', 'firstName', 'lastName', 'admissionNumber', 'studentPhoto', 'active', 'fatherName', 'fatherPhone'],
                     where: { active: true },
-                    required: true,
                 },
                 {
                     association: 'class',

@@ -27,7 +27,7 @@ export interface StudentEnrollment {
   session?: AcademicSession;
   class?: { id: number; name: string };
   section?: { id: number; name: string };
-  student?: { id: number; name: string; admissionNumber?: string };
+  student?: { id: number; firstName: string; lastName: string; admissionNumber?: string; studentPhoto?: string; fatherName?: string; fatherPhone?: string };
 }
 
 export interface EnrollStudentRequest {
