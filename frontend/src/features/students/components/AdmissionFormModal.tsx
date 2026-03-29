@@ -353,6 +353,9 @@ const AdmissionFormContent: React.FC<AdmissionFormContentProps> = ({
   copyLabel,
   formatDateOnly,
 }) => {
+  const activeEnrollment =
+    student.enrollments?.find((e) => e.session?.isActive) ?? student.enrollments?.[0];
+
   return (
     <div className="admission-form relative bg-white border border-gray-400 rounded-lg p-4 shadow-md">
       {/* Header */}
@@ -475,25 +478,25 @@ const AdmissionFormContent: React.FC<AdmissionFormContentProps> = ({
           <div className="flex items-center">
             <span className="font-semibold text-gray-600">Class:</span>
             <span className="ml-2 font-semibold text-gray-900">
-              {student.enrollments?.[0]?.class?.name || student.class?.name || 'N/A'}
+              {activeEnrollment?.class?.name || student.class?.name || 'N/A'}
             </span>
           </div>
           <div className="flex items-center">
             <span className="font-semibold text-gray-600">Section:</span>
             <span className="ml-2 font-semibold text-gray-900">
-              {student.enrollments?.[0]?.section?.name || student.section?.name || 'N/A'}
+              {activeEnrollment?.section?.name || student.section?.name || 'N/A'}
             </span>
           </div>
           <div className="flex items-center">
             <span className="font-semibold text-gray-600">Roll Number:</span>
             <span className="ml-2 font-semibold text-gray-900">
-              {student.rollNumber || 'N/A'}
+              {activeEnrollment?.rollNumber || 'N/A'}
             </span>
           </div>
           <div className="flex items-center">
             <span className="font-semibold text-gray-600">Academic Year:</span>
             <span className="ml-2 font-semibold text-gray-900">
-              {student.enrollments?.[0]?.session?.name || 'N/A'}
+              {activeEnrollment?.session?.name || 'N/A'}
             </span>
           </div>
         </div>

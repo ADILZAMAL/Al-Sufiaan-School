@@ -42,8 +42,9 @@ export default function StudentPromotion() {
       enrollmentApi.getEnrollments(sourceSessionId!, {
         classId: sourceClassId ?? undefined,
         sectionId: sourceSectionId ?? undefined,
+        excludePromoted: true,
       }),
-    { enabled: !!sourceSessionId && !!sourceClassId }
+    { enabled: !!sourceSessionId }
   );
 
   const { data: targetClasses = [] } = useQuery<ClassType[]>(
@@ -126,7 +127,7 @@ export default function StudentPromotion() {
     setTargetSectionId(null);
   };
 
-  const canSearch = !!sourceSessionId && !!sourceClassId;
+  const canSearch = !!sourceSessionId;
 
   return (
     <div className="p-6">
@@ -196,7 +197,7 @@ export default function StudentPromotion() {
       {/* Student List */}
       {!canSearch ? (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center text-amber-700 text-sm">
-          Select a session and class above to view students for promotion.
+          Select a session above to view students for promotion.
         </div>
       ) : enrollmentsLoading ? (
         <div className="flex justify-center py-12">
@@ -224,6 +225,9 @@ export default function StudentPromotion() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Section
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Father
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Roll No.
@@ -264,6 +268,12 @@ export default function StudentPromotion() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {enrollment.section?.name ?? '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <div>{enrollment.student?.fatherName ?? '-'}</div>
+                    {enrollment.student?.fatherPhone && (
+                      <div className="text-xs text-gray-400">{enrollment.student.fatherPhone}</div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {enrollment.rollNumber ?? '-'}
