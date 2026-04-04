@@ -378,13 +378,9 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
 
     const queryDate = new Date(date as string);
 
-    // Derive session from date
+    // Use active session for the school
     const session = await AcademicSession.findOne({
-      where: {
-        schoolId,
-        startDate: { [Op.lte]: queryDate },
-        endDate: { [Op.gte]: queryDate },
-      },
+      where: { schoolId, isActive: true },
     });
 
     if (!session) {
@@ -628,13 +624,9 @@ export const getStudentsWithAttendance = async (req: Request, res: Response) => 
 
     const attendanceDate = new Date(date as string);
 
-    // Derive session from date
+    // Use active session for the school
     const session = await AcademicSession.findOne({
-      where: {
-        schoolId,
-        startDate: { [Op.lte]: attendanceDate },
-        endDate: { [Op.gte]: attendanceDate },
-      },
+      where: { schoolId, isActive: true },
     });
 
     const enrollmentWhere: any = {
