@@ -23,7 +23,7 @@ interface Props {
 interface ClassData {
   id: number;
   name: string;
-  sections: Array<{ id: number; name: string }>;
+  sections?: Array<{ id: number; name: string }>;
 }
 
 const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess }) => {
