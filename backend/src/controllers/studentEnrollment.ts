@@ -29,6 +29,8 @@ export const getEnrollments = async (req: Request, res: Response) => {
                 {
                     association: 'student',
                     attributes: ['id', 'firstName', 'lastName', 'admissionNumber', 'active'],
+                    where: { active: true },
+                    required: true,
                 },
                 {
                     association: 'class',
