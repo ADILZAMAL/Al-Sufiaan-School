@@ -3,7 +3,6 @@ import verifyToken from '../middleware/auth'
 import Class from '../models/Class';
 import {check, validationResult} from 'express-validator'
 import Section from '../models/Section';
-import AcademicSession from '../models/AcademicSession';
 import logger from '../utils/logger';
 
 
@@ -20,14 +19,6 @@ router.get("/", verifyToken,  async(req: Request, res: Response) => {
         const where: Record<string, unknown> = { schoolId: req.schoolId };
         if (req.query.sessionId) {
             where.sessionId = Number(req.query.sessionId);
-        } else {
-            const activeSession = await AcademicSession.findOne({
-                where: { schoolId: req.schoolId, isActive: true },
-                attributes: ['id'],
-            });
-            if (activeSession) {
-                where.sessionId = activeSession.id;
-            }
         }
         const classes = await Class.findAll({
             where,

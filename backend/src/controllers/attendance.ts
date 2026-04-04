@@ -6,8 +6,29 @@ import { Op } from 'sequelize';
 import sequelize from '../config/database';
 import logger from '../utils/logger';
 
-// Check if a specific date is a holiday
+// Helper function to check if a date is Sunday
+const isSunday = (date: Date): boolean => {
+  const dayOfWeek = date.getDay();
+  return dayOfWeek === 0; // 0 = Sunday
+};
+
+// Check if a specific date is a holiday (including Sundays)
 const isHolidayCheck = async (schoolId: number, date: Date): Promise<Holiday | null> => {
+  // First check if it's a Sunday
+  if (isSunday(date)) {
+    return {
+      id: -1,
+      schoolId,
+      startDate: date,
+      endDate: date,
+      name: 'Sunday',
+      reason: 'Weekly holiday',
+      createdBy: -1,
+      createdAt: date,
+      updatedAt: date,
+    } as Holiday;
+  }
+
   const holiday = await Holiday.findOne({
     where: {
       schoolId,
