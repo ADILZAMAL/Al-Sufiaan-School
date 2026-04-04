@@ -34,7 +34,6 @@ router.get(
 router.post(
     '/sessions/:sessionId/enroll',
     verifyToken,
-    adminOnly,
     param('sessionId').isInt(),
     body('studentId').isInt().withMessage('studentId must be an integer'),
     body('classId').isInt().withMessage('classId must be an integer'),
