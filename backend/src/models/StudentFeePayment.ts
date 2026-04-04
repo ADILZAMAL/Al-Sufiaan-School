@@ -121,6 +121,10 @@ export const initStudentFeePaymentModel = (sequelize: Sequelize) => {
         {
           fields: ['verifiedBy'],
           name: 'student_fee_payment_verified_by_idx',
+        },
+        {
+          fields: ['paymentDate'],
+          name: 'student_fee_payment_payment_date_idx',
         }
       ]
     }

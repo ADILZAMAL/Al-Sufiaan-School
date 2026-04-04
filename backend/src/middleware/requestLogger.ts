@@ -21,9 +21,9 @@ const morganStream = {
     write: (message: string) => {
         try {
             const parsed = JSON.parse(message.trim());
-            logger.http('HTTP request', parsed);
+            logger.log({ level: 'http', message: 'HTTP request', ...parsed });
         } catch {
-            logger.http(message.trim());
+            logger.log({ level: 'http', message: message.trim() });
         }
     },
 };

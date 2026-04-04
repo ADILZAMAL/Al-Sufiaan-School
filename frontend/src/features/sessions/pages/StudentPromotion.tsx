@@ -85,6 +85,10 @@ export default function StudentPromotion() {
   const handleOpenPromote = (enrollment: StudentEnrollment) => {
     setPromotingEnrollment(enrollment);
     resetModal();
+    const activeSession = sessions.find((s) => s.isActive && s.id !== enrollment.sessionId);
+    if (activeSession) {
+      setTargetSessionId(activeSession.id);
+    }
   };
 
   const handlePromoteSubmit = (e: React.FormEvent) => {
@@ -237,12 +241,27 @@ export default function StudentPromotion() {
               {enrollments.map((enrollment) => (
                 <tr key={enrollment.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">
-                      {enrollment.student?.name ?? `Student #${enrollment.studentId}`}
+                    <div className="flex items-center gap-3">
+                      {enrollment.student?.studentPhoto ? (
+                        <img
+                          src={enrollment.student.studentPhoto}
+                          alt={enrollment.student ? `${enrollment.student.firstName} ${enrollment.student.lastName}` : ''}
+                          className="h-9 w-9 rounded-full object-cover border border-gray-200 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-gray-500 text-sm font-medium">
+                          {enrollment.student ? enrollment.student.firstName.charAt(0).toUpperCase() : '?'}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {enrollment.student ? `${enrollment.student.firstName} ${enrollment.student.lastName}` : `Student #${enrollment.studentId}`}
+                        </div>
+                        {enrollment.student?.admissionNumber && (
+                          <div className="text-xs text-gray-500">{enrollment.student.admissionNumber}</div>
+                        )}
+                      </div>
                     </div>
-                    {enrollment.student?.admissionNumber && (
-                      <div className="text-xs text-gray-500">{enrollment.student.admissionNumber}</div>
-                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {enrollment.class?.name ?? '-'}
@@ -280,7 +299,7 @@ export default function StudentPromotion() {
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold mb-1 text-gray-800">Promote Student</h2>
             <p className="text-sm text-gray-500 mb-4">
-              {promotingEnrollment.student?.name ?? `Student #${promotingEnrollment.studentId}`}
+              {promotingEnrollment.student ? `${promotingEnrollment.student.firstName} ${promotingEnrollment.student.lastName}` : `Student #${promotingEnrollment.studentId}`}
             </p>
 
             <form onSubmit={handlePromoteSubmit} className="space-y-4">

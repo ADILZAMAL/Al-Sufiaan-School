@@ -14,7 +14,6 @@ import {
   verifyOnboardCredentials,
   onboardSchool,
   uploadSchoolLogo,
-  OnboardSchoolData,
   School,
 } from "../../../api/school";
 

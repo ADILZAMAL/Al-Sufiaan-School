@@ -14,9 +14,6 @@ export interface School {
   email: string;
   sid: string;
   paymentModes: string[];
-  hostelFee?: number | null;
-  admissionFee?: number | null;
-  dayboardingFee?: number | null;
   logoUrl?: string | null;
   createdAt: string;
   updatedAt: string;

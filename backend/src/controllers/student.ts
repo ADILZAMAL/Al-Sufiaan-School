@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Student, StudentMonthlyFee, StudentFeePayment, AcademicSession, StudentEnrollment } from '../models';
+import { Student, StudentMonthlyFee, StudentFeePayment, AcademicSession, StudentEnrollment, School } from '../models';
 import { sendSuccess, sendError } from '../utils/response';
 import { validationResult } from 'express-validator';
 import { generateAdmissionNumber } from '../utils/studentUtils';
@@ -172,6 +172,11 @@ export const createStudent = async (req: Request, res: Response) => {
       }
     }
 
+    const school = await School.findByPk(schoolId);
+    if (!school) {
+      return sendError(res, 'School not found', 404);
+    }
+
     const studentData = {
       ...studentFields,
       hostel,
@@ -179,7 +184,7 @@ export const createStudent = async (req: Request, res: Response) => {
       dayboarding,
       schoolId,
       createdBy: userId,
-      admissionNumber: await generateAdmissionNumber(schoolId),
+      admissionNumber: await generateAdmissionNumber(schoolId, school.sid),
     };
 
     const student = await Student.create(studentData);
@@ -214,8 +219,12 @@ export const createStudent = async (req: Request, res: Response) => {
     });
 
     return sendSuccess(res, createdStudent, 'Student created successfully', 201);
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Error creating student', { error });
+    if (error?.name === 'SequelizeValidationError') {
+      const message = error.errors?.[0]?.message ?? 'Validation failed';
+      return sendError(res, message, 400);
+    }
     return sendError(res, 'Failed to create student', 500);
   }
 };

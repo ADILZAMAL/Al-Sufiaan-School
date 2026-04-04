@@ -1,4 +1,4 @@
-import { DataTypes, Model, InferAttributes, InferCreationAttributes, CreationOptional, Sequelize } from "sequelize";
+import { DataTypes, Model, Sequelize } from "sequelize";
 import sequelize from "../config/database";
 import StudentMonthlyFee from "./StudentMonthlyFee";
 
@@ -11,14 +11,23 @@ export enum FeeItemType {
 }
 
 export interface StudentMonthlyFeeItemCreationAttributes {
-  feeType: FeeItemType;
+  feeType?: FeeItemType | null;
+  feeHeadId: number;
+  feeHeadName?: string | null;
+  note?: string | null;
   amount: number;
+  transportationAreaId?: number | null;
 }
+
 class StudentMonthlyFeeItem extends Model {
     public id!: number;
     public studentMonthlyFeeId!: number;
-    public feeType!: FeeItemType;
+    public feeType!: FeeItemType | null;
+    public feeHeadId!: number;
+    public feeHeadName!: string | null;
+    public note!: string | null;
     public amount!: number;
+    public transportationAreaId!: number | null;
 }
 
 export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
@@ -41,11 +50,27 @@ export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
         },
       feeType: {
         type: DataTypes.ENUM(...Object.values(FeeItemType)),
+        allowNull: true,
+      },
+      feeHeadId: {
+        type: DataTypes.INTEGER,
         allowNull: false,
+      },
+      feeHeadName: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+      },
+      note: {
+        type: DataTypes.STRING(200),
+        allowNull: true,
       },
       amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
+      },
+      transportationAreaId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       }
     },
     {
@@ -57,7 +82,7 @@ export const initStudentMonthlyFeeItemModel = (sequelize: Sequelize) => {
       indexes: [
         {
           unique: true,
-          fields: ['studentMonthlyFeeId', 'feeType'],
+          fields: ['studentMonthlyFeeId', 'feeHeadId'],
           name: 'student_monthly_fee_item_unique',
         },
         {

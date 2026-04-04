@@ -76,6 +76,7 @@ export default function IncomingPayments() {
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
   const [paymentMode, setPaymentMode] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const loadPayments = async () => {
     try {
@@ -110,7 +111,7 @@ export default function IncomingPayments() {
       setVerifyingPayment(paymentId);
       await verifyPayment(paymentId);
       showToast({ message: 'Payment verified successfully!', type: 'SUCCESS' });
-      loadPayments();
+      setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, verified: true } : p));
     } catch (err) {
       showToast({
         message: err instanceof Error ? err.message : 'Failed to verify payment',
@@ -125,6 +126,9 @@ export default function IncomingPayments() {
   const totalAmount = payments.reduce((s, p) => s + p.amountPaid, 0);
   const verifiedCount = payments.filter((p) => p.verified).length;
   const pendingCount = payments.filter((p) => !p.verified).length;
+  const filteredPayments = statusFilter === 'all' ? payments
+    : statusFilter === 'verified' ? payments.filter((p) => p.verified)
+    : payments.filter((p) => !p.verified);
   const colSpan = 6;
 
   return (
@@ -206,6 +210,18 @@ export default function IncomingPayments() {
                 ))}
               </select>
             </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[130px]"
+              >
+                <option value="all">All Status</option>
+                <option value="verified">Verified</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
             <button
               type="submit"
               className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
@@ -257,14 +273,14 @@ export default function IncomingPayments() {
                       </button>
                     </td>
                   </tr>
-                ) : payments.length === 0 ? (
+                ) : filteredPayments.length === 0 ? (
                   <tr>
                     <td colSpan={colSpan} className="py-16 text-center">
                       <p className="text-gray-400 text-sm">No payments found for the selected filters</p>
                     </td>
                   </tr>
                 ) : (
-                  payments.map((payment) => (
+                  filteredPayments.map((payment) => (
                     <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
                       {/* Student */}
                       <td className="px-3 py-2.5 whitespace-nowrap">

@@ -1,15 +1,16 @@
 import { Request, Response } from "express";
 import { sendError, sendSuccess } from "../utils/response";
 import Student from "../models/Student";
-import School from "../models/School";
 import StudentMonthlyFee, { StudentMonthlyFeeStatus } from "../models/StudentMonthlyFee";
 import StudentMonthlyFeeItem, { FeeItemType, StudentMonthlyFeeItemCreationAttributes } from "../models/StudentMonthlyFeeItem";
-import ClassFeePricing from "../models/ClassFeePricing";
 import TransportationAreaPricing from "../models/TransportationAreaPricing";
 import StudentFeePayment from "../models/StudentFeePayment";
 import User from "../models/User";
 import AcademicSession from "../models/AcademicSession";
 import StudentEnrollment from "../models/StudentEnrollment";
+import Class from "../models/Class";
+import FeeHead from "../models/FeeHead";
+import FeeHeadClassPricing from "../models/FeeHeadClassPricing";
 import { Op } from "sequelize";
 import logger from '../utils/logger';
 
@@ -22,10 +23,11 @@ const MONTH_NAMES = [
 interface GenerateFeeRequest {
   month: number;
   calendarYear: number;
-  hostel?: boolean;
-  newAdmission?: boolean;
+  // New-style fee selection
+  feeHeadIds?: number[];
+  customAmounts?: { [feeHeadId: string]: number };
+  notes?: { [feeHeadId: string]: string };
   transportationAreaId?: number;
-  dayboarding?: boolean;
   discount?: number;
   discountReason?: string;
 }
@@ -33,7 +35,7 @@ interface GenerateFeeRequest {
 export const generateMonthlyFee = async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
-    const { month, calendarYear, hostel = false, transportationAreaId, discount = 0, discountReason, newAdmission = false, dayboarding = false }: GenerateFeeRequest = req.body;
+    const { month, calendarYear, feeHeadIds, customAmounts, notes, transportationAreaId, discount = 0, discountReason }: GenerateFeeRequest = req.body;
     const userId = parseInt(req.userId);
 
     // Validate inputs
@@ -50,10 +52,6 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
 
     if (discount < 0) {
       return sendError(res, "Discount cannot be negative", 400);
-    }
-
-    if(hostel && transportationAreaId){
-      return sendError(res, "Student cannot have both hostel and transportation services", 400);  
     }
 
     //Verify student exists
@@ -96,21 +94,11 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
       return sendError(res, `Monthly fee already generated for ${month}/${calendarYear}`, 409);
     }
 
-    // Fetch school data for hostel and admission fees
-    const school = await School.findByPk(student.schoolId);
-
-    if (!school) {
-      return sendError(res, "School not found", 404);
-    }
-
     // 3️⃣ Calculate fee items based on student's enrollment class
     const feeItems: StudentMonthlyFeeItemCreationAttributes[] = await calculateFeeItems(
       enrollment.classId,
-      hostel,
-      transportationAreaId,
-      newAdmission,
-      dayboarding,
-      school
+      student.schoolId,
+      { feeHeadIds, customAmounts, notes, transportationAreaId }
     );
 
     if (feeItems.length === 0) {
@@ -146,8 +134,12 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
     // 7️⃣ Create StudentMonthlyFeeItems with bulk insert
     const feeItemsToCreate = feeItems.map(item => ({
       studentMonthlyFeeId: monthlyFee.id,
-      feeType: item.feeType,
+      feeType: item.feeType ?? null,
+      feeHeadId: item.feeHeadId ?? null,
+      feeHeadName: item.feeHeadName ?? null,
+      note: item.note ?? null,
       amount: item.amount,
+      transportationAreaId: item.transportationAreaId ?? null,
     }));
 
     await StudentMonthlyFeeItem.bulkCreate(feeItemsToCreate);
@@ -158,7 +150,7 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
         {
           model: StudentMonthlyFeeItem,
           as: 'feeItems',
-          attributes: ['id', 'feeType', 'amount']
+          attributes: ['id', 'feeType', 'feeHeadId', 'feeHeadName', 'note', 'amount']
         },
       ],
     });
@@ -170,79 +162,112 @@ export const generateMonthlyFee = async (req: Request, res: Response) => {
   }
 };
 
+interface CalculateFeeOptions {
+  feeHeadIds?: number[];
+  customAmounts?: { [feeHeadId: string]: number };
+  notes?: { [feeHeadId: string]: string };
+  transportationAreaId?: number;
+}
+
 async function calculateFeeItems(
   classId: number,
-  hostel: boolean,
-  transportationAreaId?: number,
-  newAdmission?: boolean,
-  dayboarding?: boolean,
-  school?: School
+  schoolId: number,
+  options: CalculateFeeOptions
 ): Promise<StudentMonthlyFeeItemCreationAttributes[]> {
-  const feeItems: StudentMonthlyFeeItemCreationAttributes[] = [];
+  const { feeHeadIds, customAmounts = {}, notes = {}, transportationAreaId } = options;
 
   try {
-    // 1. Tuition Fee (always included)
-    const classFeePricing = await ClassFeePricing.findOne({
-      where: { classId },
+    const schoolFeeHeads = await FeeHead.findAll({
+      where: { schoolId, isActive: true },
+      order: [['displayOrder', 'ASC']],
     });
 
-    if (classFeePricing && classFeePricing.amount) {
-      feeItems.push({
-        feeType: FeeItemType.TUITION_FEE,
-        amount: parseFloat(classFeePricing.amount.toString())
-      });
-    }
-
-    // 2. Hostel Fee (if hostel is true)
-    if (hostel) {
-      if (!school || !school.hostelFee || school.hostelFee <= 0) {
-        throw new Error('Please configure hostel fee in School Settings first');
-      }
-      feeItems.push({
-        feeType: FeeItemType.HOSTEL_FEE,
-        amount: parseFloat(school.hostelFee.toString()),
-      });
-    }
-
-    // 3. Transportation Fee (if transportationAreaId is provided)
-    if (transportationAreaId) {
-      const transportPricing = await TransportationAreaPricing.findByPk(transportationAreaId);
-
-      if (transportPricing && transportPricing.price) {
-        feeItems.push({
-          feeType: FeeItemType.TRANSPORT_FEE,
-          amount: parseFloat(transportPricing.price.toString()),
-        });
-      }
-    }
-
-    // 4. New Admission Fee (if newAdmission is true)
-    if (newAdmission) {
-      if (!school || !school.admissionFee || school.admissionFee <= 0) {
-        throw new Error('Please configure admission fee in School Settings first');
-      }
-      feeItems.push({
-        feeType: FeeItemType.ADMISSION_FEE,
-        amount: parseFloat(school.admissionFee.toString()),
-      });
-    }
-
-    // 5. Dayboarding Fee (if dayboarding is true)
-    if (dayboarding) {
-      if (!school || !school.dayboardingFee || school.dayboardingFee <= 0) {
-        throw new Error('Please configure dayboarding fee in School Settings first');
-      }
-      feeItems.push({
-        feeType: FeeItemType.DAYBOARDING_FEE,
-        amount: parseFloat(school.dayboardingFee.toString()),
-      });
-    }
-
-    return feeItems;
+    return await calculateFeeItemsFromHeads(classId, schoolFeeHeads, {
+      feeHeadIds,
+      customAmounts,
+      notes,
+      transportationAreaId,
+    });
   } catch (error) {
     logger.error("Error calculating fee items:", { error });
     throw error;
   }
+}
+
+async function calculateFeeItemsFromHeads(
+  classId: number,
+  feeHeads: FeeHead[],
+  options: CalculateFeeOptions
+): Promise<StudentMonthlyFeeItemCreationAttributes[]> {
+  const { feeHeadIds, customAmounts = {}, notes = {}, transportationAreaId } = options;
+  const feeItems: StudentMonthlyFeeItemCreationAttributes[] = [];
+
+  // Pre-fetch all PER_CLASS pricing in one query
+  const perClassFeeHeadIds = feeHeads
+    .filter(fh => fh.pricingType === 'PER_CLASS')
+    .map(fh => fh.id);
+  const classPricings = perClassFeeHeadIds.length > 0
+    ? await FeeHeadClassPricing.findAll({ where: { feeHeadId: perClassFeeHeadIds, classId } })
+    : [];
+  const classPricingMap = new Map(
+    classPricings.map(p => [p.feeHeadId, parseFloat(p.amount.toString())])
+  );
+
+  // Pre-fetch transportation area pricing once if needed
+  const hasAreaBased = feeHeads.some(fh => fh.pricingType === 'AREA_BASED');
+  const transportPricing = (hasAreaBased && transportationAreaId)
+    ? await TransportationAreaPricing.findByPk(transportationAreaId)
+    : null;
+
+  for (const feeHead of feeHeads) {
+    const shouldInclude =
+      feeHead.applicability === 'AUTO' ||
+      (Array.isArray(feeHeadIds) && feeHeadIds.includes(feeHead.id));
+
+    if (!shouldInclude) continue;
+
+    let amount: number;
+    let itemTransportationAreaId: number | null = null;
+
+    switch (feeHead.pricingType) {
+      case 'FLAT': {
+        if (!feeHead.flatAmount) continue;
+        amount = parseFloat(feeHead.flatAmount.toString());
+        break;
+      }
+      case 'PER_CLASS': {
+        const classAmount = classPricingMap.get(feeHead.id);
+        if (classAmount === undefined) continue;
+        amount = classAmount;
+        break;
+      }
+      case 'AREA_BASED': {
+        if (!transportPricing) continue;
+        amount = parseFloat(transportPricing.price.toString());
+        itemTransportationAreaId = transportationAreaId!;
+        break;
+      }
+      case 'CUSTOM': {
+        const customAmount = customAmounts[feeHead.id.toString()];
+        if (customAmount === undefined) continue;
+        amount = customAmount;
+        break;
+      }
+      default:
+        continue;
+    }
+
+    feeItems.push({
+      feeType: feeHead.legacyType ? (feeHead.legacyType as FeeItemType) : null,
+      feeHeadId: feeHead.id,
+      feeHeadName: feeHead.name,
+      note: notes[feeHead.id.toString()] ?? null,
+      amount,
+      transportationAreaId: itemTransportationAreaId,
+    });
+  }
+
+  return feeItems;
 }
 
 // Helper function to generate timeline from admission
@@ -315,7 +340,7 @@ export async function getStudentFeeTimeline(studentId: number) {
       {
         model: StudentMonthlyFeeItem,
         as: 'feeItems',
-        attributes: ['feeType', 'amount'],
+        attributes: ['feeType', 'feeHeadId', 'feeHeadName', 'note', 'amount', 'transportationAreaId'],
       },
       {
         model: StudentFeePayment,
@@ -369,7 +394,11 @@ export async function getStudentFeeTimeline(studentId: number) {
     // Extract fee items as array
     const feeItemsArray = fee.feeItems?.map((item: any) => ({
       feeType: item.feeType,
+      feeHeadId: item.feeHeadId,
+      feeHeadName: item.feeHeadName,
+      note: item.note,
       amount: Number(item.amount),
+      transportationAreaId: item.transportationAreaId ?? null,
     })) || [];
 
     // Format payment details
@@ -615,52 +644,62 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
       ...(limitNum !== null && { limit: limitNum, offset }),
     });
 
-    // Fetch class information for each payment via enrollment
-    const paymentData = await Promise.all(
-      payments.map(async (pmt: any) => {
-        const sessionId = (pmt.studentMonthlyFee as any)?.sessionId;
-        let className = 'N/A';
-        let classId: number | undefined;
+    // Batch fetch class info for all payments (avoids N+1 queries)
+    const studentIds = [...new Set(payments.map((p: any) => p.studentId))];
+    const sessionIds = [...new Set(payments.map((p: any) => (p.studentMonthlyFee as any)?.sessionId).filter(Boolean))];
 
-        if (sessionId) {
-          const enrollment = await StudentEnrollment.findOne({
-            where: { studentId: pmt.studentId, sessionId },
-            include: [{ association: 'class', attributes: ['id', 'name'] }],
-          });
-          if (enrollment) {
-            className = (enrollment as any).class?.name || 'N/A';
-            classId = (enrollment as any).class?.id;
-          }
-        }
+    const enrollments = studentIds.length && sessionIds.length
+      ? await StudentEnrollment.findAll({
+          where: {
+            studentId: { [Op.in]: studentIds },
+            sessionId: { [Op.in]: sessionIds },
+          },
+          include: [{ model: Class, as: 'class', attributes: ['id', 'name'] }],
+        })
+      : [];
 
-        return {
-          id: pmt.id,
-          studentId: pmt.studentId,
-          studentName: `${pmt.student.firstName} ${pmt.student.lastName}`,
-          admissionNumber: pmt.student.admissionNumber,
-          className,
-          classId,
-          month: pmt.studentMonthlyFee?.month,
-          year: pmt.studentMonthlyFee?.calendarYear,
-          amountPaid: Number(pmt.amountPaid),
-          paymentDate: pmt.paymentDate,
-          paymentMode: pmt.paymentMode,
-          referenceNumber: pmt.referenceNumber,
-          receivedBy: pmt.receiver
-            ? `${pmt.receiver.firstName} ${pmt.receiver.lastName}`
-            : 'Unknown',
-          receiverId: pmt.receivedBy,
-          remarks: pmt.remarks,
-          verified: pmt.verified,
-          verifiedBy: pmt.verifier
-            ? `${pmt.verifier.firstName} ${pmt.verifier.lastName}`
-            : null,
-          verifiedByUserId: pmt.verifiedBy,
-          createdAt: pmt.createdAt,
-          updatedAt: pmt.updatedAt,
-        };
-      })
-    );
+    const enrollmentMap = new Map<string, { className: string; classId: number | undefined }>();
+    for (const enrollment of enrollments) {
+      const key = `${(enrollment as any).studentId}-${(enrollment as any).sessionId}`;
+      enrollmentMap.set(key, {
+        className: (enrollment as any).class?.name || 'N/A',
+        classId: (enrollment as any).class?.id,
+      });
+    }
+
+    const paymentData = payments.map((pmt: any) => {
+      const sessionId = (pmt.studentMonthlyFee as any)?.sessionId;
+      const enrollmentInfo = sessionId
+        ? (enrollmentMap.get(`${pmt.studentId}-${sessionId}`) ?? { className: 'N/A', classId: undefined })
+        : { className: 'N/A', classId: undefined };
+
+      return {
+        id: pmt.id,
+        studentId: pmt.studentId,
+        studentName: `${pmt.student.firstName} ${pmt.student.lastName}`,
+        admissionNumber: pmt.student.admissionNumber,
+        className: enrollmentInfo.className,
+        classId: enrollmentInfo.classId,
+        month: pmt.studentMonthlyFee?.month,
+        year: pmt.studentMonthlyFee?.calendarYear,
+        amountPaid: Number(pmt.amountPaid),
+        paymentDate: pmt.paymentDate,
+        paymentMode: pmt.paymentMode,
+        referenceNumber: pmt.referenceNumber,
+        receivedBy: pmt.receiver
+          ? `${pmt.receiver.firstName} ${pmt.receiver.lastName}`
+          : 'Unknown',
+        receiverId: pmt.receivedBy,
+        remarks: pmt.remarks,
+        verified: pmt.verified,
+        verifiedBy: pmt.verifier
+          ? `${pmt.verifier.firstName} ${pmt.verifier.lastName}`
+          : null,
+        verifiedByUserId: pmt.verifiedBy,
+        createdAt: pmt.createdAt,
+        updatedAt: pmt.updatedAt,
+      };
+    });
 
     return sendSuccess(res, {
       payments: paymentData,
@@ -720,7 +759,7 @@ export async function verifyPaymentController(req: Request, res: Response) {
 export async function regenerateMonthlyFee(req: Request, res: Response) {
   try {
     const { studentId, monthlyFeeId } = req.params;
-    const { month, calendarYear, hostel = false, transportationAreaId, discount = 0, discountReason, newAdmission = false, dayboarding = false }: GenerateFeeRequest = req.body;
+    const { month, calendarYear, feeHeadIds, customAmounts, notes, transportationAreaId, discount = 0, discountReason }: GenerateFeeRequest = req.body;
     const userId = parseInt(req.userId);
 
     // Validate inputs
@@ -738,10 +777,6 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
 
     if (discount < 0) {
       return sendError(res, "Discount cannot be negative", 400);
-    }
-
-    if(hostel && transportationAreaId){
-      return sendError(res, "Student cannot have both hostel and transportation services", 400);  
     }
 
     // Find existing StudentMonthlyFee
@@ -786,21 +821,11 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
       return sendError(res, "Student has no enrollment in the fee's session", 400);
     }
 
-    // Fetch school data for hostel and admission fees
-    const school = await School.findByPk(student.schoolId);
-
-    if (!school) {
-      return sendError(res, "School not found", 404);
-    }
-
     // Recalculate fee items based on enrollment class
     const feeItems: StudentMonthlyFeeItemCreationAttributes[] = await calculateFeeItems(
       regenEnrollment.classId,
-      hostel,
-      transportationAreaId,
-      newAdmission,
-      dayboarding,
-      school
+      student.schoolId,
+      { feeHeadIds, customAmounts, notes, transportationAreaId }
     );
 
     if (feeItems.length === 0) {
@@ -839,8 +864,12 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
     // Create new StudentMonthlyFeeItems
     const feeItemsToCreate = feeItems.map(item => ({
       studentMonthlyFeeId: parseInt(monthlyFeeId),
-      feeType: item.feeType,
+      feeType: item.feeType ?? null,
+      feeHeadId: item.feeHeadId ?? null,
+      feeHeadName: item.feeHeadName ?? null,
+      note: item.note ?? null,
       amount: item.amount,
+      transportationAreaId: item.transportationAreaId ?? null,
     }));
 
     await StudentMonthlyFeeItem.bulkCreate(feeItemsToCreate);
@@ -851,7 +880,7 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
         {
           model: StudentMonthlyFeeItem,
           as: 'feeItems',
-          attributes: ['id', 'feeType', 'amount']
+          attributes: ['id', 'feeType', 'feeHeadId', 'feeHeadName', 'note', 'amount']
         },
       ],
     });
@@ -860,6 +889,43 @@ export async function regenerateMonthlyFee(req: Request, res: Response) {
   } catch (error) {
     logger.error("Error regenerating monthly fee:", { error });
     return sendError(res, "Failed to regenerate monthly fee", 500);
+  }
+}
+
+// Get the most recently generated fee for a student (used to pre-populate fee generation form)
+export async function getLastGeneratedFee(req: Request, res: Response) {
+  try {
+    const { studentId } = req.params;
+
+    const fee = await StudentMonthlyFee.findOne({
+      where: { studentId: parseInt(studentId), schoolId: 1 },
+      order: [['calendarYear', 'DESC'], ['month', 'DESC']],
+      include: [
+        {
+          model: StudentMonthlyFeeItem,
+          as: 'feeItems',
+          attributes: ['feeHeadId', 'feeHeadName', 'feeType', 'amount', 'note', 'transportationAreaId'],
+        },
+      ],
+    });
+
+    if (!fee) {
+      return sendSuccess(res, null, "No generated fee found");
+    }
+
+    return sendSuccess(res, {
+      feeItems: fee.feeItems?.map((item: any) => ({
+        feeHeadId: item.feeHeadId,
+        amount: Number(item.amount),
+        note: item.note ?? null,
+        transportationAreaId: item.transportationAreaId ?? null,
+      })) ?? [],
+      totalAdjustment: Number(fee.totalAdjustment),
+      discountReason: fee.discountReason ?? null,
+    });
+  } catch (error) {
+    logger.error("Error fetching last generated fee:", { error });
+    return sendError(res, "Failed to fetch last generated fee", 500);
   }
 }
 

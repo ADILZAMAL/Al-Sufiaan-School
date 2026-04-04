@@ -184,10 +184,10 @@ export interface UpdatePaymentReminderRequest {
 export interface RegenerateMonthlyFeeRequest {
   month: number;
   calendarYear: number;
-  hostel?: boolean;
+  feeHeadIds?: number[];
+  customAmounts?: Record<number, number>;
+  notes?: Record<number, string>;
   transportationAreaId?: number;
-  dayboarding?: boolean;
-  newAdmission?: boolean;
   discount?: number;
   discountReason?: string;
 }

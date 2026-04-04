@@ -19,8 +19,12 @@ const formatDateOnly = (iso: string) =>
     timeZone: 'Asia/Kolkata',
   });
 
+const getActiveEnrollment = (student: Student) => {
+  return student.enrollments?.find(e => e.session?.isActive) ?? student.enrollments?.[0];
+};
+
 const getClassName = (student: Student) => {
-  const enrollment = student.enrollments?.[0];
+  const enrollment = getActiveEnrollment(student);
   const className = enrollment?.class?.name || student.class?.name || 'N/A';
   const sectionName = enrollment?.section?.name || student.section?.name || 'N/A';
   return `${className} - ${sectionName}`;
@@ -68,6 +72,10 @@ const ViewStudentProfile: React.FC = () => {
   });
 
   const feeTimeline = feeTimelineData?.data || [];
+
+  const totalDue = feeTimeline.reduce((sum: number, entry: any) => {
+    return sum + (entry.dueAmount && entry.dueAmount > 0 ? Number(entry.dueAmount) : 0);
+  }, 0);
 
   // Fetch transportation area if student has one
   const { data: transportationArea } = useQuery({
@@ -235,8 +243,16 @@ const ViewStudentProfile: React.FC = () => {
                 </div>
                 <div className="flex items-center">
                   <span className="font-medium text-gray-700">Roll No:</span>
-                  <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 rounded-md font-semibold">{student.enrollments?.[0]?.rollNumber ?? student.rollNumber ?? 'N/A'}</span>
+                  <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 rounded-md font-semibold">{getActiveEnrollment(student)?.rollNumber ?? student.rollNumber ?? 'N/A'}</span>
                 </div>
+                {!timelineLoading && (
+                  <div className="flex items-center">
+                    <span className="font-medium text-gray-700">Total Due:</span>
+                    <span className={`ml-2 px-2 py-1 rounded-md font-semibold ${totalDue > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                      ₹{totalDue.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="mt-3 text-sm text-gray-500">
                 Gender: <span className="font-medium">{student.gender}</span> | 
@@ -355,9 +371,9 @@ const ViewStudentProfile: React.FC = () => {
                 firstName: student.firstName,
                 lastName: student.lastName,
                 admissionNumber: student.admissionNumber,
-                rollNumber: student.enrollments?.[0]?.rollNumber ?? student.rollNumber,
-                className: student.enrollments?.[0]?.class?.name ?? student.class?.name ?? '',
-                sectionName: student.enrollments?.[0]?.section?.name ?? student.section?.name ?? '',
+                rollNumber: getActiveEnrollment(student)?.rollNumber ?? student.rollNumber,
+                className: getActiveEnrollment(student)?.class?.name ?? student.class?.name ?? '',
+                sectionName: getActiveEnrollment(student)?.section?.name ?? student.section?.name ?? '',
                 schoolId: student.schoolId,
                 fatherName: student.fatherName,
               }}
