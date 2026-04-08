@@ -63,7 +63,7 @@ const DatePicker: React.FC<DatePickerProps> = ({ date, onDateChange, maximumDate
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 10,
+    flex: 1,
   },
   button: {
     backgroundColor: '#fff',

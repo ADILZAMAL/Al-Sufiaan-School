@@ -22,6 +22,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import DatePicker from '../components/DatePicker';
 
 type StudentProfileScreenRouteProp = RouteProp<RootStackParamList, 'StudentProfile'>;
 
@@ -75,11 +76,12 @@ interface FieldProps {
   keyboardType?: 'default' | 'numeric' | 'phone-pad' | 'email-address';
   multiline?: boolean;
   isLast?: boolean;
+  placeholder?: string;
 }
 
 const Field: React.FC<FieldProps> = ({
   label, value, editable, onChangeText,
-  keyboardType = 'default', multiline = false, isLast = false,
+  keyboardType = 'default', multiline = false, isLast = false, placeholder,
 }) => (
   <View style={[styles.fieldRow, !isLast && styles.fieldRowBorder]}>
     <Text style={styles.fieldLabel}>{label}</Text>
@@ -90,7 +92,7 @@ const Field: React.FC<FieldProps> = ({
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         multiline={multiline}
-        placeholder={`Enter ${label.toLowerCase()}`}
+        placeholder={placeholder ?? `Enter ${label.toLowerCase()}`}
         placeholderTextColor="#9ca3af"
         autoCorrect={false}
       />
@@ -222,6 +224,7 @@ const StudentProfileScreen: React.FC = () => {
 
   const handleSave = async () => {
     if (!student || !activeEnrollment) return;
+
     try {
       setSaving(true);
       let photoUrl = form.studentPhoto ?? null;
@@ -381,7 +384,23 @@ const StudentProfileScreen: React.FC = () => {
         <View style={styles.card}>
           <Field label="First Name" value={form.firstName} editable={isEditMode} onChangeText={v => updateForm('firstName', v)} />
           <Field label="Last Name" value={form.lastName} editable={isEditMode} onChangeText={v => updateForm('lastName', v)} />
-          <Field label="Date of Birth" value={form.dateOfBirth} editable={isEditMode} onChangeText={v => updateForm('dateOfBirth', v)} />
+          <View style={[styles.fieldRow, styles.fieldRowBorder]}>
+            <Text style={styles.fieldLabel}>Date of Birth</Text>
+            {isEditMode ? (
+              <DatePicker
+                date={form.dateOfBirth ? new Date(form.dateOfBirth) : new Date()}
+                onDateChange={date => {
+                  const yyyy = date.getFullYear();
+                  const mm = String(date.getMonth() + 1).padStart(2, '0');
+                  const dd = String(date.getDate()).padStart(2, '0');
+                  updateForm('dateOfBirth', `${yyyy}-${mm}-${dd}`);
+                }}
+                maximumDate={new Date()}
+              />
+            ) : (
+              <Text style={styles.fieldValue}>{form.dateOfBirth || '—'}</Text>
+            )}
+          </View>
           <PillSelector label="Gender" options={GENDER_OPTIONS} value={form.gender ?? ''} editable={isEditMode} onSelect={v => updateForm('gender', v as StudentUpdatePayload['gender'])} />
           <PillSelector label="Blood Group" options={BLOOD_GROUP_OPTIONS} value={form.bloodGroup ?? ''} editable={isEditMode} onSelect={v => updateForm('bloodGroup', v as StudentUpdatePayload['bloodGroup'])} />
           <PillSelector label="Religion" options={RELIGION_OPTIONS} value={form.religion ?? ''} editable={isEditMode} onSelect={v => updateForm('religion', v as StudentUpdatePayload['religion'])} isLast />
