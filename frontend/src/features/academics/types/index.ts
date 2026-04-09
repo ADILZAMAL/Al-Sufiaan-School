@@ -17,6 +17,7 @@ export interface Chapter {
   isTaught: boolean;
   taughtOn: string | null;
   taughtBy: number | null;
+  pdfUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }

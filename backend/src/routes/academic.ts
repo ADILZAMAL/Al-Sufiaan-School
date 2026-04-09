@@ -4,10 +4,12 @@ import {
   createSubject, getSubjects, updateSubject, deleteSubject,
   createAssignment, getAssignments, deleteAssignment,
   createChapter, getChapters, updateChapter, deleteChapter,
+  uploadChapterPDF, deleteChapterPDF,
   createExam, getExams, updateExam, deleteExam,
   bulkSubmitMarks, getMarksByExam, getStudentMarks, getPendingMarks,
   getSyllabusProgress,
 } from '../controllers/academic';
+import { uploadSinglePDF } from '../middleware/upload';
 
 const router = Router();
 
@@ -29,6 +31,8 @@ router.post('/chapters', requireRole(['SUPER_ADMIN', 'ADMIN']), createChapter);
 router.get('/chapters', getChapters);
 router.put('/chapters/:id', requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']), updateChapter);
 router.delete('/chapters/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), deleteChapter);
+router.post('/chapters/:id/pdf', requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']), uploadSinglePDF, uploadChapterPDF);
+router.delete('/chapters/:id/pdf', requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']), deleteChapterPDF);
 
 // Exams
 router.post('/exams', requireRole(['SUPER_ADMIN', 'ADMIN']), createExam);

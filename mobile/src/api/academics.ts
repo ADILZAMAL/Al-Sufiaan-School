@@ -52,4 +52,19 @@ export const academicApi = {
   markChapterTaught: async (chapterId: number, isTaught: boolean, taughtOn?: string): Promise<void> => {
     await apiClient.put(`/academic/chapters/${chapterId}`, { isTaught, taughtOn });
   },
+
+  uploadChapterPDF: async (chapterId: number, fileUri: string, fileName: string): Promise<string> => {
+    const formData = new FormData();
+    formData.append('pdf', { uri: fileUri, name: fileName, type: 'application/pdf' } as any);
+    const response = await apiClient.post<{ success: boolean; data: { pdfUrl: string } }>(
+      `/academic/chapters/${chapterId}/pdf`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return response.data.data.pdfUrl;
+  },
+
+  deleteChapterPDF: async (chapterId: number): Promise<void> => {
+    await apiClient.delete(`/academic/chapters/${chapterId}/pdf`);
+  },
 };

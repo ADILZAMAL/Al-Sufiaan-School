@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, Alert,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, Linking,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import * as DocumentPicker from 'expo-document-picker';
 import { useAuth } from '../context/AuthContext';
 import { academicApi } from '../api/academics';
 import { AcademicChapter } from '../types';
@@ -24,6 +25,7 @@ const MarksChapterSelectionScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [markingId, setMarkingId] = useState<number | null>(null);
+  const [pdfLoadingId, setPdfLoadingId] = useState<number | null>(null);
 
   useEffect(() => { loadChapters(); }, []);
 
@@ -61,6 +63,48 @@ const MarksChapterSelectionScreen: React.FC = () => {
         ]
       );
     }
+  };
+
+  const handlePDFPress = async (chapter: AcademicChapter) => {
+    if (chapter.pdfUrl) {
+      Linking.openURL(chapter.pdfUrl);
+    } else {
+      try {
+        const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
+        if (result.canceled || !result.assets?.[0]) return;
+        const asset = result.assets[0];
+        setPdfLoadingId(chapter.id);
+        const pdfUrl = await academicApi.uploadChapterPDF(chapter.id, asset.uri, asset.name);
+        setChapters(prev => prev.map(c => c.id === chapter.id ? { ...c, pdfUrl } : c));
+      } catch (err: any) {
+        Alert.alert('Error', err.response?.data?.message || 'Failed to upload PDF');
+      } finally {
+        setPdfLoadingId(null);
+      }
+    }
+  };
+
+  const handlePDFDelete = (chapter: AcademicChapter) => {
+    Alert.alert(
+      'Delete PDF',
+      `Remove PDF from "${chapter.name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive', onPress: async () => {
+            try {
+              setPdfLoadingId(chapter.id);
+              await academicApi.deleteChapterPDF(chapter.id);
+              setChapters(prev => prev.map(c => c.id === chapter.id ? { ...c, pdfUrl: null } : c));
+            } catch (err: any) {
+              Alert.alert('Error', err.response?.data?.message || 'Failed to delete PDF');
+            } finally {
+              setPdfLoadingId(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const toggleTaught = async (chapter: AcademicChapter, isTaught: boolean) => {
@@ -114,6 +158,16 @@ const MarksChapterSelectionScreen: React.FC = () => {
               </View>
             </TouchableOpacity>
             <TouchableOpacity
+              style={[styles.pdfButton, item.pdfUrl ? styles.pdfButtonActive : styles.pdfButtonEmpty]}
+              onPress={() => handlePDFPress(item)}
+              onLongPress={() => item.pdfUrl && handlePDFDelete(item)}
+              disabled={pdfLoadingId === item.id}
+            >
+              <Text style={[styles.pdfButtonText, item.pdfUrl ? styles.pdfButtonTextActive : styles.pdfButtonTextEmpty]}>
+                {pdfLoadingId === item.id ? '...' : item.pdfUrl ? 'PDF' : '+ PDF'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[styles.badge, item.isTaught ? styles.badgeTaught : styles.badgeNotTaught]}
               onPress={() => handleMarkTaught(item)}
               disabled={markingId === item.id}
@@ -152,6 +206,12 @@ const styles = StyleSheet.create({
   chapterInfo: { flex: 1 },
   chapterName: { fontSize: 15, fontWeight: '600', color: '#1f2937' },
   taughtDate: { fontSize: 12, color: '#10b981', marginTop: 2 },
+  pdfButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, marginRight: 6 },
+  pdfButtonActive: { backgroundColor: '#dbeafe' },
+  pdfButtonEmpty: { backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: '#d1d5db' },
+  pdfButtonText: { fontSize: 12, fontWeight: '600' },
+  pdfButtonTextActive: { color: '#2563eb' },
+  pdfButtonTextEmpty: { color: '#9ca3af' },
   badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
   badgeTaught: { backgroundColor: '#dcfce7' },
   badgeNotTaught: { backgroundColor: '#fee2e2' },

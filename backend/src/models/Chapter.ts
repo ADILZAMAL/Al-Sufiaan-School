@@ -11,6 +11,7 @@ class Chapter extends Model {
   public isTaught!: boolean;
   public taughtOn!: string | null;
   public taughtBy!: number | null;
+  public pdfUrl!: string | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -62,6 +63,10 @@ export const initChapterModel = (sequelize: Sequelize) => {
         references: { model: Staff, key: 'id' },
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL',
+      },
+      pdfUrl: {
+        type: DataTypes.STRING(500),
+        allowNull: true,
       },
       createdAt: {
         type: DataTypes.DATE,

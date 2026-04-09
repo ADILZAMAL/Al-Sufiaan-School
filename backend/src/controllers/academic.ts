@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import { Subject, Chapter, Exam, StudentExamMark, TeacherSubjectAssignment, Student, Staff, User, StudentEnrollment, AcademicSession, Section } from '../models';
 import { sendSuccess, sendError } from '../utils/response';
 import logger from '../utils/logger';
+import cloudinary, { chapterPDFUploadOptions } from '../config/cloudinary';
 
 // ─── SUBJECTS ────────────────────────────────────────────────────────────────
 
@@ -255,6 +256,54 @@ export const deleteChapter = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Error deleting chapter', { error });
     return sendError(res, 'Failed to delete chapter', 500);
+  }
+};
+
+export const uploadChapterPDF = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = parseInt(String(req.schoolId));
+
+    const chapter = await Chapter.findOne({ where: { id: parseInt(id), schoolId } });
+    if (!chapter) return sendError(res, 'Chapter not found', 404);
+
+    if (!req.file) return sendError(res, 'No PDF file provided', 400);
+
+    const uploadOptions = chapterPDFUploadOptions(chapter.id);
+    const result = await new Promise<any>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      });
+      stream.end(req.file!.buffer);
+    });
+
+    await chapter.update({ pdfUrl: result.secure_url });
+    return sendSuccess(res, { pdfUrl: result.secure_url }, 'PDF uploaded successfully');
+  } catch (error) {
+    logger.error('Error uploading chapter PDF', { error });
+    return sendError(res, 'Failed to upload PDF', 500);
+  }
+};
+
+export const deleteChapterPDF = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = parseInt(String(req.schoolId));
+
+    const chapter = await Chapter.findOne({ where: { id: parseInt(id), schoolId } });
+    if (!chapter) return sendError(res, 'Chapter not found', 404);
+
+    if (!chapter.pdfUrl) return sendError(res, 'No PDF to delete', 404);
+
+    const publicId = `al-sufiaan-school/chapter-pdfs/chapter-${chapter.id}`;
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+
+    await chapter.update({ pdfUrl: null });
+    return sendSuccess(res, null, 'PDF deleted successfully');
+  } catch (error) {
+    logger.error('Error deleting chapter PDF', { error });
+    return sendError(res, 'Failed to delete PDF', 500);
   }
 };
 

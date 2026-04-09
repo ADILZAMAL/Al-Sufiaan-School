@@ -12,6 +12,15 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     }
 };
 
+// File filter to allow only PDFs
+const pdfFileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    if (file.mimetype === 'application/pdf') {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type. Only PDF files are allowed.'));
+    }
+};
+
 // Configure multer for memory storage (files will be uploaded to Cloudinary)
 export const uploadPhoto = multer({
     storage: multer.memoryStorage(),
@@ -23,6 +32,17 @@ export const uploadPhoto = multer({
 
 // Middleware to handle single photo upload
 export const uploadSinglePhoto = uploadPhoto.single('photo');
+
+// Configure multer for PDF uploads
+const uploadPDF = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 20 * 1024 * 1024, // 20MB limit
+    },
+    fileFilter: pdfFileFilter,
+});
+
+export const uploadSinglePDF = uploadPDF.single('pdf');
 
 // Middleware to handle multiple photo uploads (max 4 photos)
 export const uploadMultipleStudentPhotos = uploadPhoto.fields([

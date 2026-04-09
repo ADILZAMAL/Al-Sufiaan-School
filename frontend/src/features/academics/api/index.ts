@@ -51,6 +51,21 @@ export const chapterApi = {
   delete: async (id: number): Promise<void> => {
     await req(`/api/academic/chapters/${id}`, { method: 'DELETE' });
   },
+  uploadPDF: async (id: number, file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('pdf', file);
+    const response = await fetch(`${API_BASE_URL}/api/academic/chapters/${id}/pdf`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    const body = await response.json();
+    if (!body.success) throw new Error(body.message || 'Upload failed');
+    return body.data.pdfUrl as string;
+  },
+  deletePDF: async (id: number): Promise<void> => {
+    await req(`/api/academic/chapters/${id}/pdf`, { method: 'DELETE' });
+  },
 };
 
 // ── Exams ─────────────────────────────────────────────────────────────────────

@@ -178,6 +178,7 @@ export interface AcademicChapter {
   orderNumber: number;
   isTaught: boolean;
   taughtOn: string | null;
+  pdfUrl: string | null;
 }
 
 export interface AcademicExam {

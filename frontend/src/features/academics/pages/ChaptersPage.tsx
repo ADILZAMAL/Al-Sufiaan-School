@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FaPlus, FaChevronRight, FaTimes } from 'react-icons/fa';
+import { FaPlus, FaChevronRight, FaTimes, FaFilePdf } from 'react-icons/fa';
 import { HiOutlinePencil, HiOutlineTrash, HiOutlineArrowLeft, HiOutlineCheck } from 'react-icons/hi';
 import { chapterApi } from '../api';
 import { Chapter } from '../types';
@@ -21,6 +21,11 @@ export default function ChaptersPage() {
   const [deletingChapter, setDeletingChapter] = useState<Chapter | null>(null);
   const [formName, setFormName] = useState('');
   const [formOrder, setFormOrder] = useState('1');
+  const [pdfLoadingId, setPdfLoadingId] = useState<number | null>(null);
+  const [deletingPdfChapter, setDeletingPdfChapter] = useState<Chapter | null>(null);
+  const [viewingPdfChapter, setViewingPdfChapter] = useState<Chapter | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pdfTargetChapterId, setPdfTargetChapterId] = useState<number | null>(null);
 
   const { data: chapters = [], isLoading } = useQuery<Chapter[]>(
     ['chapters', subjectId],
@@ -84,6 +89,51 @@ export default function ChaptersPage() {
     });
   };
 
+  const handlePdfClick = (chapter: Chapter) => {
+    if (chapter.pdfUrl) {
+      setViewingPdfChapter(chapter);
+    } else {
+      setPdfTargetChapterId(chapter.id);
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !pdfTargetChapterId) return;
+    e.target.value = '';
+    try {
+      setPdfLoadingId(pdfTargetChapterId);
+      const pdfUrl = await chapterApi.uploadPDF(pdfTargetChapterId, file);
+      queryClient.setQueryData<Chapter[]>(['chapters', subjectId], old =>
+        (old ?? []).map(c => c.id === pdfTargetChapterId ? { ...c, pdfUrl } : c)
+      );
+      showToast({ message: 'PDF uploaded successfully', type: 'SUCCESS' });
+    } catch (e: unknown) {
+      showToast({ message: (e as Error).message, type: 'ERROR' });
+    } finally {
+      setPdfLoadingId(null);
+      setPdfTargetChapterId(null);
+    }
+  };
+
+  const handleDeletePdf = async () => {
+    if (!deletingPdfChapter) return;
+    try {
+      setPdfLoadingId(deletingPdfChapter.id);
+      await chapterApi.deletePDF(deletingPdfChapter.id);
+      queryClient.setQueryData<Chapter[]>(['chapters', subjectId], old =>
+        (old ?? []).map(c => c.id === deletingPdfChapter.id ? { ...c, pdfUrl: null } : c)
+      );
+      showToast({ message: 'PDF deleted', type: 'SUCCESS' });
+    } catch (e: unknown) {
+      showToast({ message: (e as Error).message, type: 'ERROR' });
+    } finally {
+      setPdfLoadingId(null);
+      setDeletingPdfChapter(null);
+    }
+  };
+
   const taughtCount = chapters.filter(c => c.isTaught).length;
 
   if (!subjectId) {
@@ -101,6 +151,14 @@ export default function ChaptersPage() {
 
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
+      {/* Hidden PDF file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={handleFileChange}
+      />
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
@@ -206,6 +264,21 @@ export default function ChaptersPage() {
                     {chapter.isTaught ? 'Taught' : 'Not Taught'}
                   </button>
 
+                  {/* PDF button */}
+                  <button
+                    onClick={() => handlePdfClick(chapter)}
+                    disabled={pdfLoadingId === chapter.id}
+                    title={chapter.pdfUrl ? 'View PDF' : 'Upload PDF'}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition shrink-0 ${
+                      chapter.pdfUrl
+                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                    }`}
+                  >
+                    <FaFilePdf size={11} />
+                    {pdfLoadingId === chapter.id ? '...' : chapter.pdfUrl ? 'PDF' : 'Add PDF'}
+                  </button>
+
                   {/* Actions — hover reveal */}
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
                     <button
@@ -215,6 +288,15 @@ export default function ChaptersPage() {
                     >
                       <HiOutlinePencil className="text-base" />
                     </button>
+                    {chapter.pdfUrl && (
+                      <button
+                        onClick={() => setDeletingPdfChapter(chapter)}
+                        className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition"
+                        title="Delete PDF"
+                      >
+                        <FaFilePdf className="text-base" />
+                      </button>
+                    )}
                     <button
                       onClick={() => setDeletingChapter(chapter)}
                       className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
@@ -288,6 +370,69 @@ export default function ChaptersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Viewer Modal */}
+      {viewingPdfChapter?.pdfUrl && (
+        <div className="fixed inset-0 flex flex-col z-50 bg-black/60 backdrop-blur-sm">
+          <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+            <div className="flex items-center gap-2">
+              <FaFilePdf className="text-red-500" size={16} />
+              <span className="font-semibold text-gray-800 text-sm">{viewingPdfChapter.name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={viewingPdfChapter.pdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition"
+              >
+                Open in tab
+              </a>
+              <button
+                onClick={() => setViewingPdfChapter(null)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                <FaTimes size={14} />
+              </button>
+            </div>
+          </div>
+          <iframe
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(viewingPdfChapter.pdfUrl)}&embedded=true`}
+            className="flex-1 w-full bg-gray-100"
+            title={viewingPdfChapter.name}
+          />
+        </div>
+      )}
+
+      {/* Delete PDF Confirmation */}
+      {deletingPdfChapter && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-3">
+              <FaFilePdf className="text-orange-400" size={20} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete PDF?</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Remove the PDF from <span className="font-medium text-gray-700">"{deletingPdfChapter.name}"</span>? You can re-upload one later.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingPdfChapter(null)}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeletePdf}
+                disabled={pdfLoadingId === deletingPdfChapter.id}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-orange-600 text-white text-sm font-medium hover:bg-orange-700 disabled:opacity-50 transition"
+              >
+                {pdfLoadingId === deletingPdfChapter.id ? 'Deleting...' : 'Delete PDF'}
+              </button>
+            </div>
           </div>
         </div>
       )}

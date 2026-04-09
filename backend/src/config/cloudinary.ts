@@ -20,6 +20,15 @@ export const staffPhotoUploadOptions = {
     quality: 'auto'
 };
 
+// Upload options for chapter PDFs
+export const chapterPDFUploadOptions = (chapterId: number) => ({
+    folder: 'al-sufiaan-school/chapter-pdfs',
+    public_id: `chapter-${chapterId}`,
+    use_filename: false,
+    overwrite: true,
+    resource_type: 'raw' as const,
+});
+
 // Upload options for school logos
 export const schoolLogoUploadOptions = {
     folder: 'al-sufiaan-school/school-logos',
