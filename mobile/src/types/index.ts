@@ -3,6 +3,29 @@ export enum AttendanceStatus {
   ABSENT = 'ABSENT',
 }
 
+export enum AttendanceType {
+  CLASS       = 'CLASS',
+  HOSTEL      = 'HOSTEL',
+  DAYBOARDING = 'DAYBOARDING',
+}
+
+export interface BoardingStudent {
+  id: number;
+  firstName: string;
+  lastName: string;
+  studentPhoto?: string;
+  hostel: boolean;
+  dayboarding: boolean;
+  rollNumber: string | null;
+  class: { id: number; name: string } | null;
+  section: { id: number; name: string } | null;
+  attendance?: {
+    id: number;
+    status: AttendanceStatus;
+    remarks?: string | null;
+  } | null;
+}
+
 export interface Student {
   id: number;
   firstName: string;
@@ -70,6 +93,7 @@ export interface LoginResponse {
 }
 
 export interface BulkAttendanceRequest {
+  attendanceType?: AttendanceType;
   attendances: Array<{
     studentId: number;
     status: AttendanceStatus;

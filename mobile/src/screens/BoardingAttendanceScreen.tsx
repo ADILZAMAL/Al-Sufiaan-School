@@ -12,20 +12,20 @@ import {
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { attendanceApi } from '../api/attendance';
 import { holidayApi } from '../api/holiday';
-import { Student, AttendanceStatus, BulkAttendanceRequest, Holiday } from '../types';
+import { BoardingStudent, AttendanceStatus, AttendanceType, BulkAttendanceRequest, Holiday } from '../types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import { useAuth } from '../context/AuthContext';
 
-const AttendanceScreen: React.FC = () => {
+const BoardingAttendanceScreen: React.FC = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const params = route.params as RootStackParamList['Attendance'];
-  const { classId, sectionId } = params || {};
+  const params = route.params as RootStackParamList['BoardingAttendance'];
+  const { boardingType } = params;
   const { logout } = useAuth();
 
-  const [students, setStudents] = useState<Student[]>([]);
+  const [students, setStudents] = useState<BoardingStudent[]>([]);
   const [attendanceState, setAttendanceState] = useState<Map<number, AttendanceStatus>>(new Map());
   const [baselineAttendanceState, setBaselineAttendanceState] = useState<Map<number, AttendanceStatus>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -37,7 +37,14 @@ const AttendanceScreen: React.FC = () => {
 
   useEffect(() => {
     loadStudentsWithAttendance();
-  }, [classId, sectionId]);
+  }, [boardingType]);
+
+  const formatDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const loadStudentsWithAttendance = async () => {
     try {
@@ -45,8 +52,8 @@ const AttendanceScreen: React.FC = () => {
       setError(null);
       const today = new Date();
       const dateString = formatDate(today);
-      
-      // First check if the selected date is a holiday
+
+      // Check if today is a holiday
       try {
         const holidayCheck = await holidayApi.checkIsHoliday(dateString);
         if (holidayCheck.isHoliday && holidayCheck.holiday) {
@@ -59,15 +66,13 @@ const AttendanceScreen: React.FC = () => {
           return;
         }
       } catch (holidayErr: any) {
-        // If holiday check fails, continue with loading students
-        // (holiday API might not be available or there's a network issue)
         console.warn('Error checking holiday:', holidayErr);
       }
 
-      // If not a holiday, load students
       setIsHoliday(false);
       setHoliday(null);
-      const data = await attendanceApi.getStudentsWithAttendance(classId, sectionId, dateString);
+
+      const data = await attendanceApi.getBoardingStudentsWithAttendance(boardingType, dateString);
       setStudents(data);
 
       // Initialize attendance state from loaded data
@@ -78,13 +83,10 @@ const AttendanceScreen: React.FC = () => {
         }
       });
       setAttendanceState(state);
-      // Set baseline to track what was loaded from API (saved state)
       setBaselineAttendanceState(new Map(state));
       setCurrentIndex(0);
     } catch (err: any) {
-      // Check if error is unauthorized (401)
       if (err.response?.status === 401) {
-        // Logout and redirect to login (AppNavigator will handle navigation)
         await logout();
         return;
       }
@@ -95,31 +97,22 @@ const AttendanceScreen: React.FC = () => {
     }
   };
 
-  const formatDate = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const calculateUnsavedCount = (): number => {
     let count = 0;
-    
-    // Check for changes in existing baseline entries
+
     baselineAttendanceState.forEach((baselineStatus, studentId) => {
       const currentStatus = attendanceState.get(studentId);
       if (currentStatus !== baselineStatus) {
         count++;
       }
     });
-    
-    // Check for new entries not in baseline
-    attendanceState.forEach((currentStatus, studentId) => {
+
+    attendanceState.forEach((_, studentId) => {
       if (!baselineAttendanceState.has(studentId)) {
         count++;
       }
     });
-    
+
     return count;
   };
 
@@ -133,7 +126,6 @@ const AttendanceScreen: React.FC = () => {
     if (currentIndex < students.length) {
       const student = students[currentIndex];
       handleMarkAttendance(student.id, AttendanceStatus.PRESENT);
-      // Move to next student
       if (currentIndex < students.length - 1) {
         setCurrentIndex(currentIndex + 1);
       }
@@ -144,7 +136,6 @@ const AttendanceScreen: React.FC = () => {
     if (currentIndex < students.length) {
       const student = students[currentIndex];
       handleMarkAttendance(student.id, AttendanceStatus.ABSENT);
-      // Move to next student
       if (currentIndex < students.length - 1) {
         setCurrentIndex(currentIndex + 1);
       }
@@ -168,7 +159,6 @@ const AttendanceScreen: React.FC = () => {
 
     setSaving(true);
     try {
-      const today = new Date();
       const attendances: BulkAttendanceRequest['attendances'] = Array.from(attendanceState.entries()).map(
         ([studentId, status]) => ({
           studentId,
@@ -178,6 +168,7 @@ const AttendanceScreen: React.FC = () => {
       );
 
       const requestData: BulkAttendanceRequest = {
+        attendanceType: boardingType === 'HOSTEL' ? AttendanceType.HOSTEL : AttendanceType.DAYBOARDING,
         attendances,
       };
 
@@ -194,19 +185,15 @@ const AttendanceScreen: React.FC = () => {
           {
             text: 'OK',
             onPress: () => {
-              // Reload to show updated attendance
               loadStudentsWithAttendance();
             },
           },
         ]);
       }
 
-      // Update baseline to match current state after successful save
       setBaselineAttendanceState(new Map(attendanceState));
     } catch (err: any) {
-      // Check if error is unauthorized (401)
       if (err.response?.status === 401) {
-        // Logout and redirect to login (AppNavigator will handle navigation)
         await logout();
         return;
       }
@@ -221,16 +208,13 @@ const AttendanceScreen: React.FC = () => {
   };
 
   const unsavedCount = calculateUnsavedCount();
-  const remainingCount = students.length - currentIndex;
-  // Check if all students have been marked (have a status in attendanceState)
-  const allMarked = students.length > 0 && students.every(student => {
+  const allMarked = students.length > 0 && students.every((student) => {
     const status = attendanceState.get(student.id);
     return status === AttendanceStatus.PRESENT || status === AttendanceStatus.ABSENT;
   });
-  
-  // Get current student data
+
   const currentStudent = students[currentIndex];
-  const currentStatus = currentStudent 
+  const currentStatus = currentStudent
     ? (attendanceState.get(currentStudent.id) || currentStudent.attendance?.status || null)
     : null;
   const isPresent = currentStatus === AttendanceStatus.PRESENT;
@@ -244,7 +228,6 @@ const AttendanceScreen: React.FC = () => {
     return <ErrorMessage message={error} onRetry={loadStudentsWithAttendance} />;
   }
 
-  // Show holiday message if today is a holiday
   if (isHoliday && holiday) {
     return (
       <View style={styles.container}>
@@ -286,7 +269,6 @@ const AttendanceScreen: React.FC = () => {
     <View style={styles.container}>
       {/* Header Section */}
       <View style={styles.header}>
-        {/* Progress Indicator */}
         {students.length > 0 && (
           <View style={styles.progressContainer}>
             <Text style={styles.progressText}>
@@ -294,8 +276,6 @@ const AttendanceScreen: React.FC = () => {
             </Text>
           </View>
         )}
-
-        {/* Unsaved Changes Indicator */}
         {unsavedCount > 0 && (
           <View style={styles.unsavedIndicator}>
             <Text style={styles.unsavedText}>
@@ -305,7 +285,7 @@ const AttendanceScreen: React.FC = () => {
         )}
       </View>
 
-      {/* Show table view when all students are marked, otherwise show current student */}
+      {/* Table view when all marked, otherwise card view */}
       {allMarked && students.length > 0 ? (
         <ScrollView style={styles.tableContainer} contentContainerStyle={styles.tableContent}>
           <View style={styles.tableHeader}>
@@ -316,18 +296,25 @@ const AttendanceScreen: React.FC = () => {
           <Text style={styles.tableEditHint}>Tap a row to change status</Text>
           {students.map((student, index) => {
             const status = attendanceState.get(student.id) || student.attendance?.status || null;
-            const isPresent = status === AttendanceStatus.PRESENT;
-            const isAbsent = status === AttendanceStatus.ABSENT;
+            const present = status === AttendanceStatus.PRESENT;
+            const absent = status === AttendanceStatus.ABSENT;
             return (
               <TouchableOpacity key={student.id} style={[styles.tableRow, index % 2 === 0 && styles.tableRowEven]} onPress={() => handleToggleStatus(student.id)} activeOpacity={0.7}>
-                <Text style={[styles.tableCell, styles.tableCol1]}>
-                  {student.firstName} {student.lastName}
-                </Text>
+                <View style={[styles.tableCol1]}>
+                  <Text style={styles.tableCell}>
+                    {student.firstName} {student.lastName}
+                  </Text>
+                  {student.class && student.section && (
+                    <Text style={styles.tableCellSub}>
+                      {student.class.name} - {student.section.name}
+                    </Text>
+                  )}
+                </View>
                 <Text style={[styles.tableCell, styles.tableCol2]}>
                   {student.rollNumber || '-'}
                 </Text>
-                <Text style={[styles.tableCell, styles.tableCol3, isPresent && styles.statusPresent, isAbsent && styles.statusAbsent, !isPresent && !isAbsent && styles.statusUnmarked]}>
-                  {isPresent ? '✓ Present' : isAbsent ? '✗ Absent' : '-'}
+                <Text style={[styles.tableCell, styles.tableCol3, present && styles.statusPresent, absent && styles.statusAbsent, !present && !absent && styles.statusUnmarked]}>
+                  {present ? '✓ Present' : absent ? '✗ Absent' : '-'}
                 </Text>
               </TouchableOpacity>
             );
@@ -360,22 +347,13 @@ const AttendanceScreen: React.FC = () => {
             )}
 
             {/* Class and Section */}
-            <Text style={styles.classSection}>
-              {currentStudent.class?.name} - {currentStudent.section?.name}
-            </Text>
-
-            {/* Days Absent Indicator */}
-            {currentStudent.daysAbsentSinceLastPresent !== null && 
-             currentStudent.daysAbsentSinceLastPresent !== undefined && 
-             currentStudent.daysAbsentSinceLastPresent > 0 && (
-              <View style={styles.absentBadge}>
-                <Text style={styles.absentBadgeText}>
-                  Absent for {currentStudent.daysAbsentSinceLastPresent} {currentStudent.daysAbsentSinceLastPresent === 1 ? 'day' : 'days'}
-                </Text>
-              </View>
+            {currentStudent.class && currentStudent.section && (
+              <Text style={styles.classSection}>
+                {currentStudent.class.name} - {currentStudent.section.name}
+              </Text>
             )}
 
-            {/* Status Indicator - Simple text only */}
+            {/* Status Indicator */}
             {isPresent && (
               <Text style={styles.statusText}>Status: Present</Text>
             )}
@@ -386,7 +364,9 @@ const AttendanceScreen: React.FC = () => {
         </View>
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No students found</Text>
+          <Text style={styles.emptyText}>
+            No {boardingType === 'HOSTEL' ? 'hostel' : 'dayboarding'} students found
+          </Text>
         </View>
       )}
 
@@ -408,7 +388,7 @@ const AttendanceScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Save Button - Only show when all students are marked */}
+      {/* Save Button */}
       {allMarked && unsavedCount > 0 && (
         <View style={styles.saveSection}>
           <TouchableOpacity
@@ -515,21 +495,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#4b5563',
     marginBottom: 20,
-    textAlign: 'center',
-  },
-  absentBadge: {
-    backgroundColor: '#fee2e2',
-    borderColor: '#ef4444',
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginTop: 8,
-  },
-  absentBadgeText: {
-    color: '#dc2626',
-    fontSize: 14,
-    fontWeight: '600',
     textAlign: 'center',
   },
   statusText: {
@@ -699,6 +664,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+    alignItems: 'center',
   },
   tableRowEven: {
     backgroundColor: '#f9fafb',
@@ -706,6 +672,11 @@ const styles = StyleSheet.create({
   tableCell: {
     fontSize: 14,
     color: '#374151',
+  },
+  tableCellSub: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginTop: 2,
   },
   tableCol1: {
     flex: 2,
@@ -734,4 +705,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AttendanceScreen;
+export default BoardingAttendanceScreen;

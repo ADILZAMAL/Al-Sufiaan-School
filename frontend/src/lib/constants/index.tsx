@@ -166,6 +166,12 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 		icon: <HiOutlineCalendar />
 	},
 	{
+		key: 'boarding-attendance',
+		label: 'Boarding Attendance',
+		path: 'boarding-attendance',
+		icon: <HiOutlineClipboardList />
+	},
+	{
 		key: 'holidays',
 		label: 'Holidays',
 		path: 'holidays',

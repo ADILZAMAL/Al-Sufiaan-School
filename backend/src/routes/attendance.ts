@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import verifyToken from '../middleware/auth';
 import { body, param, query } from 'express-validator';
-import { AttendanceStatus } from '../models/Attendance';
+import { AttendanceStatus, AttendanceType } from '../models/Attendance';
 import {
   bulkMarkAttendance,
   getAttendance,
@@ -11,6 +11,7 @@ import {
   getAllAttendanceStats,
   getStudentsWithAttendance,
   getStudentAttendanceCalendar,
+  getBoardingStudents,
 } from '../controllers/attendance';
 
 const router = Router();
@@ -47,6 +48,24 @@ const bulkMarkAttendanceValidation = [
       }
       return true;
     }),
+  body('attendanceType')
+    .optional()
+    .isIn(Object.values(AttendanceType))
+    .withMessage(`attendanceType must be one of: ${Object.values(AttendanceType).join(', ')}`),
+];
+
+// Validation rules for boarding students query
+const getBoardingStudentsValidation = [
+  query('boardingType')
+    .notEmpty()
+    .withMessage('boardingType is required')
+    .isIn(['HOSTEL', 'DAYBOARDING'])
+    .withMessage('boardingType must be HOSTEL or DAYBOARDING'),
+  query('date')
+    .notEmpty()
+    .withMessage('Date is required')
+    .isISO8601()
+    .withMessage('Date must be a valid date format (YYYY-MM-DD)'),
 ];
 
 // Validation rules for updating attendance
@@ -115,6 +134,7 @@ router.post('/', verifyToken, bulkMarkAttendanceValidation, bulkMarkAttendance);
 router.get('/', verifyToken, getAttendanceQueryValidation, getAttendance);
 router.get('/stats', verifyToken, getAttendanceStatsValidation, getAttendanceStats);
 router.get('/stats/all', verifyToken, getAllAttendanceStats);
+router.get('/boarding-students', verifyToken, getBoardingStudentsValidation, getBoardingStudents);
 router.get('/students/:classId/:sectionId', verifyToken, getStudentsWithAttendance);
 router.get('/calendar/:studentId', verifyToken, getStudentAttendanceCalendar);
 router.get('/:id', verifyToken, getAttendanceById);

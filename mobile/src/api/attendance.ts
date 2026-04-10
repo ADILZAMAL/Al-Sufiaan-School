@@ -1,5 +1,5 @@
 import apiClient from './client';
-import { BulkAttendanceRequest, BulkAttendanceResponse, Student, AttendanceRecord } from '../types';
+import { BulkAttendanceRequest, BulkAttendanceResponse, Student, AttendanceRecord, BoardingStudent } from '../types';
 
 export const attendanceApi = {
   // Get students with attendance status for a class/section
@@ -50,6 +50,19 @@ export const attendanceApi = {
   getAttendanceById: async (id: number): Promise<AttendanceRecord> => {
     const response = await apiClient.get<{ success: boolean; data: AttendanceRecord }>(
       `/attendance/${id}`
+    );
+    return response.data.data;
+  },
+
+  // Get boarding students (hostel or dayboarding) with attendance for a date
+  getBoardingStudentsWithAttendance: async (
+    boardingType: 'HOSTEL' | 'DAYBOARDING',
+    date?: string
+  ): Promise<BoardingStudent[]> => {
+    const params = new URLSearchParams({ boardingType });
+    if (date) params.append('date', date);
+    const response = await apiClient.get<{ success: boolean; data: BoardingStudent[] }>(
+      `/attendance/boarding-students?${params.toString()}`
     );
     return response.data.data;
   },

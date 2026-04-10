@@ -4,9 +4,25 @@ import { getStudentCalendar, type StudentAttendanceCalendar, type AttendanceCale
 interface AttendanceCalendarProps {
   studentId: number;
   studentActive?: boolean;
+  hostel?: boolean;
+  dayboarding?: boolean;
 }
 
-export default function AttendanceCalendar({ studentId, studentActive = true }: AttendanceCalendarProps) {
+type AttendanceType = 'CLASS' | 'HOSTEL' | 'DAYBOARDING';
+
+interface DayRecords {
+  class?: AttendanceCalendarRecord;
+  hostel?: AttendanceCalendarRecord;
+  dayboarding?: AttendanceCalendarRecord;
+  holiday?: AttendanceCalendarRecord;
+}
+
+export default function AttendanceCalendar({
+  studentId,
+  studentActive = true,
+  hostel = false,
+  dayboarding = false,
+}: AttendanceCalendarProps) {
   const [calendar, setCalendar] = useState<StudentAttendanceCalendar | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -28,98 +44,92 @@ export default function AttendanceCalendar({ studentId, studentActive = true }: 
     }
   };
 
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'PRESENT':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'ABSENT':
-        return 'bg-red-100 text-red-800 border-red-300';
-      case 'HOLIDAY':
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-      default:
-        return 'bg-white text-gray-400 border-gray-200';
-    }
-  };
+  // Group all records by date
+  const recordsByDate = new Map<string, DayRecords>();
+  if (calendar) {
+    calendar.attendanceRecords.forEach((r) => {
+      const existing = recordsByDate.get(r.date) || {};
+      if (r.status === 'HOLIDAY') {
+        existing.holiday = r;
+      } else if (r.attendanceType === 'CLASS') {
+        existing.class = r;
+      } else if (r.attendanceType === 'HOSTEL') {
+        existing.hostel = r;
+      } else if (r.attendanceType === 'DAYBOARDING') {
+        existing.dayboarding = r;
+      }
+      recordsByDate.set(r.date, existing);
+    });
+  }
 
-  const getDaysInMonth = (year: number, month: number): number => {
-    return new Date(year, month + 1, 0).getDate();
-  };
-
-  const getFirstDayOfMonth = (year: number, month: number): number => {
-    return new Date(year, month, 1).getDay();
-  };
+  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
 
   const formatDate = (day: number): string => {
-    // Format manually to avoid timezone conversion issues
-    const year = selectedYear;
-    const month = String(selectedMonth + 1).padStart(2, '0'); // Months are 0-indexed
+    const month = String(selectedMonth + 1).padStart(2, '0');
     const dayStr = String(day).padStart(2, '0');
-    return `${year}-${month}-${dayStr}`;
+    return `${selectedYear}-${month}-${dayStr}`;
   };
 
-  const isSunday = (year: number, month: number, day: number): boolean => {
-    const date = new Date(year, month, day);
-    return date.getDay() === 0; // 0 = Sunday
-  };
+  const isSunday = (year: number, month: number, day: number) =>
+    new Date(year, month, day).getDay() === 0;
 
-  const getRecordForDate = (dateStr: string, day?: number): AttendanceCalendarRecord | null => {
-    if (!calendar) {
-      // If no calendar data yet, check if it's a Sunday
-      if (day !== undefined && isSunday(selectedYear, selectedMonth, day)) {
-        return {
-          date: dateStr,
-          status: 'HOLIDAY',
-          name: 'Sunday',
-          reason: 'Weekly holiday',
-        };
-      }
-      return null;
+  const getRecordsForDay = (day: number): DayRecords => {
+    const dateStr = formatDate(day);
+    const records = recordsByDate.get(dateStr) || {};
+    if (!records.holiday && isSunday(selectedYear, selectedMonth, day)) {
+      records.holiday = { date: dateStr, status: 'HOLIDAY', name: 'Sunday', reason: 'Weekly holiday' };
     }
-    
-    const record = calendar.attendanceRecords.find(r => r.date === dateStr);
-    if (record) return record;
-    
-    // If no record found, check if it's a Sunday
-    if (day !== undefined && isSunday(selectedYear, selectedMonth, day)) {
-      return {
-        date: dateStr,
-        status: 'HOLIDAY',
-        name: 'Sunday',
-        reason: 'Weekly holiday',
-      };
-    }
-    
-    return null;
+    return records;
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     if (direction === 'prev') {
-      if (selectedMonth === 0) {
-        setSelectedMonth(11);
-        setSelectedYear(selectedYear - 1);
-      } else {
-        setSelectedMonth(selectedMonth - 1);
-      }
+      if (selectedMonth === 0) { setSelectedMonth(11); setSelectedYear(y => y - 1); }
+      else setSelectedMonth(m => m - 1);
     } else {
-      if (selectedMonth === 11) {
-        setSelectedMonth(0);
-        setSelectedYear(selectedYear + 1);
-      } else {
-        setSelectedMonth(selectedMonth + 1);
-      }
+      if (selectedMonth === 11) { setSelectedMonth(0); setSelectedYear(y => y + 1); }
+      else setSelectedMonth(m => m + 1);
     }
   };
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'July', 'August', 'September', 'October', 'November', 'December',
   ];
+
+  const statusBadge = (record: AttendanceCalendarRecord | undefined, label: string) => {
+    if (!record) {
+      return (
+        <div className="flex items-center gap-1">
+          <span className="text-gray-300 text-[9px] font-medium">{label}</span>
+          <span className="text-gray-300 text-[9px]">—</span>
+        </div>
+      );
+    }
+    const isPresent = record.status === 'PRESENT';
+    const color = isPresent ? 'text-green-600' : 'text-red-500';
+    const mark = isPresent ? '✓' : '✗';
+    return (
+      <div className="flex items-center gap-1">
+        <span className="text-gray-400 text-[9px] font-medium">{label}</span>
+        <span className={`text-[10px] font-bold ${color}`}>{mark}</span>
+      </div>
+    );
+  };
+
+  const dayCellBg = (records: DayRecords): string => {
+    if (records.holiday) return 'bg-gray-100 border-gray-300';
+    if (records.class?.status === 'PRESENT') return 'bg-green-100 border-green-400';
+    if (records.class?.status === 'ABSENT') return 'bg-red-100 border-red-400';
+    return 'bg-white border-gray-200';
+  };
 
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
         </div>
       </div>
     );
@@ -142,58 +152,70 @@ export default function AttendanceCalendar({ studentId, studentActive = true }: 
     );
   }
 
+  const showBoarding = hostel || dayboarding;
+  const boardingLabel = hostel ? 'Hostel' : 'Dayboard';
+  const boardingType: AttendanceType | null = hostel ? 'HOSTEL' : dayboarding ? 'DAYBOARDING' : null;
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-xl font-bold text-gray-800 mb-4">Attendance Calendar</h2>
 
       {/* Month Navigation */}
       <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => navigateMonth('prev')}
-          className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
-        >
+        <button onClick={() => navigateMonth('prev')} className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">
           ← Previous
         </button>
-        <h3 className="text-lg font-semibold">
-          {monthNames[selectedMonth]} {selectedYear}
-        </h3>
-        <button
-          onClick={() => navigateMonth('next')}
-          className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
-        >
+        <h3 className="text-lg font-semibold">{monthNames[selectedMonth]} {selectedYear}</h3>
+        <button onClick={() => navigateMonth('next')} className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">
           Next →
         </button>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-1 mb-4">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-          <div key={day} className="text-center font-medium text-gray-600 py-2 bg-gray-100 rounded">
-            {day}
-          </div>
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+          <div key={d} className="text-center text-xs font-medium text-gray-500 py-2 bg-gray-100 rounded">{d}</div>
         ))}
       </div>
 
+      {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-1">
-        {Array.from({ length: getFirstDayOfMonth(selectedYear, selectedMonth) }).map((_, index) => (
-          <div key={`empty-${index}`} className="h-20"></div>
+        {Array.from({ length: getFirstDayOfMonth(selectedYear, selectedMonth) }).map((_, i) => (
+          <div key={`e-${i}`} className="h-20" />
         ))}
 
         {Array.from({ length: getDaysInMonth(selectedYear, selectedMonth) }).map((_, index) => {
           const day = index + 1;
-          const dateStr = formatDate(day);
-          const record = getRecordForDate(dateStr, day);
+          const records = getRecordsForDay(day);
+          const isHoliday = !!records.holiday;
 
           return (
             <div
               key={day}
-              className={`h-20 border rounded-lg p-1 ${getStatusColor(record?.status || '')} cursor-pointer hover:opacity-80`}
-              title={record ? `${record.status}${record.name ? ` (${record.name})` : ''}` : 'No record'}
+              className={`h-20 border rounded-lg p-1 ${dayCellBg(records)}`}
+              title={
+                isHoliday
+                  ? records.holiday?.name || 'Holiday'
+                  : [
+                      records.class ? `Class: ${records.class.status}` : '',
+                      records.hostel ? `Hostel: ${records.hostel.status}` : '',
+                      records.dayboarding ? `Dayboarding: ${records.dayboarding.status}` : '',
+                    ].filter(Boolean).join(' | ')
+              }
             >
-              <div className="text-sm font-semibold">{day}</div>
-              {record && record.status !== 'HOLIDAY' && (
-                <div className="text-xs mt-1">
-                  {record.status === 'PRESENT' ? '✓' : '✗'}
+              <div className="text-xs font-semibold text-gray-700 mb-0.5">{day}</div>
+
+              {isHoliday ? (
+                <div className="text-[9px] text-gray-400 leading-tight">
+                  {records.holiday?.name || 'Holiday'}
+                </div>
+              ) : (
+                <div className="space-y-0.5">
+                  {statusBadge(records.class, 'Cls')}
+                  {showBoarding && boardingType && statusBadge(
+                    boardingType === 'HOSTEL' ? records.hostel : records.dayboarding,
+                    hostel ? 'Hst' : 'Day'
+                  )}
                 </div>
               )}
             </div>
@@ -202,43 +224,106 @@ export default function AttendanceCalendar({ studentId, studentActive = true }: 
       </div>
 
       {/* Legend */}
-      <div className="mt-6 flex flex-wrap gap-4 text-sm">
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-green-100 border-2 border-green-300 rounded"></div>
-          <span>Present</span>
+      <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-600">
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-green-100 border border-green-400 rounded" />
+          <span>Class Present</span>
         </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-red-100 border-2 border-red-300 rounded"></div>
-          <span>Absent</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-red-100 border border-red-400 rounded" />
+          <span>Class Absent</span>
         </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-gray-100 border-2 border-gray-300 rounded"></div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded" />
           <span>Holiday</span>
         </div>
+        {showBoarding && (
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-green-600">✓</span>
+            <span>/</span>
+            <span className="font-bold text-red-500">✗</span>
+            <span>{boardingLabel} attendance shown per cell</span>
+          </div>
+        )}
       </div>
 
       {/* Summary */}
       {calendar && (
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-semibold text-gray-800 mb-2">Summary (All Time)</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div>
-              <p className="text-gray-600">Present:</p>
-              <p className="font-semibold text-green-600">{calendar.summary.totalPresent}</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Absent:</p>
-              <p className="font-semibold text-red-600">{calendar.summary.totalAbsent}</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Working Days:</p>
-              <p className="font-semibold text-blue-600">{calendar.summary.totalWorkingDays}</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Attendance %:</p>
-              <p className="font-semibold text-blue-600">{calendar.summary.attendancePercentage.toFixed(1)}%</p>
+        <div className="mt-6 space-y-3">
+          {/* Class summary */}
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <h3 className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">📋 Class Attendance</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div>
+                <p className="text-gray-500 text-xs">Present</p>
+                <p className="font-bold text-green-600">{calendar.summary.class.totalPresent}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Absent</p>
+                <p className="font-bold text-red-500">{calendar.summary.class.totalAbsent}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Working Days</p>
+                <p className="font-bold text-gray-700">{calendar.summary.class.totalWorkingDays}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Attendance %</p>
+                <p className="font-bold text-blue-600">{calendar.summary.class.attendancePercentage.toFixed(1)}%</p>
+              </div>
             </div>
           </div>
+
+          {/* Hostel summary */}
+          {calendar.summary.hostel && (
+            <div className="p-4 bg-purple-50 rounded-lg border border-purple-100">
+              <h3 className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-2">🏠 Hostel Attendance</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div>
+                  <p className="text-gray-500 text-xs">Present</p>
+                  <p className="font-bold text-green-600">{calendar.summary.hostel.totalPresent}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Absent</p>
+                  <p className="font-bold text-red-500">{calendar.summary.hostel.totalAbsent}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Working Days</p>
+                  <p className="font-bold text-gray-700">{calendar.summary.hostel.totalWorkingDays}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Attendance %</p>
+                  <p className="font-bold text-purple-600">{calendar.summary.hostel.attendancePercentage.toFixed(1)}%</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Dayboarding summary */}
+          {calendar.summary.dayboarding && (
+            <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+              <h3 className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-2">🌤️ Dayboarding Attendance</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div>
+                  <p className="text-gray-500 text-xs">Present</p>
+                  <p className="font-bold text-green-600">{calendar.summary.dayboarding.totalPresent}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Absent</p>
+                  <p className="font-bold text-red-500">{calendar.summary.dayboarding.totalAbsent}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Working Days</p>
+                  <p className="font-bold text-gray-700">{calendar.summary.dayboarding.totalWorkingDays}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Attendance %</p>
+                  <p className="font-bold text-orange-600">{calendar.summary.dayboarding.attendancePercentage.toFixed(1)}%</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-400">Holidays (incl. Sundays): {calendar.summary.totalHolidays}</p>
         </div>
       )}
     </div>

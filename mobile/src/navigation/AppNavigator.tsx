@@ -19,6 +19,7 @@ import MarksSubjectSelectionScreen from '../screens/MarksSubjectSelectionScreen'
 import MarksChapterSelectionScreen from '../screens/MarksChapterSelectionScreen';
 import MarksExamSelectionScreen from '../screens/MarksExamSelectionScreen';
 import MarksEntryScreen from '../screens/MarksEntryScreen';
+import BoardingAttendanceScreen from '../screens/BoardingAttendanceScreen';
 import SchoolLogo from '../../assets/school-logo.svg';
 
 export type RootStackParamList = {
@@ -28,6 +29,7 @@ export type RootStackParamList = {
   ClassSelection: { mode: 'attendance' | 'students' };
   SectionSelection: { classId: number; className: string; mode: 'attendance' | 'students' };
   Attendance: { classId: number; sectionId: number; className: string; sectionName: string };
+  BoardingAttendance: { boardingType: 'HOSTEL' | 'DAYBOARDING' };
   StudentList: { classId: number; sectionId: number; className: string; sectionName: string };
   StudentProfile: { studentId: number; studentName: string };
   ChangePassword: undefined;
@@ -109,6 +111,13 @@ const AppNavigator: React.FC = () => {
             component={AttendanceScreen}
             options={({ route }) => ({
               title: `${route.params.className} - ${route.params.sectionName}`,
+            })}
+          />
+          <Stack.Screen
+            name="BoardingAttendance"
+            component={BoardingAttendanceScreen}
+            options={({ route }) => ({
+              title: route.params.boardingType === 'HOSTEL' ? 'Hostel Attendance' : 'Dayboarding Attendance',
             })}
           />
           <Stack.Screen

@@ -34,6 +34,7 @@ import ViewStudentProfile from "./features/students/pages/ViewStudentProfile"
 import SchoolSettings from "./features/general/pages/SchoolSettings"
 import Holidays from "./features/attendance/pages/Holidays"
 import AttendanceDashboard from "./features/attendance/pages/AttendanceDashboard"
+import BoardingAttendancePage from "./features/attendance/pages/BoardingAttendancePage"
 import SessionManagement from "./features/sessions/pages/SessionManagement"
 import StudentPromotion from "./features/sessions/pages/StudentPromotion"
 import SubjectsPage from "./features/academics/pages/SubjectsPage"
@@ -199,6 +200,10 @@ const router = createBrowserRouter([
       {
         path: "attendance",
         element: <AttendanceDashboard />
+      },
+      {
+        path: "boarding-attendance",
+        element: <BoardingAttendancePage />
       },
       {
         path: "academics",

@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -37,7 +38,11 @@ const HomeScreen: React.FC = () => {
         <Text style={styles.greeting}>Welcome back, {user?.staffName ?? 'Teacher'}!</Text>
 
         {/* Feature Cards */}
-        <View style={styles.cardsContainer}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.cardsContainer}
+          showsVerticalScrollIndicator={false}
+        >
           <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('ClassSelection', { mode: 'attendance' })}
@@ -46,7 +51,33 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.cardIcon}>📋</Text>
             <View style={styles.cardText}>
               <Text style={styles.cardTitle}>Take Attendance</Text>
-              <Text style={styles.cardSubtitle}>Mark today's attendance</Text>
+              <Text style={styles.cardSubtitle}>Mark today's class attendance</Text>
+            </View>
+            <Text style={styles.cardArrow}>→</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('BoardingAttendance', { boardingType: 'HOSTEL' })}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.cardIcon}>🏠</Text>
+            <View style={styles.cardText}>
+              <Text style={styles.cardTitle}>Hostel Attendance</Text>
+              <Text style={styles.cardSubtitle}>Mark hostel students attendance</Text>
+            </View>
+            <Text style={styles.cardArrow}>→</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('BoardingAttendance', { boardingType: 'DAYBOARDING' })}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.cardIcon}>🌤️</Text>
+            <View style={styles.cardText}>
+              <Text style={styles.cardTitle}>Dayboarding Attendance</Text>
+              <Text style={styles.cardSubtitle}>Mark dayboarding students attendance</Text>
             </View>
             <Text style={styles.cardArrow}>→</Text>
           </TouchableOpacity>
@@ -102,12 +133,12 @@ const HomeScreen: React.FC = () => {
             </View>
             <Text style={styles.cardArrow}>→</Text>
           </TouchableOpacity>
-        </View>
 
-        {/* Logout */}
-        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+          {/* Logout */}
+          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -146,9 +177,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     marginBottom: 20,
   },
+  scrollView: {
+    flex: 1,
+  },
   cardsContainer: {
     paddingHorizontal: 24,
     gap: 16,
+    paddingBottom: 40,
   },
   card: {
     backgroundColor: '#fff',
@@ -185,11 +220,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   logoutButton: {
-    position: 'absolute',
-    bottom: 36,
     alignSelf: 'center',
     paddingVertical: 10,
     paddingHorizontal: 32,
+    marginTop: 8,
   },
   logoutText: {
     fontSize: 15,

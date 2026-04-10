@@ -76,23 +76,32 @@ export interface StudentWithAttendance {
 export interface AttendanceCalendarRecord {
   date: string;
   status: 'PRESENT' | 'ABSENT' | 'HOLIDAY';
+  attendanceType?: 'CLASS' | 'HOSTEL' | 'DAYBOARDING';
   remarks?: string;
   name?: string;
   reason?: string;
 }
 
+interface AttendanceTypeSummary {
+  totalPresent: number;
+  totalAbsent: number;
+  totalWorkingDays: number;
+  attendancePercentage: number;
+}
+
 export interface StudentAttendanceCalendar {
   studentId: number;
   studentName: string;
+  hostel: boolean;
+  dayboarding: boolean;
   class?: string;
   section?: string;
   attendanceRecords: AttendanceCalendarRecord[];
   summary: {
-    totalPresent: number;
-    totalAbsent: number;
+    class: AttendanceTypeSummary;
+    hostel?: AttendanceTypeSummary;
+    dayboarding?: AttendanceTypeSummary;
     totalHolidays: number;
-    totalWorkingDays: number;
-    attendancePercentage: number;
   };
 }
 
@@ -210,9 +219,38 @@ export const attendanceApi = {
   },
 };
 
+export interface BoardingStudentWithAttendance {
+  id: number;
+  firstName: string;
+  lastName: string;
+  studentPhoto?: string;
+  hostel: boolean;
+  dayboarding: boolean;
+  rollNumber: string | null;
+  class: { id: number; name: string } | null;
+  section: { id: number; name: string } | null;
+  attendance?: {
+    id: number;
+    status: 'PRESENT' | 'ABSENT';
+    remarks: string | null;
+  } | null;
+}
+
 export const markAttendance = attendanceApi.markAttendance;
 export const getAttendance = attendanceApi.getAttendance;
 export const getAttendanceStats = attendanceApi.getAttendanceStats;
 export const getAllAttendanceStats = attendanceApi.getAllAttendanceStats;
 export const getStudentsWithAttendance = attendanceApi.getStudentsWithAttendance;
 export const getStudentCalendar = attendanceApi.getStudentCalendar;
+
+export const getBoardingAttendance = async (params: {
+  boardingType: 'HOSTEL' | 'DAYBOARDING';
+  date: string;
+}): Promise<BoardingStudentWithAttendance[]> => {
+  const queryParams = new URLSearchParams({
+    boardingType: params.boardingType,
+    date: params.date,
+  });
+  const response = await apiRequest(`/attendance/boarding-students?${queryParams.toString()}`);
+  return response.data;
+};

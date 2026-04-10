@@ -388,7 +388,12 @@ const ViewStudentProfile: React.FC = () => {
               <FiCalendar className="h-5 w-5 mr-2 text-orange-600" />
               Attendance Calendar
             </h3>
-            <AttendanceCalendar studentId={Number(id)} studentActive={student.active !== false} />
+            <AttendanceCalendar
+              studentId={Number(id)}
+              studentActive={student.active !== false}
+              hostel={student.hostel}
+              dayboarding={student.dayboarding}
+            />
           </div>
 
           {/* Payment Reminder Section */}

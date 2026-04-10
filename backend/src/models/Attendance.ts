@@ -13,12 +13,19 @@ export enum AttendanceStatus {
   ABSENT = 'ABSENT',
 }
 
+export enum AttendanceType {
+  CLASS       = 'CLASS',
+  HOSTEL      = 'HOSTEL',
+  DAYBOARDING = 'DAYBOARDING',
+}
+
 class Attendance extends Model {
   public id!: number;
   public studentId!: number; // Foreign Key
   public sessionId!: number; // Foreign Key
   public date!: Date;
   public status!: AttendanceStatus;
+  public attendanceType!: AttendanceType;
   public markedBy!: number; // Foreign Key to User
   public schoolId!: number; // Foreign Key
   public remarks?: string;
@@ -94,6 +101,11 @@ export const initAttendanceModel = (sequelize: Sequelize) => {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
+      attendanceType: {
+        type: DataTypes.ENUM(...Object.values(AttendanceType)),
+        allowNull: false,
+        defaultValue: AttendanceType.CLASS,
+      },
       remarks: {
         type: DataTypes.TEXT,
         allowNull: true,
@@ -117,8 +129,8 @@ export const initAttendanceModel = (sequelize: Sequelize) => {
       indexes: [
         {
           unique: true,
-          fields: ['studentId', 'date', 'schoolId'],
-          name: 'attendances_student_date_school_unique',
+          fields: ['studentId', 'date', 'schoolId', 'attendanceType'],
+          name: 'attendances_student_date_school_type_unique',
         },
         {
           fields: ['date'],
@@ -139,6 +151,10 @@ export const initAttendanceModel = (sequelize: Sequelize) => {
         {
           fields: ['sessionId'],
           name: 'attendances_session_index',
+        },
+        {
+          fields: ['attendanceType'],
+          name: 'attendances_attendance_type_index',
         },
       ],
     }

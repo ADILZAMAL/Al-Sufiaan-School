@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Attendance, Student, Holiday, AcademicSession, StudentEnrollment } from '../models';
+import { AttendanceType } from '../models/Attendance';
 import { sendSuccess, sendError } from '../utils/response';
 import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
@@ -46,7 +47,7 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
     return sendError(res, 'Validation failed', 400, errorsResult.array());
   }
 
-  const { attendances } = req.body;
+  const { attendances, attendanceType = AttendanceType.CLASS } = req.body;
   const schoolId = req.schoolId;
   const userId = req.userId;
 
@@ -105,11 +106,12 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
         studentId: { [Op.in]: studentIds },
         schoolId,
         date: attendanceDate,
+        attendanceType,
       },
       transaction,
     });
 
-    const attendanceMap = new Map(existingAttendances.map(a => [a.studentId, a]));
+    const attendanceMap = new Map(existingAttendances.map(a => [`${a.studentId}-${a.attendanceType}`, a]));
 
     for (const entry of attendances) {
       const { studentId, status, remarks } = entry;
@@ -129,7 +131,7 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
         continue;
       }
 
-      const existing = attendanceMap.get(studentId);
+      const existing = attendanceMap.get(`${studentId}-${attendanceType}`);
 
       if (existing) {
         await existing.update(
@@ -151,6 +153,7 @@ export const bulkMarkAttendance = async (req: Request, res: Response) => {
             schoolId,
             date: attendanceDate,
             sessionId: session.id,
+            attendanceType,
           },
           { transaction }
         );
@@ -408,9 +411,9 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
       );
     }
 
-    // Get all attendance records for this date in the school
+    // Get all attendance records for this date in the school (class attendance only)
     const attendances = await Attendance.findAll({
-      where: { schoolId, date },
+      where: { schoolId, date, attendanceType: AttendanceType.CLASS },
     });
 
     // Check if the date is a holiday
@@ -566,11 +569,12 @@ export const getAttendanceStats = async (req: Request, res: Response) => {
 
     const totalStudents = studentIds.length;
 
-    // Get attendance for these students on the specified date
+    // Get attendance for these students on the specified date (class attendance only)
     const whereClause: any = {
       schoolId,
       date,
       studentId: { [Op.in]: studentIds },
+      attendanceType: AttendanceType.CLASS,
     };
 
     const attendances = await Attendance.findAll({ where: whereClause });
@@ -651,12 +655,13 @@ export const getStudentsWithAttendance = async (req: Request, res: Response) => 
 
     const studentIds = enrollments.map((e: any) => e.studentId);
 
-    // Get attendance for the date
+    // Get attendance for the date (class attendance only)
     const attendanceRecords = await Attendance.findAll({
       where: {
         schoolId,
         date: attendanceDate,
         studentId: { [Op.in]: studentIds },
+        attendanceType: AttendanceType.CLASS,
       },
     });
 
@@ -675,6 +680,7 @@ export const getStudentsWithAttendance = async (req: Request, res: Response) => 
             studentId,
             status: 'PRESENT',
             date: { [Op.lte]: attendanceDate },
+            attendanceType: AttendanceType.CLASS,
           },
           attributes: ['date'],
           order: [['date', 'DESC']],
@@ -751,39 +757,57 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       order: [['promotedAt', 'DESC']],
     });
 
-    // Get all attendance records for the student
+    // Scope to active session
+    const session = await AcademicSession.findOne({
+      where: { schoolId, isActive: true },
+    });
+    if (!session) {
+      return sendSuccess(
+        res,
+        {
+          studentId: student.id,
+          studentName: `${student.firstName} ${student.lastName}`,
+          hostel: student.hostel,
+          dayboarding: student.dayboarding,
+          class: (currentEnrollment as any)?.class?.name || null,
+          section: (currentEnrollment as any)?.section?.name || null,
+          attendanceRecords: [],
+          summary: {
+            class: { totalPresent: 0, totalAbsent: 0, totalWorkingDays: 0, attendancePercentage: 0 },
+            totalHolidays: 0,
+          },
+        },
+        'No active academic session'
+      );
+    }
+    const sessionStart = new Date(session.startDate);
+    sessionStart.setHours(0, 0, 0, 0);
+
+    // Get attendance records scoped to active session
     const attendances = await Attendance.findAll({
       where: {
         studentId: parseInt(studentId),
         schoolId,
+        date: { [Op.gte]: sessionStart },
       },
       order: [['date', 'ASC']],
     });
 
-    // Get all holidays for the school
+    // Get holidays on/after session start
     const holidays = await Holiday.findAll({
-      where: { schoolId },
+      where: {
+        schoolId,
+        endDate: { [Op.gte]: sessionStart },
+      },
       order: [['startDate', 'ASC']],
     });
 
-    // Create a map of date -> attendance status
-    const attendanceMap = new Map<string, any>();
-    attendances.forEach((a) => {
-      const dateStr = a.date instanceof Date ? a.date.toISOString().split('T')[0] : String(a.date);
-      attendanceMap.set(dateStr, {
-        date: dateStr,
-        status: a.status,
-        remarks: a.remarks,
-      });
-    });
-
-    // Create a map of date -> holiday info
+    // Build holiday map (date -> holiday entry)
     const holidayMap = new Map<string, any>();
     holidays.forEach((h) => {
       const start = new Date(h.startDate);
       const end = new Date(h.endDate);
       const current = new Date(start);
-
       while (current <= end) {
         const dateStr = current.toISOString().split('T')[0];
         holidayMap.set(dateStr, {
@@ -796,22 +820,13 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       }
     });
 
-    // Add all Sundays as holidays
+    // Add Sundays as holidays starting from session start
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    let startDate: Date;
-    if (student.admissionDate) {
-      startDate = new Date(student.admissionDate);
-      startDate.setHours(0, 0, 0, 0);
-    } else {
-      startDate = new Date(today);
-      startDate.setFullYear(today.getFullYear() - 2);
-    }
 
-    const firstSunday = new Date(startDate);
+    const firstSunday = new Date(sessionStart);
     const dayOfWeek = firstSunday.getDay();
-    const daysToSubtract = dayOfWeek === 0 ? 0 : dayOfWeek;
-    firstSunday.setDate(firstSunday.getDate() - daysToSubtract);
+    if (dayOfWeek !== 0) firstSunday.setDate(firstSunday.getDate() + (7 - dayOfWeek));
 
     const currentSunday = new Date(firstSunday);
     while (currentSunday <= today) {
@@ -827,63 +842,185 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       currentSunday.setDate(currentSunday.getDate() + 7);
     }
 
-    // Merge attendance and holidays into a single array
-    const combinedRecords = new Map<string, any>();
-
-    attendanceMap.forEach((value, key) => {
-      combinedRecords.set(key, value);
+    // Build attendance records — each record includes its attendanceType
+    // Multiple records can share the same date (e.g. CLASS + HOSTEL on same day)
+    const attendanceDateSet = new Set<string>();
+    const attendanceRecordsList = attendances.map((a) => {
+      const dateStr = a.date instanceof Date ? a.date.toISOString().split('T')[0] : String(a.date);
+      attendanceDateSet.add(dateStr);
+      return {
+        date: dateStr,
+        status: a.status,
+        attendanceType: a.attendanceType,
+        remarks: a.remarks || null,
+      };
     });
 
-    holidayMap.forEach((value, key) => {
-      if (!combinedRecords.has(key)) {
-        combinedRecords.set(key, value);
-      }
+    // Add holidays for dates that don't have any attendance record (or always add as separate entries)
+    const holidayRecords: any[] = [];
+    holidayMap.forEach((value) => {
+      holidayRecords.push(value);
     });
 
-    const allRecords = Array.from(combinedRecords.values()).sort((a, b) =>
-      a.date.localeCompare(b.date)
-    );
+    // Combine: attendance records + holiday records, sorted by date
+    const allRecords = [
+      ...attendanceRecordsList,
+      ...holidayRecords,
+    ].sort((a, b) => a.date.localeCompare(b.date));
 
-    // Calculate summary
-    const presentCount = attendances.filter((a) => a.status === 'PRESENT').length;
-    const absentCount = attendances.filter((a) => a.status === 'ABSENT').length;
-    const workingDays = presentCount + absentCount;
-    const attendancePercentage =
-      workingDays > 0 ? ((presentCount / workingDays) * 100).toFixed(2) : '0';
+    // Per-type summary helper
+    const typeSummary = (type: AttendanceType) => {
+      const records = attendances.filter((a) => a.attendanceType === type);
+      const present = records.filter((a) => a.status === 'PRESENT').length;
+      const absent = records.filter((a) => a.status === 'ABSENT').length;
+      const working = present + absent;
+      return {
+        totalPresent: present,
+        totalAbsent: absent,
+        totalWorkingDays: working,
+        attendancePercentage: working > 0 ? parseFloat(((present / working) * 100).toFixed(2)) : 0,
+      };
+    };
 
+    // Total holidays count
     let totalHolidayDays = 0;
     holidays.forEach((h) => {
       const start = new Date(h.startDate);
       const end = new Date(h.endDate);
-      const diffTime = Math.abs(end.getTime() - start.getTime());
-      totalHolidayDays += Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      totalHolidayDays += Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     });
+    totalHolidayDays += Array.from(holidayMap.values()).filter((h: any) => h.name === 'Sunday').length;
 
-    const sundayCount = Array.from(holidayMap.values()).filter(
-      (h: any) => h.name === 'Sunday' && !attendanceMap.has(h.date)
-    ).length;
-    totalHolidayDays += sundayCount;
+    // Build summary — always include class; conditionally include hostel/dayboarding
+    const hasHostel = student.hostel;
+    const hasDayboarding = student.dayboarding;
+
+    const summary: any = {
+      class: typeSummary(AttendanceType.CLASS),
+      totalHolidays: totalHolidayDays,
+    };
+    if (hasHostel) summary.hostel = typeSummary(AttendanceType.HOSTEL);
+    if (hasDayboarding) summary.dayboarding = typeSummary(AttendanceType.DAYBOARDING);
 
     return sendSuccess(
       res,
       {
         studentId: student.id,
         studentName: `${student.firstName} ${student.lastName}`,
+        hostel: student.hostel,
+        dayboarding: student.dayboarding,
         class: (currentEnrollment as any)?.class?.name || null,
         section: (currentEnrollment as any)?.section?.name || null,
         attendanceRecords: allRecords,
-        summary: {
-          totalPresent: presentCount,
-          totalAbsent: absentCount,
-          totalHolidays: totalHolidayDays,
-          totalWorkingDays: workingDays,
-          attendancePercentage: parseFloat(attendancePercentage),
-        },
+        summary,
       },
       'Student attendance calendar retrieved successfully'
     );
   } catch (error) {
     logger.error('Error fetching student attendance calendar', { error });
     return sendError(res, 'Failed to fetch student attendance calendar', 500);
+  }
+};
+
+// Get boarding students (hostel or dayboarding) with attendance for a date
+export const getBoardingStudents = async (req: Request, res: Response) => {
+  try {
+    const schoolId = req.schoolId;
+    const { boardingType, date } = req.query;
+
+    if (!schoolId) {
+      return sendError(res, 'School ID not found in request', 400);
+    }
+
+    if (!boardingType || (boardingType !== 'HOSTEL' && boardingType !== 'DAYBOARDING')) {
+      return sendError(res, 'boardingType must be HOSTEL or DAYBOARDING', 400);
+    }
+
+    if (!date) {
+      return sendError(res, 'Date is required', 400);
+    }
+
+    const attendanceDate = new Date(date as string);
+    const attendanceTypeValue = boardingType === 'HOSTEL' ? AttendanceType.HOSTEL : AttendanceType.DAYBOARDING;
+    const studentFilter = boardingType === 'HOSTEL' ? { hostel: true } : { dayboarding: true };
+
+    // Require an active session — boarding attendance is session-scoped
+    const session = await AcademicSession.findOne({
+      where: { schoolId, isActive: true },
+    });
+
+    if (!session) {
+      return sendSuccess(res, [], 'No active academic session found');
+    }
+
+    // Fetch enrollments in the active session where the student is a boarding student
+    const enrollments = await StudentEnrollment.findAll({
+      where: { sessionId: session.id },
+      include: [
+        {
+          association: 'student',
+          where: { schoolId, active: true, ...studentFilter },
+          attributes: ['id', 'firstName', 'lastName', 'studentPhoto', 'hostel', 'dayboarding'],
+        },
+        { association: 'class', attributes: ['id', 'name'] },
+        { association: 'section', attributes: ['id', 'name'] },
+      ],
+      attributes: ['studentId', 'rollNumber'],
+    });
+
+    if (enrollments.length === 0) {
+      return sendSuccess(res, [], 'No boarding students found');
+    }
+
+    const studentIds = enrollments.map((e: any) => e.studentId);
+
+    // Fetch attendance records for this type and date
+    const attendanceRecords = await Attendance.findAll({
+      where: {
+        schoolId,
+        date: attendanceDate,
+        studentId: { [Op.in]: studentIds },
+        attendanceType: attendanceTypeValue,
+      },
+    });
+
+    const attendanceMap = new Map(
+      attendanceRecords.map((a) => [a.studentId, { id: a.id, status: a.status, remarks: a.remarks }])
+    );
+
+    // Build response from enrollments (each enrollment has the student included)
+    const result = enrollments.map((enrollment: any) => {
+      const student = enrollment.student;
+      return {
+        id: student.id,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        studentPhoto: student.studentPhoto,
+        hostel: student.hostel,
+        dayboarding: student.dayboarding,
+        rollNumber: enrollment.rollNumber || null,
+        class: enrollment.class || null,
+        section: enrollment.section || null,
+        attendance: attendanceMap.get(student.id) || null,
+      };
+    });
+
+    // Sort by class name, then section name, then roll number
+    result.sort((a, b) => {
+      const aClass = a.class?.name || '';
+      const bClass = b.class?.name || '';
+      if (aClass !== bClass) return aClass.localeCompare(bClass);
+      const aSection = a.section?.name || '';
+      const bSection = b.section?.name || '';
+      if (aSection !== bSection) return aSection.localeCompare(bSection);
+      const aRoll = a.rollNumber || '';
+      const bRoll = b.rollNumber || '';
+      return aRoll.localeCompare(bRoll);
+    });
+
+    return sendSuccess(res, result, `${boardingType} students retrieved successfully`);
+  } catch (error) {
+    logger.error('Error fetching boarding students', { error });
+    return sendError(res, 'Failed to fetch boarding students', 500);
   }
 };
