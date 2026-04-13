@@ -68,7 +68,15 @@ const AttendanceScreen: React.FC = () => {
       setIsHoliday(false);
       setHoliday(null);
       const data = await attendanceApi.getStudentsWithAttendance(classId, sectionId, dateString);
-      setStudents(data);
+      const sorted = [...data].sort((a, b) => {
+        if (a.rollNumber === null) return 1;
+        if (b.rollNumber === null) return -1;
+        const numA = parseInt(a.rollNumber, 10);
+        const numB = parseInt(b.rollNumber, 10);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return a.rollNumber.localeCompare(b.rollNumber);
+      });
+      setStudents(sorted);
 
       // Initialize attendance state from loaded data
       const state = new Map<number, AttendanceStatus>();
