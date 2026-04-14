@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import verifyToken, { requireRole } from '../middleware/auth';
-import { 
+import {
   generateMonthlyFee,
   getStudentFeeTimelineController,
   collectFeePaymentController,
@@ -8,7 +8,8 @@ import {
   verifyPaymentController,
   regenerateMonthlyFee,
   getFeeDashboardController,
-  getStudentsWithDuesController
+  getStudentsWithDuesController,
+  getStudentsWithoutFeesController
 } from '../controllers/monthlyFee';
 
 const router = Router();
@@ -68,6 +69,13 @@ router.get(
   '/students-with-dues',
   verifyToken,
   getStudentsWithDuesController
+);
+
+// Get active students with no fee generated for a specific month
+router.get(
+  '/students-without-fees',
+  verifyToken,
+  getStudentsWithoutFeesController
 );
 
 export default router;

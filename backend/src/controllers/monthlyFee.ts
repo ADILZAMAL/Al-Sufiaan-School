@@ -1110,3 +1110,81 @@ export async function getStudentsWithDuesController(req: Request, res: Response)
     return sendError(res, 'Failed to fetch students with dues', 500);
   }
 }
+
+// Controller to get active students who have NO fee generated for a specific month
+export async function getStudentsWithoutFeesController(req: Request, res: Response) {
+  try {
+    const schoolId = parseInt(req.schoolId);
+    const { month, calendarYear } = req.query;
+
+    if (!month || !calendarYear) {
+      return sendError(res, 'Month and calendarYear query parameters are required', 400);
+    }
+
+    const monthNum = parseInt(month as string);
+    const yearNum = parseInt(calendarYear as string);
+
+    if (monthNum < 1 || monthNum > 12) {
+      return sendError(res, 'Invalid month. Must be between 1 and 12', 400);
+    }
+
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    if (yearNum > currentYear || (yearNum === currentYear && monthNum > currentMonth)) {
+      return sendError(res, 'Cannot query future months. Only past or present months are allowed', 400);
+    }
+
+    // Get the active academic session
+    const activeSession = await AcademicSession.findOne({ where: { schoolId, isActive: true } });
+    if (!activeSession) {
+      return sendError(res, 'No active academic session found', 404);
+    }
+
+    // Last day of the queried month — students admitted after this date are excluded
+    const lastDayOfQueriedMonth = new Date(yearNum, monthNum, 0); // day 0 of next month = last day of this month
+
+    // Get all active students enrolled in the active session, with their class info
+    // Only include students admitted on or before the last day of the queried month
+    const enrollments = await StudentEnrollment.findAll({
+      where: { sessionId: activeSession.id },
+      include: [
+        {
+          model: Student,
+          as: 'student',
+          where: {
+            schoolId,
+            active: true,
+            admissionDate: { [Op.lte]: lastDayOfQueriedMonth },
+          },
+          attributes: ['id', 'firstName', 'lastName', 'admissionNumber', 'studentPhoto'],
+        },
+        { model: Class, as: 'class', attributes: ['id', 'name'] },
+      ],
+    });
+
+    // Get student IDs that already have a fee record for this month/year
+    const existingFees = await StudentMonthlyFee.findAll({
+      where: { schoolId, month: monthNum, calendarYear: yearNum },
+      attributes: ['studentId'],
+    });
+    const feeStudentIds = new Set(existingFees.map((f: any) => f.studentId));
+
+    // Return students who don't have a fee record
+    const studentsWithoutFees = enrollments
+      .filter((e: any) => !feeStudentIds.has(e.student.id))
+      .map((e: any) => ({
+        studentId: e.student.id,
+        student: {
+          ...e.student.toJSON(),
+          class: (e as any).class || null,
+        },
+      }));
+
+    return sendSuccess(res, studentsWithoutFees, 'Students without fees retrieved successfully');
+  } catch (error) {
+    logger.error('Error fetching students without fees', { error });
+    return sendError(res, 'Failed to fetch students without fees', 500);
+  }
+}

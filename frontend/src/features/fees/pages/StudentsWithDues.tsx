@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useQuery } from 'react-query';
-import { useNavigate } from 'react-router-dom';
-import { fetchStudentsWithDues, StudentWithDue } from '../api/studentsWithDues';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { fetchStudentsWithDues, fetchStudentsWithoutFees, StudentWithDue, StudentWithoutFee } from '../api/studentsWithDues';
 import {
   FiAlertCircle,
   FiCheckCircle,
@@ -108,26 +108,48 @@ const StudentsWithDues: React.FC = () => {
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
 
-  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const { data: students = [], isLoading, error, refetch } = useQuery({
+  const tab = (searchParams.get('tab') as 'dues' | 'not-generated') || 'dues';
+  const selectedMonth = parseInt(searchParams.get('month') || String(currentMonth));
+  const selectedYear = parseInt(searchParams.get('year') || String(currentYear));
+  const search = searchParams.get('search') || '';
+
+  const { data: students = [], isLoading: duesLoading, error: duesError, refetch: refetchDues } = useQuery({
     queryKey: ['studentsWithDues', selectedMonth, selectedYear],
     queryFn: () => fetchStudentsWithDues(selectedMonth, selectedYear),
     enabled: !!selectedMonth && !!selectedYear,
   });
 
+  const { data: studentsWithoutFees = [], isLoading: noFeeLoading, error: noFeeError, refetch: refetchNoFee } = useQuery({
+    queryKey: ['studentsWithoutFees', selectedMonth, selectedYear],
+    queryFn: () => fetchStudentsWithoutFees(selectedMonth, selectedYear),
+    enabled: !!selectedMonth && !!selectedYear,
+  });
+
+  const isLoading = tab === 'dues' ? duesLoading : noFeeLoading;
+  const error = tab === 'dues' ? duesError : noFeeError;
+  const refetch = tab === 'dues' ? refetchDues : refetchNoFee;
+
+  const setTab = (value: 'dues' | 'not-generated') => {
+    setSearchParams(p => { p.set('tab', value); p.delete('search'); return p; }, { replace: true });
+  };
+
   const handleYearChange = (newYear: number) => {
-    setSelectedYear(newYear);
-    if (newYear === currentYear && selectedMonth > currentMonth) {
-      setSelectedMonth(currentMonth);
-    }
+    setSearchParams(p => {
+      p.set('year', String(newYear));
+      if (newYear === currentYear && selectedMonth > currentMonth) p.set('month', String(currentMonth));
+      return p;
+    }, { replace: true });
   };
 
   const handleMonthChange = (newMonth: number) => {
     if (selectedYear === currentYear && newMonth > currentMonth) return;
-    setSelectedMonth(newMonth);
+    setSearchParams(p => { p.set('month', String(newMonth)); return p; }, { replace: true });
+  };
+
+  const setSearch = (value: string) => {
+    setSearchParams(p => { value ? p.set('search', value) : p.delete('search'); return p; }, { replace: true });
   };
 
   const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i).reverse();
@@ -136,15 +158,15 @@ const StudentsWithDues: React.FC = () => {
     ? MONTH_NAMES.slice(1, currentMonth + 1).map((month, i) => ({ value: i + 1, label: month }))
     : MONTH_NAMES.slice(1).map((month, i) => ({ value: i + 1, label: month }));
 
-  // ── Aggregates ──────────────────────────────────────────────────────────────
+  // ── Aggregates (dues tab) ────────────────────────────────────────────────────
   const totalDue = students.reduce((s, st) => s + st.dueAmount, 0);
   const totalPaid = students.reduce((s, st) => s + st.paidAmount, 0);
   const totalPayable = students.reduce((s, st) => s + st.totalPayableAmount, 0);
   const partialCount = students.filter(s => s.status === 'PARTIAL').length;
   const pendingCount = students.filter(s => s.status === 'PENDING').length;
 
-  // ── Filtered list ────────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
+  // ── Filtered list (dues tab) ─────────────────────────────────────────────────
+  const filteredDues = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return students;
     return students.filter((s) => {
@@ -154,6 +176,18 @@ const StudentsWithDues: React.FC = () => {
       return name.includes(q) || adm.includes(q) || cls.includes(q);
     });
   }, [students, search]);
+
+  // ── Filtered list (not-generated tab) ───────────────────────────────────────
+  const filteredNoFee = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return studentsWithoutFees;
+    return studentsWithoutFees.filter((s) => {
+      const name = `${s.student.firstName} ${s.student.lastName}`.toLowerCase();
+      const adm = s.student.admissionNumber.toLowerCase();
+      const cls = (s.student.class?.name ?? '').toLowerCase();
+      return name.includes(q) || adm.includes(q) || cls.includes(q);
+    });
+  }, [studentsWithoutFees, search]);
 
   // ── States ───────────────────────────────────────────────────────────────────
   if (isLoading) return <LoadingSkeleton />;
@@ -187,13 +221,47 @@ const StudentsWithDues: React.FC = () => {
 
         {/* ── Header ── */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Students with Dues</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Fee Reports</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Students with pending fee payments for{' '}
+            {tab === 'dues' ? 'Students with pending fee payments' : 'Students with no fee generated'} for{' '}
             <span className="font-medium text-gray-700">
               {MONTH_NAMES[selectedMonth]} {selectedYear}
             </span>
           </p>
+        </div>
+
+        {/* ── Tabs ── */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setTab('dues')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              tab === 'dues'
+                ? 'bg-red-600 text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Students with Dues
+            {students.length > 0 && (
+              <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs font-bold ${tab === 'dues' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-600'}`}>
+                {students.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setTab('not-generated')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              tab === 'not-generated'
+                ? 'bg-orange-500 text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Fee Not Generated
+            {studentsWithoutFees.length > 0 && (
+              <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs font-bold ${tab === 'not-generated' ? 'bg-orange-400 text-white' : 'bg-orange-100 text-orange-600'}`}>
+                {studentsWithoutFees.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* ── Month / Year filter ── */}
@@ -221,152 +289,258 @@ const StudentsWithDues: React.FC = () => {
           </select>
         </div>
 
-        {/* ── Stats ── */}
-        {students.length > 0 && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              icon={<FiUsers />}
-              label="Students with Dues"
-              value={String(students.length)}
-              iconBg="bg-red-50"
-              iconColor="text-red-500"
-              sub={`${partialCount} partial · ${pendingCount} pending`}
-            />
-            <StatCard
-              icon={<FiAlertCircle />}
-              label="Total Due"
-              value={formatCurrency(totalDue)}
-              iconBg="bg-red-50"
-              iconColor="text-red-500"
-              sub="Outstanding"
-            />
-            <StatCard
-              icon={<FiCheckCircle />}
-              label="Total Paid"
-              value={formatCurrency(totalPaid)}
-              iconBg="bg-emerald-50"
-              iconColor="text-emerald-600"
-              sub="Collected so far"
-            />
-            <StatCard
-              icon={<FiDollarSign />}
-              label="Total Payable"
-              value={formatCurrency(totalPayable)}
-              iconBg="bg-blue-50"
-              iconColor="text-blue-600"
-              sub="This month"
-            />
-          </div>
-        )}
-
-        {/* ── Empty state ── */}
-        {students.length === 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 py-20 text-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-              <FiCheckCircle className="text-emerald-500 text-2xl" />
-            </div>
-            <p className="text-gray-800 font-semibold text-lg">All Clear!</p>
-            <p className="text-sm text-gray-400 mt-1">
-              No outstanding dues for {MONTH_NAMES[selectedMonth]} {selectedYear}.
-            </p>
-          </div>
-        )}
-
-        {/* ── Students list ── */}
-        {students.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-
-            {/* table header + search */}
-            <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800">
-                  {filtered.length} {filtered.length === 1 ? 'Student' : 'Students'}
-                  {search && <span className="text-gray-400 font-normal"> matching "{search}"</span>}
-                </p>
-              </div>
-              <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                <input
-                  type="text"
-                  placeholder="Search by name, admission no., class…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none w-64"
+        {/* ══════════════════════ DUES TAB ══════════════════════ */}
+        {tab === 'dues' && (
+          <>
+            {/* ── Stats ── */}
+            {students.length > 0 && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard
+                  icon={<FiUsers />}
+                  label="Students with Dues"
+                  value={String(students.length)}
+                  iconBg="bg-red-50"
+                  iconColor="text-red-500"
+                  sub={`${partialCount} partial · ${pendingCount} pending`}
+                />
+                <StatCard
+                  icon={<FiAlertCircle />}
+                  label="Total Due"
+                  value={formatCurrency(totalDue)}
+                  iconBg="bg-red-50"
+                  iconColor="text-red-500"
+                  sub="Outstanding"
+                />
+                <StatCard
+                  icon={<FiCheckCircle />}
+                  label="Total Paid"
+                  value={formatCurrency(totalPaid)}
+                  iconBg="bg-emerald-50"
+                  iconColor="text-emerald-600"
+                  sub="Collected so far"
+                />
+                <StatCard
+                  icon={<FiDollarSign />}
+                  label="Total Payable"
+                  value={formatCurrency(totalPayable)}
+                  iconBg="bg-blue-50"
+                  iconColor="text-blue-600"
+                  sub="This month"
                 />
               </div>
-            </div>
+            )}
 
-            {filtered.length === 0 ? (
-              <div className="py-16 text-center">
-                <p className="text-gray-400 text-sm">No students match your search.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-100">
-                {filtered.map((s: StudentWithDue) => {
-                  const fullName = `${s.student.firstName} ${s.student.lastName}`;
-                  const avatarColor = AVATAR_COLORS[s.student.firstName.charCodeAt(0) % 6];
-                  return (
-                    <div
-                      key={s.studentId}
-                      onClick={() => navigate(`/dashboard/students/${s.studentId}`)}
-                      className="flex flex-wrap sm:flex-nowrap items-center gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors group"
-                    >
-                      {/* Avatar */}
-                      <div className="flex-shrink-0">
-                        {s.student.studentPhoto ? (
-                          <img
-                            src={s.student.studentPhoto}
-                            alt={fullName}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${avatarColor}`}>
-                            {getInitials(s.student.firstName, s.student.lastName)}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Name + admission */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 group-hover:text-red-600 transition-colors truncate">
-                          {fullName}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-gray-400">{s.student.admissionNumber}</span>
-                          {s.student.class?.name && (
-                            <>
-                              <span className="text-gray-200">·</span>
-                              <span className="text-xs text-gray-400">{s.student.class.name}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Amounts */}
-                      <div className="hidden md:flex flex-col items-end">
-                        <span className="text-xs text-gray-400">Paid</span>
-                        <span className="text-sm font-semibold text-emerald-600">
-                          {formatCurrency(s.paidAmount)}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <span className="text-xs text-gray-400">Due</span>
-                        <span className="text-sm font-semibold text-red-500">
-                          {formatCurrency(s.dueAmount)}
-                        </span>
-                      </div>
-
-                      {/* Status badge */}
-                      <div className="flex-shrink-0">
-                        <StatusBadge status={s.status} />
-                      </div>
-                    </div>
-                  );
-                })}
+            {/* ── Empty state ── */}
+            {students.length === 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 py-20 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                  <FiCheckCircle className="text-emerald-500 text-2xl" />
+                </div>
+                <p className="text-gray-800 font-semibold text-lg">All Clear!</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  No outstanding dues for {MONTH_NAMES[selectedMonth]} {selectedYear}.
+                </p>
               </div>
             )}
-          </div>
+
+            {/* ── Students list ── */}
+            {students.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800">
+                      {filteredDues.length} {filteredDues.length === 1 ? 'Student' : 'Students'}
+                      {search && <span className="text-gray-400 font-normal"> matching "{search}"</span>}
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                    <input
+                      type="text"
+                      placeholder="Search by name, admission no., class…"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none w-64"
+                    />
+                  </div>
+                </div>
+
+                {filteredDues.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <p className="text-gray-400 text-sm">No students match your search.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {filteredDues.map((s: StudentWithDue) => {
+                      const fullName = `${s.student.firstName} ${s.student.lastName}`;
+                      const avatarColor = AVATAR_COLORS[s.student.firstName.charCodeAt(0) % 6];
+                      return (
+                        <div
+                          key={s.studentId}
+                          onClick={() => navigate(`/dashboard/students/${s.studentId}`)}
+                          className="flex flex-wrap sm:flex-nowrap items-center gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors group"
+                        >
+                          <div className="flex-shrink-0">
+                            {s.student.studentPhoto ? (
+                              <img
+                                src={s.student.studentPhoto}
+                                alt={fullName}
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${avatarColor}`}>
+                                {getInitials(s.student.firstName, s.student.lastName)}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 group-hover:text-red-600 transition-colors truncate">
+                              {fullName}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs text-gray-400">{s.student.admissionNumber}</span>
+                              {s.student.class?.name && (
+                                <>
+                                  <span className="text-gray-200">·</span>
+                                  <span className="text-xs text-gray-400">{s.student.class.name}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="hidden md:flex flex-col items-end">
+                            <span className="text-xs text-gray-400">Paid</span>
+                            <span className="text-sm font-semibold text-emerald-600">
+                              {formatCurrency(s.paidAmount)}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-gray-400">Due</span>
+                            <span className="text-sm font-semibold text-red-500">
+                              {formatCurrency(s.dueAmount)}
+                            </span>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <StatusBadge status={s.status} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
+
+        {/* ══════════════════════ FEE NOT GENERATED TAB ══════════════════════ */}
+        {tab === 'not-generated' && (
+          <>
+            {/* ── Stat ── */}
+            {studentsWithoutFees.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <StatCard
+                  icon={<FiUsers />}
+                  label="Fee Not Generated"
+                  value={String(studentsWithoutFees.length)}
+                  iconBg="bg-orange-50"
+                  iconColor="text-orange-500"
+                  sub={`for ${MONTH_NAMES[selectedMonth]} ${selectedYear}`}
+                />
+              </div>
+            )}
+
+            {/* ── Empty state ── */}
+            {studentsWithoutFees.length === 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 py-20 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                  <FiCheckCircle className="text-emerald-500 text-2xl" />
+                </div>
+                <p className="text-gray-800 font-semibold text-lg">All fees generated!</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Every active student has a fee record for {MONTH_NAMES[selectedMonth]} {selectedYear}.
+                </p>
+              </div>
+            )}
+
+            {/* ── Students list ── */}
+            {studentsWithoutFees.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800">
+                      {filteredNoFee.length} {filteredNoFee.length === 1 ? 'Student' : 'Students'}
+                      {search && <span className="text-gray-400 font-normal"> matching "{search}"</span>}
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                    <input
+                      type="text"
+                      placeholder="Search by name, admission no., class…"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none w-64"
+                    />
+                  </div>
+                </div>
+
+                {filteredNoFee.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <p className="text-gray-400 text-sm">No students match your search.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {filteredNoFee.map((s: StudentWithoutFee) => {
+                      const fullName = `${s.student.firstName} ${s.student.lastName}`;
+                      const avatarColor = AVATAR_COLORS[s.student.firstName.charCodeAt(0) % 6];
+                      return (
+                        <div
+                          key={s.studentId}
+                          onClick={() => navigate(`/dashboard/students/${s.studentId}`)}
+                          className="flex flex-wrap sm:flex-nowrap items-center gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors group"
+                        >
+                          <div className="flex-shrink-0">
+                            {s.student.studentPhoto ? (
+                              <img
+                                src={s.student.studentPhoto}
+                                alt={fullName}
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${avatarColor}`}>
+                                {getInitials(s.student.firstName, s.student.lastName)}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 group-hover:text-orange-600 transition-colors truncate">
+                              {fullName}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs text-gray-400">{s.student.admissionNumber}</span>
+                              {s.student.class?.name && (
+                                <>
+                                  <span className="text-gray-200">·</span>
+                                  <span className="text-xs text-gray-400">{s.student.class.name}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-50 text-orange-600">
+                              Not Generated
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
       </div>
     </div>
   );

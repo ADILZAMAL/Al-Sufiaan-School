@@ -29,6 +29,33 @@ export type StudentsWithDuesResponse = {
   data: StudentWithDue[];
 };
 
+export type StudentWithoutFee = {
+  studentId: number;
+  student: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    admissionNumber: string;
+    studentPhoto?: string;
+    class?: { id: number; name: string };
+  };
+};
+
+export const fetchStudentsWithoutFees = async (
+  month: number,
+  calendarYear: number
+): Promise<StudentWithoutFee[]> => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/fees/students-without-fees?month=${month}&calendarYear=${calendarYear}`,
+    { credentials: 'include' }
+  );
+  const body: { success: boolean; message: string; data: StudentWithoutFee[] } = await response.json();
+  if (!body.success) {
+    throw new Error(body.message || 'Failed to fetch students without fees');
+  }
+  return body.data;
+};
+
 export const fetchStudentsWithDues = async (
   month: number,
   calendarYear: number
