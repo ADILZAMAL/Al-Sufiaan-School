@@ -558,6 +558,12 @@ export async function collectFeePaymentController(req: Request, res: Response) {
 
     await monthlyFee.update({ status: newStatus });
 
+    // Clear payment reminder when a payment is recorded
+    await Student.update(
+      { paymentReminderDate: null, paymentRemainderRemarks: null },
+      { where: { id: studentId } }
+    );
+
     // Fetch the updated fee with payments
     const updatedFee = await StudentMonthlyFee.findByPk(monthlyFeeId, {
       include: [
