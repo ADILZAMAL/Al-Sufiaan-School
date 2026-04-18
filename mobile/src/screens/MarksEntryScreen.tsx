@@ -22,6 +22,63 @@ interface StudentMark {
   marksObtained: string; // string for TextInput; convert to number on save
 }
 
+interface MarkRowProps {
+  item: StudentMark;
+  totalMarks: number;
+  passingMarks: number;
+  onUpdate: (studentId: number, field: 'marksObtained' | 'isAbsent', value: string | boolean) => void;
+}
+
+const MarkRow = React.memo(({ item, totalMarks, passingMarks, onUpdate }: MarkRowProps) => {
+  const result: 'pass' | 'fail' | null = (() => {
+    if (item.isAbsent || item.marksObtained === '') return null;
+    const num = parseFloat(item.marksObtained);
+    if (isNaN(num)) return null;
+    return num >= passingMarks ? 'pass' : 'fail';
+  })();
+
+  return (
+    <View style={styles.row}>
+      <View style={styles.studentInfo}>
+        {item.rollNumber && <Text style={styles.rollNumber}>#{item.rollNumber}</Text>}
+        <Text style={styles.studentName}>{item.studentName}</Text>
+      </View>
+      <TouchableOpacity
+        style={[styles.absentBtn, item.isAbsent && styles.absentBtnActive]}
+        onPress={() => onUpdate(item.studentId, 'isAbsent', !item.isAbsent)}
+      >
+        <Text style={[styles.absentBtnText, item.isAbsent && styles.absentBtnTextActive]}>Absent</Text>
+      </TouchableOpacity>
+      {!item.isAbsent ? (
+        <View style={styles.marksInputWrap}>
+          <TextInput
+            style={[
+              styles.marksInput,
+              result === 'pass' && styles.marksInputPass,
+              result === 'fail' && styles.marksInputFail,
+            ]}
+            value={item.marksObtained}
+            onChangeText={text => onUpdate(item.studentId, 'marksObtained', text)}
+            keyboardType="decimal-pad"
+            placeholder={`/ ${totalMarks}`}
+            placeholderTextColor="#9ca3af"
+            maxLength={6}
+          />
+          {result && (
+            <Text style={result === 'pass' ? styles.resultPass : styles.resultFail}>
+              {result === 'pass' ? 'P' : 'F'}
+            </Text>
+          )}
+        </View>
+      ) : (
+        <View style={styles.absentPlaceholder}>
+          <Text style={styles.absentLabel}>—</Text>
+        </View>
+      )}
+    </View>
+  );
+});
+
 const MarksEntryScreen: React.FC = () => {
   const route = useRoute<Route>();
   const navigation = useNavigation();
@@ -32,6 +89,8 @@ const MarksEntryScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUpdate, setIsUpdate] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -60,6 +119,8 @@ const MarksEntryScreen: React.FC = () => {
       });
 
       setMarks(merged);
+      setIsUpdate(existingMarks.length > 0);
+      setIsDirty(false);
     } catch (err: any) {
       if (err.response?.status === 401) { await logout(); return; }
       setError(err.response?.data?.message || 'Failed to load data');
@@ -69,6 +130,7 @@ const MarksEntryScreen: React.FC = () => {
   };
 
   const updateMark = useCallback((studentId: number, field: 'marksObtained' | 'isAbsent', value: string | boolean) => {
+    setIsDirty(true);
     setMarks(prev => prev.map(m => {
       if (m.studentId !== studentId) return m;
       if (field === 'isAbsent') {
@@ -77,6 +139,15 @@ const MarksEntryScreen: React.FC = () => {
       return { ...m, marksObtained: value as string };
     }));
   }, []);
+
+  const renderItem = useCallback(({ item }: { item: StudentMark }) => (
+    <MarkRow
+      item={item}
+      totalMarks={totalMarks}
+      passingMarks={passingMarks}
+      onUpdate={updateMark}
+    />
+  ), [totalMarks, passingMarks, updateMark]);
 
   const getPassFail = (mark: StudentMark): 'pass' | 'fail' | null => {
     if (mark.isAbsent || mark.marksObtained === '') return null;
@@ -106,8 +177,8 @@ const MarksEntryScreen: React.FC = () => {
     if (!validate()) return;
 
     Alert.alert(
-      'Save Marks',
-      `Save marks for all ${marks.length} students?`,
+      isUpdate ? 'Update Marks' : 'Save Marks',
+      `${isUpdate ? 'Update' : 'Save'} marks for all ${marks.length} students?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -121,6 +192,8 @@ const MarksEntryScreen: React.FC = () => {
                 marksObtained: m.isAbsent ? null : parseFloat(m.marksObtained),
               }));
               await academicApi.bulkSubmitMarks(examId, payload);
+              setIsUpdate(true);
+              setIsDirty(false);
               Alert.alert('Saved', 'Marks saved successfully!', [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
@@ -162,71 +235,21 @@ const MarksEntryScreen: React.FC = () => {
         data={marks}
         keyExtractor={item => item.studentId.toString()}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => {
-          const result = getPassFail(item);
-          return (
-            <View style={styles.row}>
-              {/* Student info */}
-              <View style={styles.studentInfo}>
-                {item.rollNumber && (
-                  <Text style={styles.rollNumber}>#{item.rollNumber}</Text>
-                )}
-                <Text style={styles.studentName}>{item.studentName}</Text>
-              </View>
-
-              {/* Absent toggle */}
-              <TouchableOpacity
-                style={[styles.absentBtn, item.isAbsent && styles.absentBtnActive]}
-                onPress={() => updateMark(item.studentId, 'isAbsent', !item.isAbsent)}
-              >
-                <Text style={[styles.absentBtnText, item.isAbsent && styles.absentBtnTextActive]}>
-                  Absent
-                </Text>
-              </TouchableOpacity>
-
-              {/* Marks input */}
-              {!item.isAbsent ? (
-                <View style={styles.marksInputWrap}>
-                  <TextInput
-                    style={[
-                      styles.marksInput,
-                      result === 'pass' && styles.marksInputPass,
-                      result === 'fail' && styles.marksInputFail,
-                    ]}
-                    value={item.marksObtained}
-                    onChangeText={text => updateMark(item.studentId, 'marksObtained', text)}
-                    keyboardType="decimal-pad"
-                    placeholder={`/ ${totalMarks}`}
-                    placeholderTextColor="#9ca3af"
-                    maxLength={6}
-                  />
-                  {result && (
-                    <Text style={result === 'pass' ? styles.resultPass : styles.resultFail}>
-                      {result === 'pass' ? 'P' : 'F'}
-                    </Text>
-                  )}
-                </View>
-              ) : (
-                <View style={styles.absentPlaceholder}>
-                  <Text style={styles.absentLabel}>—</Text>
-                </View>
-              )}
-            </View>
-          );
-        }}
+        renderItem={renderItem}
+        keyboardShouldPersistTaps="handled"
       />
 
       {/* Save button */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+          style={[styles.saveBtn, (saving || (isUpdate && !isDirty)) && styles.saveBtnDisabled]}
           onPress={handleSave}
-          disabled={saving}
+          disabled={saving || (isUpdate && !isDirty)}
         >
           {saving ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveBtnText}>Save Marks ({marks.length} students)</Text>
+            <Text style={styles.saveBtnText}>{isUpdate ? 'Update Marks' : 'Save Marks'} ({marks.length} students)</Text>
           )}
         </TouchableOpacity>
       </View>
