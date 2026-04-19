@@ -1,13 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet,
-  Alert, KeyboardAvoidingView, Platform, ActivityIndicator,
+  Alert, ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { academicApi } from '../api/academics';
 import { studentApi } from '../api/student';
-import { Student } from '../types';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
@@ -216,11 +215,7 @@ const MarksEntryScreen: React.FC = () => {
   const absent = marks.filter(m => m.isAbsent).length;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      {/* Exam info header */}
+    <View style={styles.container}>
       <View style={styles.examHeader}>
         <Text style={styles.examName}>{examName}</Text>
         <Text style={styles.examMeta}>Total Marks: {totalMarks}  |  Passing: {passingMarks}</Text>
@@ -236,11 +231,11 @@ const MarksEntryScreen: React.FC = () => {
         keyExtractor={item => item.studentId.toString()}
         contentContainerStyle={styles.list}
         renderItem={renderItem}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
+        automaticallyAdjustKeyboardInsets={true}
         ListFooterComponent={<View style={{ height: 120 }} />}
       />
 
-      {/* Save button */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.saveBtn, (saving || (isUpdate && !isDirty)) && styles.saveBtnDisabled]}
@@ -254,7 +249,7 @@ const MarksEntryScreen: React.FC = () => {
           )}
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
