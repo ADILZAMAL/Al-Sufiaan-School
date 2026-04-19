@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   Alert, ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
@@ -139,15 +139,6 @@ const MarksEntryScreen: React.FC = () => {
     }));
   }, []);
 
-  const renderItem = useCallback(({ item }: { item: StudentMark }) => (
-    <MarkRow
-      item={item}
-      totalMarks={totalMarks}
-      passingMarks={passingMarks}
-      onUpdate={updateMark}
-    />
-  ), [totalMarks, passingMarks, updateMark]);
-
   const getPassFail = (mark: StudentMark): 'pass' | 'fail' | null => {
     if (mark.isAbsent || mark.marksObtained === '') return null;
     const num = parseFloat(mark.marksObtained);
@@ -226,15 +217,22 @@ const MarksEntryScreen: React.FC = () => {
         </View>
       </View>
 
-      <FlatList
-        data={marks}
-        keyExtractor={item => item.studentId.toString()}
+      <ScrollView
         contentContainerStyle={styles.list}
-        renderItem={renderItem}
         keyboardShouldPersistTaps="always"
         automaticallyAdjustKeyboardInsets={true}
-        ListFooterComponent={<View style={{ height: 120 }} />}
-      />
+      >
+        {marks.map(item => (
+          <MarkRow
+            key={item.studentId}
+            item={item}
+            totalMarks={totalMarks}
+            passingMarks={passingMarks}
+            onUpdate={updateMark}
+          />
+        ))}
+        <View style={{ height: 120 }} />
+      </ScrollView>
 
       <View style={styles.footer}>
         <TouchableOpacity
