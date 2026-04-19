@@ -237,6 +237,7 @@ const MarksEntryScreen: React.FC = () => {
         contentContainerStyle={styles.list}
         renderItem={renderItem}
         keyboardShouldPersistTaps="handled"
+        ListFooterComponent={<View style={{ height: 120 }} />}
       />
 
       {/* Save button */}

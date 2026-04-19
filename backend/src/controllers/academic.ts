@@ -438,17 +438,29 @@ export const bulkSubmitMarks = async (req: Request, res: Response) => {
 export const getMarksByExam = async (req: Request, res: Response) => {
   try {
     const schoolId = parseInt(String(req.schoolId));
-    const { examId } = req.query;
+    const { examId, sectionId, sessionId } = req.query;
 
     if (!examId) return sendError(res, 'examId is required', 400);
 
     const exam = await Exam.findOne({ where: { id: parseInt(String(examId)), schoolId } });
     if (!exam) return sendError(res, 'Exam not found', 404);
 
+    const studentInclude: object = {
+      association: 'student',
+      attributes: ['id', 'firstName', 'lastName', 'admissionNumber', 'fatherName', 'studentPhoto'],
+      include: sectionId && sessionId ? [{
+        model: StudentEnrollment,
+        as: 'enrollments',
+        attributes: ['rollNumber'],
+        where: { sectionId: parseInt(String(sectionId)), sessionId: parseInt(String(sessionId)) },
+        required: false,
+      }] : [],
+    };
+
     const marks = await StudentExamMark.findAll({
       where: { examId: parseInt(String(examId)) },
       include: [
-        { association: 'student', attributes: ['id', 'firstName', 'lastName'] },
+        studentInclude,
         { association: 'enteredByUser', attributes: ['id', 'firstName', 'lastName'] },
       ],
       order: [[{ model: Student, as: 'student' }, 'firstName', 'ASC']],

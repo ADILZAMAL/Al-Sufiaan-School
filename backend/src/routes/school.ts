@@ -1,5 +1,5 @@
 import express, { Router, Request, Response } from 'express';
-import { getSchoolById, getAllSchools, onboardSchool, updateSchool, getCurrentSchool, createSuperAdmin, getSchoolSuperAdmin } from '../controllers/school';
+import { getSchoolById, getAllSchools, onboardSchool, updateSchool, getCurrentSchool, createSuperAdmin, getSchoolSuperAdmin, getLogoBase64 } from '../controllers/school';
 import { check, body } from 'express-validator';
 import { sendError } from '../utils/response';
 import crypto from 'crypto';
@@ -10,6 +10,7 @@ const router: Router = express.Router();
 
 router.get("/", getAllSchools)
 router.get("/current", verifyToken, getCurrentSchool)
+router.get("/logo-base64", verifyToken, getLogoBase64)
 router.get("/:id", getSchoolById)
 router.get("/:id/super-admin", getSchoolSuperAdmin)
 

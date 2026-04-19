@@ -91,8 +91,11 @@ export const examApi = {
 // ── Marks ─────────────────────────────────────────────────────────────────────
 
 export const marksApi = {
-  getByExam: async (examId: number): Promise<StudentExamMark[]> => {
-    const body = await req(`/api/academic/marks?examId=${examId}`);
+  getByExam: async (examId: number, sectionId?: number, sessionId?: number): Promise<StudentExamMark[]> => {
+    const params = new URLSearchParams({ examId: String(examId) });
+    if (sectionId) params.append('sectionId', String(sectionId));
+    if (sessionId) params.append('sessionId', String(sessionId));
+    const body = await req(`/api/academic/marks?${params.toString()}`);
     return body.data;
   },
   getByStudent: async (studentId: number, sessionId: number): Promise<SubjectWithChapters[]> => {

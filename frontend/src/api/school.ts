@@ -52,6 +52,19 @@ export const getCurrentSchool = async (): Promise<School> => {
   return body.data as School;
 };
 
+export const getSchoolLogoBase64 = async (): Promise<string | null> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/schools/logo-base64`, {
+      credentials: 'include',
+    });
+    const body = await response.json();
+    if (!body.success) return null;
+    return body.data.base64 as string;
+  } catch {
+    return null;
+  }
+};
+
 export interface OnboardSchoolData {
   name: string;
   email: string;

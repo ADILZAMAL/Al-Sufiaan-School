@@ -44,7 +44,15 @@ export interface StudentExamMark {
   isAbsent: boolean;
   enteredBy: number;
   enteredAt: string;
-  student?: { id: number; firstName: string; lastName: string };
+  student?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    admissionNumber?: string;
+    fatherName?: string;
+    studentPhoto?: string;
+    enrollments?: { rollNumber?: string | null }[];
+  };
   enteredByUser?: { id: number; firstName: string; lastName: string };
 }
 
