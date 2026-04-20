@@ -169,7 +169,7 @@ export const getLogoBase64 = async (req: Request, res: Response) => {
     const proto = url.startsWith('https') ? https : http;
 
     proto.get(url, (imgRes) => {
-      const chunks: Buffer[] = [];
+      const chunks: Uint8Array[] = [];
       imgRes.on('data', (chunk: Buffer) => chunks.push(chunk));
       imgRes.on('end', () => {
         const buffer = Buffer.concat(chunks);
