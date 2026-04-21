@@ -48,6 +48,7 @@ const StudentPage: React.FC = () => {
     const active = searchParams.get('active');
     return active === null ? true : active === 'true';
   });
+  const [serviceFilter, setServiceFilter] = useState<string>(searchParams.get('service') || 'all');
   const [manualSessionId, setManualSessionId] = useState<number | null>(null);
 
   const { data: activeSession, isLoading: sessionLoading } = useQuery<AcademicSession | null>(
@@ -88,6 +89,7 @@ const StudentPage: React.FC = () => {
     if (selectedClassId !== null) params.set('classId', selectedClassId.toString());
     if (selectedSectionId !== null) params.set('sectionId', selectedSectionId.toString());
     if (activeFilter !== true) params.set('active', activeFilter.toString());
+    if (serviceFilter !== 'all') params.set('service', serviceFilter);
 
     const newParams = params.toString();
     const currentParams = searchParams.toString();
@@ -95,7 +97,7 @@ const StudentPage: React.FC = () => {
       setSearchParams(params, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, selectedClassId, selectedSectionId, activeFilter]);
+  }, [searchTerm, selectedClassId, selectedSectionId, activeFilter, serviceFilter]);
 
   const handleSessionChange = (sessionId: number) => {
     setManualSessionId(sessionId);
@@ -138,7 +140,14 @@ const StudentPage: React.FC = () => {
     const matchesSection = selectedSectionId === null || enrollment?.sectionId === selectedSectionId;
     const matchesActive = student.active === activeFilter;
 
-    return matchesSearch && matchesClass && matchesSection && matchesActive;
+    const matchesService =
+      serviceFilter === 'all' ||
+      (serviceFilter === 'hostel' && student.hostel) ||
+      (serviceFilter === 'dayboarding' && student.dayboarding) ||
+      (serviceFilter === 'transportation' && !!student.areaTransportationId) ||
+      (serviceFilter === 'none' && !student.hostel && !student.dayboarding && !student.areaTransportationId);
+
+    return matchesSearch && matchesClass && matchesSection && matchesActive && matchesService;
   });
 
   const availableSections: SectionType[] = selectedClassId
@@ -151,12 +160,13 @@ const StudentPage: React.FC = () => {
     setSelectedSectionId(null);
   };
 
-  const hasActiveFilters = selectedClassId !== null || selectedSectionId !== null || searchTerm !== '';
+  const hasActiveFilters = selectedClassId !== null || selectedSectionId !== null || searchTerm !== '' || serviceFilter !== 'all';
 
   const handleClearFilters = () => {
     setSelectedClassId(null);
     setSelectedSectionId(null);
     setSearchTerm('');
+    setServiceFilter('all');
   };
 
   const stats = {
@@ -300,6 +310,19 @@ const StudentPage: React.FC = () => {
                     {section.name}
                   </option>
                 ))}
+              </select>
+
+              {/* Service Filter */}
+              <select
+                value={serviceFilter}
+                onChange={(e) => setServiceFilter(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[150px] text-gray-700"
+              >
+                <option value="all">All Services</option>
+                <option value="hostel">Hostel</option>
+                <option value="dayboarding">Day Boarding</option>
+                <option value="transportation">Transportation</option>
+                <option value="none">No Service</option>
               </select>
 
               {/* Active / Inactive Pill Tabs */}
