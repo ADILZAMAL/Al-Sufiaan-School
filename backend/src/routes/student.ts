@@ -105,28 +105,6 @@ const createStudentValidation = [
     .isLength({ min: 5, max: 500 })
     .withMessage('Address must be between 5 and 500 characters'),
   
-  body('city')
-    .notEmpty()
-    .withMessage('City is required')
-    .isLength({ min: 2, max: 100 })
-    .withMessage('City must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage('City can only contain letters and spaces'),
-  
-  body('state')
-    .notEmpty()
-    .withMessage('State is required')
-    .isLength({ min: 2, max: 100 })
-    .withMessage('State must be between 2 and 100 characters')
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage('State can only contain letters and spaces'),
-  
-  body('pincode')
-    .notEmpty()
-    .withMessage('Pincode is required')
-    .matches(/^[0-9]{6}$/)
-    .withMessage('Pincode must be exactly 6 digits'),
-  
   body('fatherName')
     .notEmpty()
     .withMessage('Father name is required')

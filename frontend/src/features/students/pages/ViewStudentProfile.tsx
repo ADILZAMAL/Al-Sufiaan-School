@@ -411,19 +411,11 @@ const ViewStudentProfile: React.FC = () => {
               Address Information
             </h3>
             <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
-                  <div className="flex items-start">
-                    <FiHome className="h-4 w-4 text-gray-400 mr-2 mt-0.5" />
-                    <p className="text-sm text-gray-900 font-medium">{student.address}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">City, State - Pincode</label>
-                  <p className="text-sm text-gray-900 font-medium">
-                    {student.city}, {student.state} - {student.pincode}
-                  </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
+                <div className="flex items-start">
+                  <FiHome className="h-4 w-4 text-gray-400 mr-2 mt-0.5" />
+                  <p className="text-sm text-gray-900 font-medium">{student.address}</p>
                 </div>
               </div>
             </div>

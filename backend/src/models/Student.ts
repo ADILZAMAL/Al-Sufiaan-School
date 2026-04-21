@@ -51,9 +51,6 @@ class Student extends Model {
   public religion!: Religion;
   public aadhaarNumber!: string;
   public address!: string;
-  public city!: string;
-  public state!: string;
-  public pincode!: string;
   public fatherName!: string;
   public fatherPhone?: string;
   public fatherOccupation?: string;
@@ -203,37 +200,6 @@ Student.init(
           msg: 'Address is required',
         }
       }
-    },
-    city: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: {
-          msg: 'City is required',
-        },
-      },
-    },
-    state: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: {
-          msg: 'State is required',
-        },
-      },
-    },
-    pincode: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        is: {
-          args: [/^[0-9]{6}$/],
-          msg: 'Pincode must be 6 digits',
-        },
-        notEmpty: {
-          msg: 'Pincode is required',
-        },
-      },
     },
     fatherName: {
       type: DataTypes.STRING,

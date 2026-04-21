@@ -39,9 +39,6 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
     phone: '',
     email: '',
     address: '',
-    city: '',
-    state: '',
-    pincode: '',
     classId: null as number | null,
     sectionId: null as number | null,
     rollNumber: '',
@@ -215,8 +212,8 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
 
   const validateForm = () => {
     const requiredFields = [
-      'firstName', 'lastName', 'dateOfBirth', 'gender', 'address', 
-      'city', 'state', 'pincode', 'classId', 'sectionId',
+      'firstName', 'lastName', 'dateOfBirth', 'gender', 'address',
+      'classId', 'sectionId',
       'fatherName', 'motherName', 'phone', 'aadhaarNumber'
     ];
 
@@ -292,9 +289,6 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
         sectionId: formData.sectionId as number,
         rollNumber: formData.rollNumber || undefined,
         address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        pincode: formData.pincode,
         fatherName: formData.fatherName,
         fatherPhone: formData.fatherPhone || undefined,
         fatherOccupation: formData.fatherOccupation || undefined,
@@ -366,9 +360,6 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
       phone: '',
       email: '',
       address: '',
-      city: '',
-      state: '',
-      pincode:'',
       classId: null as number | null,
       sectionId: null as number | null,
       rollNumber: '',
@@ -733,49 +724,6 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Pin Code <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="pincode"
-                  value={formData.pincode}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  maxLength={6}
-                  pattern="[0-9]{6}"
-                />
-              </div>
             </div>
           </div>
 

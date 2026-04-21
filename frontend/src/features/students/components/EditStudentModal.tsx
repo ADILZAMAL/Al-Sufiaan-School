@@ -46,9 +46,6 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
     sectionId: null,
     rollNumber: '',
     address: '',
-    city: '',
-    state: '',
-    pincode: '',
     fatherName: '',
     fatherOccupation: '',
     fatherPhone: '',
@@ -109,9 +106,6 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         sectionId: student.sectionId ?? null,
         rollNumber: student.rollNumber || '',
         address: student.address,
-        city: student.city,
-        state: student.state,
-        pincode: student.pincode,
         fatherName: student.fatherName,
         fatherOccupation: student.fatherOccupation || '',
         fatherPhone: student.fatherPhone || '',
@@ -256,8 +250,8 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
 
   const validateForm = () => {
     const requiredFields = [
-      'firstName', 'lastName', 'dateOfBirth', 'gender', 'address', 
-      'city', 'state', 'pincode', 'fatherName', 'motherName', 'phone', 'aadhaarNumber'
+      'firstName', 'lastName', 'dateOfBirth', 'gender', 'address',
+      'fatherName', 'motherName', 'phone', 'aadhaarNumber'
     ];
 
     for (const field of requiredFields) {
@@ -331,9 +325,6 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         religion: formData.religion as Religion,
         aadhaarNumber: formData.aadhaarNumber,
         address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        pincode: formData.pincode,
         fatherName: formData.fatherName,
         fatherPhone: formData.fatherPhone || undefined,
         fatherOccupation: formData.fatherOccupation || undefined,
@@ -766,49 +757,6 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Pin Code <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="pincode"
-                  value={formData.pincode}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  maxLength={6}
-                  pattern="[0-9]{6}"
-                />
-              </div>
             </div>
           </div>
 

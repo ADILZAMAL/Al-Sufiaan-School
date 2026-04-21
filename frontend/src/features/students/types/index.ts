@@ -83,9 +83,6 @@ export interface Student {
   sectionId?: number;
   rollNumber?: string;
   address: string;
-  city: string;
-  state: string;
-  pincode: string;
   fatherName: string;
   fatherPhone?: string;
   fatherOccupation?: string;
@@ -146,9 +143,6 @@ export interface CreateStudentRequest {
   sectionId?: number; // Optional in some contexts
   rollNumber?: string;
   address: string;
-  city: string;
-  state: string;
-  pincode: string;
   fatherName: string;
   fatherPhone?: string;
   fatherOccupation?: string;
@@ -210,9 +204,6 @@ export interface StudentFormData {
   phone: string;
   email: string;
   address: string;
-  city: string;
-  state: string;
-  pincode: string;
   
   // Academic Information
   classId: number | null;

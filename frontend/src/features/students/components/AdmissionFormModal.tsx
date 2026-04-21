@@ -526,20 +526,6 @@ const AdmissionFormContent: React.FC<AdmissionFormContentProps> = ({
               </span>
             </div>
           </div>
-          <div className="col-span-2 grid grid-cols-3 gap-3">
-            <div className="flex items-center">
-              <span className="font-semibold text-gray-600 w-20">City:</span>
-              <span className="ml-2 font-semibold text-gray-900">{student.city}</span>
-            </div>
-            <div className="flex items-center">
-              <span className="font-semibold text-gray-600 w-20">State:</span>
-              <span className="ml-2 font-semibold text-gray-900">{student.state}</span>
-            </div>
-            <div className="flex items-center">
-              <span className="font-semibold text-gray-600 w-20">Pincode:</span>
-              <span className="ml-2 font-semibold text-gray-900">{student.pincode}</span>
-            </div>
-          </div>
         </div>
       </div>
 
