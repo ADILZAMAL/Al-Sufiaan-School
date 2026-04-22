@@ -134,9 +134,6 @@ export interface StudentDetail {
   phone: string;
   email?: string | null;
   address: string;
-  city: string;
-  state: string;
-  pincode: string;
   fatherName: string;
   fatherPhone?: string | null;
   motherName: string;
@@ -161,9 +158,6 @@ export interface StudentUpdatePayload {
   phone?: string;
   email?: string | null;
   address?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
   fatherName?: string;
   fatherPhone?: string | null;
   motherName?: string;

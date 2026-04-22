@@ -44,9 +44,6 @@ const initForm = (s: StudentDetail): StudentUpdatePayload => ({
   phone: s.phone ?? '',
   email: s.email ?? '',
   address: s.address ?? '',
-  city: s.city ?? '',
-  state: s.state ?? '',
-  pincode: s.pincode ?? '',
   fatherName: s.fatherName ?? '',
   fatherPhone: s.fatherPhone ?? '',
   motherName: s.motherName ?? '',
@@ -411,10 +408,7 @@ const StudentProfileScreen: React.FC = () => {
         <View style={styles.card}>
           <Field label="Phone" value={form.phone} editable={isEditMode} onChangeText={v => updateForm('phone', v)} keyboardType="phone-pad" />
           <Field label="Email" value={form.email} editable={isEditMode} onChangeText={v => updateForm('email', v)} keyboardType="email-address" />
-          <Field label="Address" value={form.address} editable={isEditMode} onChangeText={v => updateForm('address', v)} multiline />
-          <Field label="City" value={form.city} editable={isEditMode} onChangeText={v => updateForm('city', v)} />
-          <Field label="State" value={form.state} editable={isEditMode} onChangeText={v => updateForm('state', v)} />
-          <Field label="Pincode" value={form.pincode} editable={isEditMode} onChangeText={v => updateForm('pincode', v)} keyboardType="numeric" isLast />
+          <Field label="Address" value={form.address} editable={isEditMode} onChangeText={v => updateForm('address', v)} multiline isLast />
         </View>
 
         {/* ── Family ── */}
