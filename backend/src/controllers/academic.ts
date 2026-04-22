@@ -484,9 +484,15 @@ export const getStudentMarks = async (req: Request, res: Response) => {
     const student = await Student.findOne({ where: { id: parseInt(studentId), schoolId } });
     if (!student) return sendError(res, 'Student not found', 404);
 
-    // Get all subjects for this session in this school
+    // Get the student's class for this session
+    const enrollment = await StudentEnrollment.findOne({
+      where: { studentId: parseInt(studentId), sessionId: parseInt(String(sessionId)) },
+    });
+    if (!enrollment) return sendSuccess(res, [], 'No enrollment found for this session');
+
+    // Get all subjects for this session + class in this school
     const subjects = await Subject.findAll({
-      where: { sessionId: parseInt(String(sessionId)), schoolId },
+      where: { sessionId: parseInt(String(sessionId)), schoolId, classId: enrollment.classId },
       include: [
         {
           association: 'chapters',
