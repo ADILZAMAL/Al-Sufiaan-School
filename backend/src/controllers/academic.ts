@@ -448,12 +448,13 @@ export const getMarksByExam = async (req: Request, res: Response) => {
     const studentInclude: object = {
       association: 'student',
       attributes: ['id', 'firstName', 'lastName', 'admissionNumber', 'fatherName', 'studentPhoto'],
+      required: !!(sectionId && sessionId),
       include: sectionId && sessionId ? [{
         model: StudentEnrollment,
         as: 'enrollments',
         attributes: ['rollNumber'],
         where: { sectionId: parseInt(String(sectionId)), sessionId: parseInt(String(sessionId)) },
-        required: false,
+        required: true,
       }] : [],
     };
 
