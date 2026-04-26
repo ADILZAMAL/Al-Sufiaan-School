@@ -6,6 +6,8 @@ import Subject from './Subject';
 import TeacherSubjectAssignment from './TeacherSubjectAssignment';
 import Chapter from './Chapter';
 import Exam from './Exam';
+import ExamEvent from './ExamEvent';
+import ExamChapter from './ExamChapter';
 import StudentExamMark from './StudentExamMark';
 import Product from './Product';
 import Transaction from './Transaction';
@@ -198,9 +200,22 @@ TeacherSubjectAssignment.belongsTo(Section, { foreignKey: 'sectionId', as: 'sect
 TeacherSubjectAssignment.belongsTo(AcademicSession, { foreignKey: 'sessionId', as: 'session' });
 TeacherSubjectAssignment.belongsTo(User, { foreignKey: 'assignedBy', as: 'assignedByUser' });
 
-Chapter.hasMany(Exam, { foreignKey: 'chapterId', as: 'exams' });
-Exam.belongsTo(Chapter, { foreignKey: 'chapterId', as: 'chapter' });
 Chapter.belongsTo(Staff, { foreignKey: 'taughtBy', as: 'taughtByStaff' });
+
+// ExamEvent associations
+AcademicSession.hasMany(ExamEvent, { foreignKey: 'sessionId', as: 'examEvents' });
+ExamEvent.belongsTo(AcademicSession, { foreignKey: 'sessionId', as: 'session' });
+ExamEvent.hasMany(Exam, { foreignKey: 'examEventId', as: 'subjectExams' });
+Exam.belongsTo(ExamEvent, { foreignKey: 'examEventId', as: 'examEvent' });
+
+// Exam associations (now subject-scoped)
+Subject.hasMany(Exam, { foreignKey: 'subjectId', as: 'exams' });
+Exam.belongsTo(Subject, { foreignKey: 'subjectId', as: 'subject' });
+
+// ExamChapter associations
+Exam.hasMany(ExamChapter, { foreignKey: 'examId', as: 'examChapters' });
+ExamChapter.belongsTo(Exam, { foreignKey: 'examId', as: 'exam' });
+ExamChapter.belongsTo(Chapter, { foreignKey: 'chapterId', as: 'chapter' });
 
 Exam.hasMany(StudentExamMark, { foreignKey: 'examId', as: 'marks' });
 StudentExamMark.belongsTo(Exam, { foreignKey: 'examId', as: 'exam' });
@@ -227,4 +242,4 @@ StudentEnrollment.belongsTo(Section, { foreignKey: 'sectionId', as: 'section' })
 StudentEnrollment.belongsTo(User, { foreignKey: 'promotedBy', as: 'promoter' });
 Student.hasMany(StudentEnrollment, { foreignKey: 'studentId', as: 'enrollments' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, Staff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, TransportationAreaPricing, Student, AcademicSession, StudentEnrollment, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday, Designation, Subject, TeacherSubjectAssignment, Chapter, Exam, StudentExamMark, FeeHead, FeeHeadClassPricing };
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, Staff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, TransportationAreaPricing, Student, AcademicSession, StudentEnrollment, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday, Designation, Subject, TeacherSubjectAssignment, Chapter, Exam, ExamEvent, ExamChapter, StudentExamMark, FeeHead, FeeHeadClassPricing };

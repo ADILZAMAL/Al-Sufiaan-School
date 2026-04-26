@@ -216,7 +216,6 @@ export default function PendingMarksPage() {
                         <thead>
                           <tr className="bg-gray-50">
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Subject</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Chapter</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Exam</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Teacher</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Entered</th>
@@ -227,7 +226,6 @@ export default function PendingMarksPage() {
                           {pending.map(item => (
                             <tr key={item.examId} className="hover:bg-gray-50 transition">
                               <td className="px-6 py-3.5 text-sm font-semibold text-gray-800">{item.subjectName}</td>
-                              <td className="px-6 py-3.5 text-sm text-gray-600">{item.chapterName}</td>
                               <td className="px-6 py-3.5 text-sm text-gray-700">{item.examName}</td>
                               <td className="px-6 py-3.5 text-sm text-gray-600">
                                 {item.teacher ? item.teacher.name : <span className="text-gray-400 italic">Unassigned</span>}

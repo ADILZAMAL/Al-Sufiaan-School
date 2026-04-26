@@ -40,6 +40,9 @@ import StudentPromotion from "./features/sessions/pages/StudentPromotion"
 import SubjectsPage from "./features/academics/pages/SubjectsPage"
 import ChaptersPage from "./features/academics/pages/ChaptersPage"
 import ExamsPage from "./features/academics/pages/ExamsPage"
+import ExamEventsPage from "./features/academics/pages/ExamEventsPage"
+import ExamEventDetailPage from "./features/academics/pages/ExamEventDetailPage"
+import ReportCardPage from "./features/academics/pages/ReportCardPage"
 import AssignmentsPage from "./features/academics/pages/AssignmentsPage"
 import MarksViewerPage from "./features/academics/pages/MarksViewerPage"
 import PendingMarksPage from "./features/academics/pages/PendingMarksPage"
@@ -212,6 +215,9 @@ const router = createBrowserRouter([
           { path: "subjects", element: <SubjectsPage /> },
           { path: "chapters", element: <ChaptersPage /> },
           { path: "exams", element: <ExamsPage /> },
+          { path: "exam-events", element: <ExamEventsPage /> },
+          { path: "exam-events/:examEventId", element: <ExamEventDetailPage /> },
+          { path: "report-card", element: <ReportCardPage /> },
           { path: "assignments", element: <AssignmentsPage /> },
           { path: "marks-viewer", element: <MarksViewerPage /> },
           { path: "pending-marks", element: <PendingMarksPage /> },

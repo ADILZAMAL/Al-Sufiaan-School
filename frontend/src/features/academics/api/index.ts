@@ -1,4 +1,4 @@
-import { Subject, Chapter, Exam, TeacherSubjectAssignment, StudentExamMark, SubjectWithChapters, PendingExam, SyllabusSubject } from '../types';
+import { Subject, Chapter, Exam, ExamEvent, TeacherSubjectAssignment, StudentExamMark, SubjectWithExams, PendingExam, SyllabusSubject, EventReportCard, AnnualReportCard } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || '';
 
@@ -68,18 +68,41 @@ export const chapterApi = {
   },
 };
 
+// ── Exam Events ───────────────────────────────────────────────────────────────
+
+export const examEventApi = {
+  list: async (sessionId: number): Promise<ExamEvent[]> => {
+    const body = await req(`/api/academic/exam-events?sessionId=${sessionId}`);
+    return body.data;
+  },
+  create: async (data: { sessionId: number; name: string }): Promise<ExamEvent> => {
+    const body = await req('/api/academic/exam-events', { method: 'POST', body: JSON.stringify(data) });
+    return body.data;
+  },
+  update: async (id: number, name: string): Promise<ExamEvent> => {
+    const body = await req(`/api/academic/exam-events/${id}`, { method: 'PUT', body: JSON.stringify({ name }) });
+    return body.data;
+  },
+  delete: async (id: number): Promise<void> => {
+    await req(`/api/academic/exam-events/${id}`, { method: 'DELETE' });
+  },
+};
+
 // ── Exams ─────────────────────────────────────────────────────────────────────
 
 export const examApi = {
-  list: async (chapterId: number): Promise<Exam[]> => {
-    const body = await req(`/api/academic/exams?chapterId=${chapterId}`);
+  list: async (subjectId?: number, examEventId?: number): Promise<Exam[]> => {
+    const params = new URLSearchParams();
+    if (subjectId) params.append('subjectId', String(subjectId));
+    if (examEventId) params.append('examEventId', String(examEventId));
+    const body = await req(`/api/academic/exams?${params.toString()}`);
     return body.data;
   },
-  create: async (data: { chapterId: number; name: string; totalMarks: number; passingMarks: number; examDate?: string }): Promise<Exam> => {
+  create: async (data: { subjectId: number; name?: string; examEventId?: number; totalMarks: number; passingMarks: number; examDate?: string; chapterIds?: number[] }): Promise<Exam> => {
     const body = await req('/api/academic/exams', { method: 'POST', body: JSON.stringify(data) });
     return body.data;
   },
-  update: async (id: number, data: Partial<{ name: string; totalMarks: number; passingMarks: number; examDate: string }>): Promise<Exam> => {
+  update: async (id: number, data: Partial<{ name: string; totalMarks: number; passingMarks: number; examDate: string; chapterIds: number[] }>): Promise<Exam> => {
     const body = await req(`/api/academic/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) });
     return body.data;
   },
@@ -98,12 +121,24 @@ export const marksApi = {
     const body = await req(`/api/academic/marks?${params.toString()}`);
     return body.data;
   },
-  getByStudent: async (studentId: number, sessionId: number): Promise<SubjectWithChapters[]> => {
+  getByStudent: async (studentId: number, sessionId: number): Promise<SubjectWithExams[]> => {
     const body = await req(`/api/academic/marks/student/${studentId}?sessionId=${sessionId}`);
     return body.data;
   },
   getPending: async (classId: number, sectionId: number, sessionId: number): Promise<PendingExam[]> => {
     const body = await req(`/api/academic/marks/pending?classId=${classId}&sectionId=${sectionId}&sessionId=${sessionId}`);
+    return body.data;
+  },
+  bulkSubmit: async (examId: number, marks: { studentId: number; marksObtained?: number; isAbsent?: boolean }[]): Promise<void> => {
+    await req('/api/academic/marks/bulk', { method: 'POST', body: JSON.stringify({ examId, marks }) });
+  },
+  getEventReportCard: async (examEventId: number, classId: number, sectionId: number, sessionId: number): Promise<EventReportCard> => {
+    const params = new URLSearchParams({ examEventId: String(examEventId), classId: String(classId), sectionId: String(sectionId), sessionId: String(sessionId) });
+    const body = await req(`/api/academic/report-card/event?${params.toString()}`);
+    return body.data;
+  },
+  getAnnualReportCard: async (studentId: number, sessionId: number): Promise<AnnualReportCard> => {
+    const body = await req(`/api/academic/report-card/annual?studentId=${studentId}&sessionId=${sessionId}`);
     return body.data;
   },
 };

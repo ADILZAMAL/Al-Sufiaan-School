@@ -29,6 +29,8 @@ import {initSubjectModel} from "../models/Subject"
 import {initTeacherSubjectAssignmentModel} from "../models/TeacherSubjectAssignment"
 import {initChapterModel} from "../models/Chapter"
 import {initExamModel} from "../models/Exam"
+import {initExamEventModel} from "../models/ExamEvent"
+import {initExamChapterModel} from "../models/ExamChapter"
 import {initStudentExamMarkModel} from "../models/StudentExamMark"
 import {initFeeHeadModel} from '../models/FeeHead';
 import {initFeeHeadClassPricingModel} from '../models/FeeHeadClassPricing';
@@ -81,6 +83,8 @@ initSubjectModel(sequelize);
 initTeacherSubjectAssignmentModel(sequelize);
 initChapterModel(sequelize);
 initExamModel(sequelize);
+initExamEventModel(sequelize);
+initExamChapterModel(sequelize);
 initStudentExamMarkModel(sequelize);
 initFeeHeadModel(sequelize);
 initFeeHeadClassPricingModel(sequelize);

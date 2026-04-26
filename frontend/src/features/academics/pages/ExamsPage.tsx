@@ -3,8 +3,8 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaPlus, FaChevronRight, FaTimes } from 'react-icons/fa';
 import { HiOutlinePencil, HiOutlineTrash, HiOutlineArrowLeft } from 'react-icons/hi';
-import { examApi } from '../api';
-import { Exam } from '../types';
+import { examApi, chapterApi } from '../api';
+import { Exam, Chapter } from '../types';
 import { useAppContext } from '../../../providers/AppContext';
 
 export default function ExamsPage() {
@@ -13,37 +13,43 @@ export default function ExamsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const chapterId = Number(searchParams.get('chapterId'));
-  const chapterName = searchParams.get('chapterName') || 'Chapter';
+  const subjectId = Number(searchParams.get('subjectId'));
   const subjectName = searchParams.get('subjectName') || 'Subject';
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
   const [deletingExam, setDeletingExam] = useState<Exam | null>(null);
 
-  const emptyForm = { name: '', totalMarks: '', passingMarks: '', examDate: '' };
+  const emptyForm = { name: '', totalMarks: '', passingMarks: '', examDate: '', chapterIds: [] as number[] };
   const [form, setForm] = useState(emptyForm);
 
   const { data: exams = [], isLoading } = useQuery<Exam[]>(
-    ['exams', chapterId],
-    () => examApi.list(chapterId),
-    { enabled: !!chapterId }
+    ['exams', 'subject', subjectId],
+    () => examApi.list(subjectId),
+    { enabled: !!subjectId }
+  );
+
+  const { data: chapters = [] } = useQuery<Chapter[]>(
+    ['chapters', subjectId],
+    () => chapterApi.list(subjectId),
+    { enabled: !!subjectId }
   );
 
   const createMutation = useMutation(
     () => examApi.create({
-      chapterId,
+      subjectId,
       name: form.name,
       totalMarks: Number(form.totalMarks),
       passingMarks: Number(form.passingMarks),
       examDate: form.examDate || undefined,
+      chapterIds: form.chapterIds,
     }),
     {
       onSuccess: () => {
-        queryClient.invalidateQueries(['exams', chapterId]);
+        queryClient.invalidateQueries(['exams', 'subject', subjectId]);
         setShowAddModal(false);
         setForm(emptyForm);
-        showToast({ message: 'Exam created successfully', type: 'SUCCESS' });
+        showToast({ message: 'Class test created successfully', type: 'SUCCESS' });
       },
       onError: (e: Error) => showToast({ message: e.message, type: 'ERROR' }),
     }
@@ -55,13 +61,14 @@ export default function ExamsPage() {
       totalMarks: Number(form.totalMarks),
       passingMarks: Number(form.passingMarks),
       examDate: form.examDate || undefined,
+      chapterIds: form.chapterIds,
     }),
     {
       onSuccess: () => {
-        queryClient.invalidateQueries(['exams', chapterId]);
+        queryClient.invalidateQueries(['exams', 'subject', subjectId]);
         setEditingExam(null);
         setForm(emptyForm);
-        showToast({ message: 'Exam updated successfully', type: 'SUCCESS' });
+        showToast({ message: 'Class test updated successfully', type: 'SUCCESS' });
       },
       onError: (e: Error) => showToast({ message: e.message, type: 'ERROR' }),
     }
@@ -71,9 +78,9 @@ export default function ExamsPage() {
     (id: number) => examApi.delete(id),
     {
       onSuccess: () => {
-        queryClient.invalidateQueries(['exams', chapterId]);
+        queryClient.invalidateQueries(['exams', 'subject', subjectId]);
         setDeletingExam(null);
-        showToast({ message: 'Exam deleted successfully', type: 'SUCCESS' });
+        showToast({ message: 'Class test deleted successfully', type: 'SUCCESS' });
       },
       onError: (e: Error) => showToast({ message: e.message, type: 'ERROR' }),
     }
@@ -86,6 +93,7 @@ export default function ExamsPage() {
       totalMarks: String(exam.totalMarks),
       passingMarks: String(exam.passingMarks),
       examDate: exam.examDate || '',
+      chapterIds: exam.examChapters?.map(ec => ec.chapter.id) ?? [],
     });
   };
 
@@ -102,14 +110,23 @@ export default function ExamsPage() {
     }
   };
 
+  const toggleChapter = (id: number) => {
+    setForm(f => ({
+      ...f,
+      chapterIds: f.chapterIds.includes(id)
+        ? f.chapterIds.filter(c => c !== id)
+        : [...f.chapterIds, id],
+    }));
+  };
+
   const formatDate = (dateStr: string | null) =>
     dateStr ? new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
 
-  if (!chapterId) {
+  if (!subjectId) {
     return (
       <div className="p-4 md:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <p className="text-gray-500 mb-3">No chapter selected.</p>
+          <p className="text-gray-500 mb-3">No subject selected.</p>
           <button onClick={() => navigate('/dashboard/academics/subjects')} className="text-blue-600 hover:underline text-sm">
             Go back to Subjects
           </button>
@@ -140,12 +157,10 @@ export default function ExamsPage() {
                   Subjects
                 </button>
                 <FaChevronRight className="text-gray-300" size={9} />
-                <span className="font-medium">{subjectName}</span>
-                <FaChevronRight className="text-gray-300" size={9} />
-                <span className="text-gray-600 font-medium">{chapterName}</span>
+                <span className="text-gray-600 font-medium">{subjectName}</span>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Exams</h1>
-              <p className="text-sm text-gray-500 mt-0.5">Manage exams for this chapter</p>
+              <h1 className="text-2xl font-bold text-gray-900">Class Tests</h1>
+              <p className="text-sm text-gray-500 mt-0.5">Manage class tests for {subjectName}</p>
             </div>
           </div>
           <button
@@ -153,7 +168,7 @@ export default function ExamsPage() {
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition whitespace-nowrap"
           >
             <FaPlus size={11} />
-            Add Exam
+            Add Class Test
           </button>
         </div>
 
@@ -183,14 +198,14 @@ export default function ExamsPage() {
             <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
               <FaPlus className="text-blue-300" size={18} />
             </div>
-            <p className="text-gray-700 font-semibold">No exams yet</p>
-            <p className="text-gray-400 text-sm mt-1">Add the first exam for {chapterName}</p>
+            <p className="text-gray-700 font-semibold">No class tests yet</p>
+            <p className="text-gray-400 text-sm mt-1">Add the first class test for {subjectName}</p>
             <button
               onClick={() => { setShowAddModal(true); setForm(emptyForm); }}
               className="mt-5 inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
             >
               <FaPlus size={11} />
-              Add First Exam
+              Add First Class Test
             </button>
           </div>
         ) : (
@@ -199,12 +214,24 @@ export default function ExamsPage() {
               {exams.map(exam => {
                 const passPct = Math.round((exam.passingMarks / exam.totalMarks) * 100);
                 const date = formatDate(exam.examDate);
+                const examChapters = exam.examChapters
+                  ?.map(ec => ec.chapter)
+                  .sort((a, b) => a.orderNumber - b.orderNumber) ?? [];
                 return (
                   <li key={exam.id} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 group transition">
-                    {/* Exam name */}
+                    {/* Exam name + chapter tags */}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 text-sm">{exam.name}</p>
                       {date && <p className="text-xs text-gray-400 mt-0.5">{date}</p>}
+                      {examChapters.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {examChapters.map(ch => (
+                            <span key={ch.id} className="inline-block bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">
+                              {ch.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Marks info */}
@@ -253,10 +280,10 @@ export default function ExamsPage() {
       {/* Add / Edit Modal */}
       {(showAddModal || editingExam) && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-semibold text-gray-900">
-                {editingExam ? 'Edit Exam' : 'Add Exam'}
+                {editingExam ? 'Edit Class Test' : 'Add Class Test'}
               </h3>
               <button
                 onClick={() => { setShowAddModal(false); setEditingExam(null); setForm(emptyForm); }}
@@ -313,6 +340,29 @@ export default function ExamsPage() {
                   className="w-full border border-gray-300 px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+
+              {/* Chapter selection */}
+              {chapters.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Chapters covered <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-44 overflow-y-auto">
+                    {chapters.map(ch => (
+                      <label key={ch.id} className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.chapterIds.includes(ch.id)}
+                          onChange={() => toggleChapter(ch.id)}
+                          className="w-4 h-4 rounded accent-blue-600"
+                        />
+                        <span className="text-sm text-gray-700">{ch.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-1">
                 <button
                   type="button"
@@ -328,7 +378,7 @@ export default function ExamsPage() {
                 >
                   {createMutation.isLoading || updateMutation.isLoading
                     ? 'Saving...'
-                    : editingExam ? 'Save Changes' : 'Add Exam'}
+                    : editingExam ? 'Save Changes' : 'Add Class Test'}
                 </button>
               </div>
             </form>

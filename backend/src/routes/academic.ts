@@ -5,8 +5,10 @@ import {
   createAssignment, getAssignments, deleteAssignment,
   createChapter, getChapters, updateChapter, deleteChapter,
   uploadChapterPDF, deleteChapterPDF,
+  createExamEvent, getExamEvents, updateExamEvent, deleteExamEvent,
   createExam, getExams, updateExam, deleteExam,
   bulkSubmitMarks, getMarksByExam, getStudentMarks, getPendingMarks,
+  getEventReportCard, getAnnualReportCard,
   getSyllabusProgress,
 } from '../controllers/academic';
 import { uploadSinglePDF } from '../middleware/upload';
@@ -34,6 +36,12 @@ router.delete('/chapters/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), deleteChap
 router.post('/chapters/:id/pdf', requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']), uploadSinglePDF, uploadChapterPDF);
 router.delete('/chapters/:id/pdf', requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']), deleteChapterPDF);
 
+// Exam events
+router.post('/exam-events', requireRole(['SUPER_ADMIN', 'ADMIN']), createExamEvent);
+router.get('/exam-events', getExamEvents);
+router.put('/exam-events/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), updateExamEvent);
+router.delete('/exam-events/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), deleteExamEvent);
+
 // Exams
 router.post('/exams', requireRole(['SUPER_ADMIN', 'ADMIN']), createExam);
 router.get('/exams', getExams);
@@ -45,6 +53,10 @@ router.post('/marks/bulk', requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']), bul
 router.get('/marks', getMarksByExam);
 router.get('/marks/pending', requireRole(['SUPER_ADMIN', 'ADMIN']), getPendingMarks);
 router.get('/marks/student/:studentId', getStudentMarks);
+
+// Report cards
+router.get('/report-card/event', getEventReportCard);
+router.get('/report-card/annual', getAnnualReportCard);
 
 // Syllabus progress
 router.get('/syllabus-progress', getSyllabusProgress);

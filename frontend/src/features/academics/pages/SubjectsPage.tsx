@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaBookOpen, FaTimes, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import { FaPlus, FaBookOpen, FaTimes, FaChevronDown, FaChevronRight, FaClipboardList } from 'react-icons/fa';
 import { HiOutlinePencil, HiOutlineTrash } from 'react-icons/hi';
 import { subjectApi, chapterApi } from '../api';
 import { Subject, Chapter } from '../types';
@@ -80,6 +80,7 @@ function SubjectChapters({ subject, subjectName }: { subject: Subject; subjectNa
 export default function SubjectsPage() {
   const { showToast } = useAppContext();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [manualSessionId, setManualSessionId] = useState<number | null>(null);
   const [activeClass, setActiveClass] = useState<ClassType | null>(null);
@@ -315,6 +316,14 @@ export default function SubjectsPage() {
 
                               {/* Actions */}
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                                <button
+                                  onClick={() => navigate(`/dashboard/academics/exams?subjectId=${subject.id}&subjectName=${encodeURIComponent(subject.name)}`)}
+                                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition whitespace-nowrap"
+                                  title="Class Tests"
+                                >
+                                  <FaClipboardList size={11} />
+                                  Class Tests
+                                </button>
                                 <button
                                   onClick={() => { setEditingSubject(subject); setFormName(subject.name); }}
                                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"

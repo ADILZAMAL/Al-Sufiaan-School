@@ -134,6 +134,12 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				icon: <HiOutlineBookOpen />
 			},
 			{
+				key: 'academics-exam-events',
+				label: 'Exam Events',
+				path: 'academics/exam-events',
+				icon: <HiOutlineLibrary />
+			},
+			{
 				key: 'academics-assignments',
 				label: 'Teacher Assignments',
 				path: 'academics/assignments',
@@ -150,6 +156,12 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				label: 'Pending Marks',
 				path: 'academics/pending-marks',
 				icon: <HiOutlineClipboardList />
+			},
+			{
+				key: 'academics-report-card',
+				label: 'Report Card',
+				path: 'academics/report-card',
+				icon: <HiOutlineChartBar />
 			},
 			{
 				key: 'academics-syllabus',

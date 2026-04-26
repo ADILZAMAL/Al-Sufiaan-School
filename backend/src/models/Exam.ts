@@ -1,10 +1,11 @@
 import { DataTypes, Model, Sequelize } from 'sequelize';
-import Chapter from './Chapter';
 import User from './User';
 
 class Exam extends Model {
   public id!: number;
-  public chapterId!: number;
+  public subjectId!: number;
+  public examEventId!: number | null;
+  public chapterId!: number | null; // kept nullable for migration compatibility
   public schoolId!: number;
   public name!: string;
   public totalMarks!: number;
@@ -24,12 +25,17 @@ export const initExamModel = (sequelize: Sequelize) => {
         autoIncrement: true,
         primaryKey: true,
       },
-      chapterId: {
+      subjectId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: { model: Chapter, key: 'id' },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
+      },
+      examEventId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      chapterId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       schoolId: {
         type: DataTypes.INTEGER,
@@ -79,8 +85,12 @@ export const initExamModel = (sequelize: Sequelize) => {
       timestamps: true,
       indexes: [
         {
-          fields: ['chapterId'],
-          name: 'exams_chapter_index',
+          fields: ['subjectId'],
+          name: 'exams_subject_index',
+        },
+        {
+          fields: ['examEventId'],
+          name: 'exams_event_index',
         },
       ],
     }

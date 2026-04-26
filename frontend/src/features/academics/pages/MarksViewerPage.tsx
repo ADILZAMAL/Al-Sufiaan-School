@@ -4,7 +4,7 @@ import { FaListAlt } from 'react-icons/fa';
 import { FiDownload } from 'react-icons/fi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { subjectApi, chapterApi, examApi, marksApi } from '../api';
+import { subjectApi, examApi, marksApi } from '../api';
 import { StudentExamMark } from '../types';
 import { academicSessionApi } from '../../sessions/api';
 import { AcademicSession } from '../../sessions/types';
@@ -20,7 +20,6 @@ export default function MarksViewerPage() {
   const [activeClass, setActiveClass] = useState<ClassType | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null);
   const [subjectId, setSubjectId] = useState<number | ''>('');
-  const [chapterId, setChapterId] = useState<number | ''>('');
   const [examId, setExamId] = useState<number | ''>('');
 
   const { data: activeSession } = useQuery<AcademicSession | null>(
@@ -45,16 +44,10 @@ export default function MarksViewerPage() {
     { enabled: selectedSessionId !== null && activeClass !== null }
   );
 
-  const { data: chapters = [] } = useQuery(
-    ['chapters', subjectId],
-    () => chapterApi.list(subjectId as number),
-    { enabled: !!subjectId }
-  );
-
   const { data: exams = [] } = useQuery(
-    ['exams', chapterId],
-    () => examApi.list(chapterId as number),
-    { enabled: !!chapterId }
+    ['exams', 'subject', subjectId],
+    () => examApi.list(subjectId as number),
+    { enabled: !!subjectId }
   );
 
   const { data: marks = [], isLoading: marksLoading } = useQuery<StudentExamMark[]>(
@@ -83,7 +76,6 @@ export default function MarksViewerPage() {
     }
     setActiveSectionId(null);
     setSubjectId('');
-    setChapterId('');
     setExamId('');
   }, [classes]);
 
@@ -98,7 +90,6 @@ export default function MarksViewerPage() {
       setActiveSectionId(null);
     }
     setSubjectId('');
-    setChapterId('');
     setExamId('');
   }, [activeClass]);
 
@@ -107,7 +98,6 @@ export default function MarksViewerPage() {
     setActiveClass(null);
     setActiveSectionId(null);
     setSubjectId('');
-    setChapterId('');
     setExamId('');
   };
 
@@ -184,9 +174,7 @@ export default function MarksViewerPage() {
       // ── Labels ──
       const sectionName  = sections.find(s => s.id === activeSectionId)?.name ?? '';
       const subjectName  = (subjects as any[]).find(s => s.id === subjectId)?.name ?? '';
-      const activeChapter  = (chapters as any[]).find(c => c.id === chapterId);
-      const chapterNumber  = activeChapter ? String(activeChapter.orderNumber) : '';
-      const chapterName    = activeChapter?.name ?? '';
+      const examEventName = selectedExam?.examEvent?.name ?? '';
       const sessionName  = activeSession?.name ?? '';
       const schoolName   = school?.name ?? 'Al-Sufiaan School';
 
@@ -285,7 +273,7 @@ export default function MarksViewerPage() {
       ]);
 
       drawPanel(M + panelW + panelGap, y, [
-        { label: 'Chapter',       value: chapterNumber && chapterName ? `${chapterNumber}-${chapterName}` : chapterName || chapterNumber },
+        ...(examEventName ? [{ label: 'Exam Event', value: examEventName }] : []),
         { label: 'Exam',          value: selectedExam.name },
         { label: 'Total Marks',   value: String(selectedExam.totalMarks) },
         { label: 'Passing Marks', value: String(selectedExam.passingMarks) },
@@ -519,7 +507,6 @@ export default function MarksViewerPage() {
                             onClick={() => {
                               setActiveSectionId(sec.id);
                               setSubjectId('');
-                              setChapterId('');
                               setExamId('');
                             }}
                             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
@@ -537,14 +524,13 @@ export default function MarksViewerPage() {
                     )}
                   </div>
 
-                  {/* Filter bar: Subject → Chapter → Exam */}
+                  {/* Filter bar: Subject → Exam */}
                   {activeSectionId && (
                     <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap gap-3 bg-gray-50">
                       <select
                         value={subjectId}
                         onChange={e => {
                           setSubjectId(e.target.value ? Number(e.target.value) : '');
-                          setChapterId('');
                           setExamId('');
                         }}
                         className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[130px]"
@@ -554,22 +540,9 @@ export default function MarksViewerPage() {
                       </select>
 
                       <select
-                        value={chapterId}
-                        onChange={e => {
-                          setChapterId(e.target.value ? Number(e.target.value) : '');
-                          setExamId('');
-                        }}
-                        disabled={!subjectId}
-                        className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-40 min-w-[130px]"
-                      >
-                        <option value="">Chapter</option>
-                        {chapters.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-
-                      <select
                         value={examId}
                         onChange={e => setExamId(e.target.value ? Number(e.target.value) : '')}
-                        disabled={!chapterId}
+                        disabled={!subjectId}
                         className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-40 min-w-[130px]"
                       >
                         <option value="">Exam</option>
@@ -588,7 +561,7 @@ export default function MarksViewerPage() {
                       <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
                         <FaListAlt className="text-blue-300" size={18} />
                       </div>
-                      <p className="text-gray-500 text-sm font-medium">Select subject → chapter → exam</p>
+                      <p className="text-gray-500 text-sm font-medium">Select subject → exam</p>
                       <p className="text-gray-400 text-xs mt-1">Use the filters above to drill down</p>
                     </div>
                   ) : marksLoading ? (

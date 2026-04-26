@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
-import { Subject, Chapter, Exam, StudentExamMark, TeacherSubjectAssignment, Student, Staff, User, StudentEnrollment, AcademicSession, Section } from '../models';
+import { Subject, Chapter, Exam, ExamEvent, ExamChapter, StudentExamMark, TeacherSubjectAssignment, Student, Staff, User, StudentEnrollment, AcademicSession, Section } from '../models';
 import { sendSuccess, sendError } from '../utils/response';
 import logger from '../utils/logger';
 import cloudinary, { chapterPDFUploadOptions } from '../config/cloudinary';
@@ -307,28 +307,119 @@ export const deleteChapterPDF = async (req: Request, res: Response) => {
   }
 };
 
+// ─── EXAM EVENTS ─────────────────────────────────────────────────────────────
+
+export const createExamEvent = async (req: Request, res: Response) => {
+  try {
+    const { sessionId, name } = req.body;
+    const schoolId = parseInt(String(req.schoolId));
+    const createdBy = parseInt(String(req.userId));
+
+    if (!sessionId || !name) {
+      return sendError(res, 'sessionId and name are required', 400);
+    }
+
+    const event = await ExamEvent.create({ sessionId, name: name.trim(), schoolId, createdBy });
+    return sendSuccess(res, event, 'Exam event created successfully', 201);
+  } catch (error) {
+    logger.error('Error creating exam event', { error });
+    return sendError(res, 'Failed to create exam event', 500);
+  }
+};
+
+export const getExamEvents = async (req: Request, res: Response) => {
+  try {
+    const schoolId = parseInt(String(req.schoolId));
+    const { sessionId } = req.query;
+
+    if (!sessionId) return sendError(res, 'sessionId is required', 400);
+
+    const events = await ExamEvent.findAll({
+      where: { sessionId: parseInt(String(sessionId)), schoolId },
+      include: [{ association: 'subjectExams', attributes: ['id'] }],
+      order: [['createdAt', 'ASC']],
+    });
+    return sendSuccess(res, events, 'Exam events retrieved successfully');
+  } catch (error) {
+    logger.error('Error fetching exam events', { error });
+    return sendError(res, 'Failed to fetch exam events', 500);
+  }
+};
+
+export const updateExamEvent = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = parseInt(String(req.schoolId));
+    const { name } = req.body;
+
+    const event = await ExamEvent.findOne({ where: { id: parseInt(id), schoolId } });
+    if (!event) return sendError(res, 'Exam event not found', 404);
+
+    await event.update({ name: name.trim() });
+    return sendSuccess(res, event, 'Exam event updated successfully');
+  } catch (error) {
+    logger.error('Error updating exam event', { error });
+    return sendError(res, 'Failed to update exam event', 500);
+  }
+};
+
+export const deleteExamEvent = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = parseInt(String(req.schoolId));
+
+    const event = await ExamEvent.findOne({ where: { id: parseInt(id), schoolId } });
+    if (!event) return sendError(res, 'Exam event not found', 404);
+
+    await event.destroy();
+    return sendSuccess(res, null, 'Exam event deleted successfully');
+  } catch (error) {
+    logger.error('Error deleting exam event', { error });
+    return sendError(res, 'Failed to delete exam event', 500);
+  }
+};
+
 // ─── EXAMS ───────────────────────────────────────────────────────────────────
 
 export const createExam = async (req: Request, res: Response) => {
   try {
-    const { chapterId, name, totalMarks, passingMarks, examDate } = req.body;
+    const { subjectId, examEventId, name, totalMarks, passingMarks, examDate, chapterIds } = req.body;
     const schoolId = parseInt(String(req.schoolId));
     const createdBy = parseInt(String(req.userId));
 
-    if (!chapterId || !name || totalMarks === undefined || passingMarks === undefined) {
-      return sendError(res, 'chapterId, name, totalMarks, and passingMarks are required', 400);
+    if (!subjectId || totalMarks === undefined || passingMarks === undefined) {
+      return sendError(res, 'subjectId, totalMarks, and passingMarks are required', 400);
     }
     if (passingMarks > totalMarks) {
       return sendError(res, 'Passing marks cannot exceed total marks', 400);
     }
 
-    const chapter = await Chapter.findOne({ where: { id: chapterId, schoolId } });
-    if (!chapter) return sendError(res, 'Chapter not found', 404);
+    const subject = await Subject.findOne({ where: { id: subjectId, schoolId } });
+    if (!subject) return sendError(res, 'Subject not found', 404);
+
+    // For exam event subjects, auto-populate name from event
+    let examName = name ? name.trim() : null;
+    if (examEventId) {
+      const event = await ExamEvent.findOne({ where: { id: examEventId, schoolId } });
+      if (!event) return sendError(res, 'Exam event not found', 404);
+      if (!examName) examName = event.name;
+    } else {
+      if (!examName) return sendError(res, 'name is required for class tests', 400);
+    }
 
     const exam = await Exam.create({
-      chapterId, schoolId, name: name.trim(), totalMarks, passingMarks,
+      subjectId, examEventId: examEventId || null, schoolId,
+      name: examName, totalMarks, passingMarks,
       examDate: examDate || null, createdBy,
     });
+
+    if (Array.isArray(chapterIds) && chapterIds.length > 0) {
+      await ExamChapter.bulkCreate(
+        chapterIds.map((cid: number) => ({ examId: exam.id, chapterId: cid, schoolId })),
+        { ignoreDuplicates: true }
+      );
+    }
+
     return sendSuccess(res, exam, 'Exam created successfully', 201);
   } catch (error) {
     logger.error('Error creating exam', { error });
@@ -339,12 +430,26 @@ export const createExam = async (req: Request, res: Response) => {
 export const getExams = async (req: Request, res: Response) => {
   try {
     const schoolId = parseInt(String(req.schoolId));
-    const { chapterId } = req.query;
+    const { subjectId, examEventId } = req.query;
 
-    if (!chapterId) return sendError(res, 'chapterId is required', 400);
+    const where: any = { schoolId };
+    if (subjectId) where.subjectId = parseInt(String(subjectId));
+    if (examEventId) where.examEventId = parseInt(String(examEventId));
+
+    if (!subjectId && !examEventId) {
+      return sendError(res, 'subjectId or examEventId is required', 400);
+    }
 
     const exams = await Exam.findAll({
-      where: { chapterId: parseInt(String(chapterId)), schoolId },
+      where,
+      include: [
+        { association: 'examEvent', attributes: ['id', 'name'] },
+        {
+          association: 'examChapters',
+          attributes: [],
+          include: [{ association: 'chapter', attributes: ['id', 'name', 'orderNumber'] }],
+        },
+      ],
       order: [['examDate', 'ASC'], ['name', 'ASC']],
     });
     return sendSuccess(res, exams, 'Exams retrieved successfully');
@@ -358,7 +463,7 @@ export const updateExam = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const schoolId = parseInt(String(req.schoolId));
-    const { name, totalMarks, passingMarks, examDate } = req.body;
+    const { name, totalMarks, passingMarks, examDate, chapterIds } = req.body;
 
     const exam = await Exam.findOne({ where: { id: parseInt(id), schoolId } });
     if (!exam) return sendError(res, 'Exam not found', 404);
@@ -375,6 +480,17 @@ export const updateExam = async (req: Request, res: Response) => {
       passingMarks: newPassing,
       examDate: examDate !== undefined ? examDate : exam.examDate,
     });
+
+    if (Array.isArray(chapterIds)) {
+      await ExamChapter.destroy({ where: { examId: exam.id } });
+      if (chapterIds.length > 0) {
+        await ExamChapter.bulkCreate(
+          chapterIds.map((cid: number) => ({ examId: exam.id, chapterId: cid, schoolId })),
+          { ignoreDuplicates: true }
+        );
+      }
+    }
+
     return sendSuccess(res, exam, 'Exam updated successfully');
   } catch (error) {
     logger.error('Error updating exam', { error });
@@ -491,23 +607,19 @@ export const getStudentMarks = async (req: Request, res: Response) => {
     });
     if (!enrollment) return sendSuccess(res, [], 'No enrollment found for this session');
 
-    // Get all subjects for this session + class in this school
+    // Get all subjects for this session + class, with exams and this student's marks
     const subjects = await Subject.findAll({
       where: { sessionId: parseInt(String(sessionId)), schoolId, classId: enrollment.classId },
       include: [
         {
-          association: 'chapters',
+          association: 'exams',
           include: [
             {
-              association: 'exams',
-              include: [
-                {
-                  association: 'marks',
-                  where: { studentId: parseInt(studentId) },
-                  required: false,
-                },
-              ],
+              association: 'marks',
+              where: { studentId: parseInt(studentId) },
+              required: false,
             },
+            { association: 'examEvent', attributes: ['id', 'name'] },
           ],
         },
       ],
@@ -539,23 +651,19 @@ export const getPendingMarks = async (req: Request, res: Response) => {
       },
     });
 
-    // All subjects for this class+session, with chapters → exams
+    // All subjects for this class+session, with exams directly
     const subjects = await Subject.findAll({
       where: { classId: parseInt(String(classId)), sessionId: parseInt(String(sessionId)), schoolId },
       include: [
         {
-          association: 'chapters',
+          association: 'exams',
           include: [
             {
-              association: 'exams',
-              include: [
-                {
-                  association: 'marks',
-                  attributes: ['id'],
-                  required: false,
-                },
-              ],
+              association: 'marks',
+              attributes: ['id'],
+              required: false,
             },
+            { association: 'examEvent', attributes: ['id', 'name'] },
           ],
         },
         {
@@ -571,28 +679,26 @@ export const getPendingMarks = async (req: Request, res: Response) => {
     const result: any[] = [];
     for (const subject of subjects as any[]) {
       const teacher = subject.assignments?.[0]?.teacher || null;
-      for (const chapter of subject.chapters || []) {
-        for (const exam of chapter.exams || []) {
-          const entered = exam.marks?.length ?? 0;
-          let status: string;
-          if (entered === 0) status = 'Not started';
-          else if (entered < totalStudents) status = `Partial (${entered}/${totalStudents})`;
-          else status = 'Complete';
+      for (const exam of subject.exams || []) {
+        const entered = exam.marks?.length ?? 0;
+        let status: string;
+        if (entered === 0) status = 'Not started';
+        else if (entered < totalStudents) status = `Partial (${entered}/${totalStudents})`;
+        else status = 'Complete';
 
-          result.push({
-            examId: exam.id,
-            examName: exam.name,
-            chapterName: chapter.name,
-            subjectName: subject.name,
-            subjectId: subject.id,
-            totalMarks: exam.totalMarks,
-            examDate: exam.examDate,
-            teacher,
-            totalStudents,
-            marksEntered: entered,
-            status,
-          });
-        }
+        result.push({
+          examId: exam.id,
+          examName: exam.name,
+          subjectName: subject.name,
+          subjectId: subject.id,
+          examEventName: exam.examEvent?.name || null,
+          totalMarks: exam.totalMarks,
+          examDate: exam.examDate,
+          teacher,
+          totalStudents,
+          marksEntered: entered,
+          status,
+        });
       }
     }
 
@@ -600,6 +706,191 @@ export const getPendingMarks = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Error fetching pending marks', { error });
     return sendError(res, 'Failed to fetch pending marks', 500);
+  }
+};
+
+// ─── REPORT CARDS ────────────────────────────────────────────────────────────
+
+export const getEventReportCard = async (req: Request, res: Response) => {
+  try {
+    const schoolId = parseInt(String(req.schoolId));
+    const { examEventId, classId, sectionId, sessionId } = req.query;
+
+    if (!examEventId || !classId || !sectionId || !sessionId) {
+      return sendError(res, 'examEventId, classId, sectionId, and sessionId are required', 400);
+    }
+
+    const event = await ExamEvent.findOne({ where: { id: parseInt(String(examEventId)), schoolId } });
+    if (!event) return sendError(res, 'Exam event not found', 404);
+
+    // Get enrolled students for this section+session
+    const enrollments = await StudentEnrollment.findAll({
+      where: {
+        classId: parseInt(String(classId)),
+        sectionId: parseInt(String(sectionId)),
+        sessionId: parseInt(String(sessionId)),
+      },
+      include: [{
+        association: 'student',
+        attributes: ['id', 'firstName', 'lastName', 'admissionNumber'],
+      }],
+      order: [[{ model: Student, as: 'student' }, 'firstName', 'ASC']],
+    });
+
+    const students = enrollments.map((e: any) => ({
+      studentId: e.student.id,
+      studentName: `${e.student.firstName} ${e.student.lastName}`.trim(),
+      admissionNumber: e.student.admissionNumber,
+      rollNumber: e.rollNumber,
+    }));
+
+    const studentIds = students.map((s: any) => s.studentId);
+
+    // Get all exams for this event that belong to subjects of the given class
+    const exams = await Exam.findAll({
+      where: { examEventId: parseInt(String(examEventId)), schoolId },
+      include: [
+        {
+          association: 'subject',
+          attributes: ['id', 'name'],
+          where: { classId: parseInt(String(classId)) },
+          required: true,
+        },
+        {
+          association: 'marks',
+          where: { studentId: { [Op.in]: studentIds } },
+          required: false,
+          include: [{ association: 'student', attributes: ['id', 'firstName', 'lastName'] }],
+        },
+      ],
+      order: [[{ model: Subject, as: 'subject' }, 'name', 'ASC']],
+    });
+
+    const subjects = (exams as any[]).map(exam => ({
+      subjectId: exam.subject.id,
+      subjectName: exam.subject.name,
+      examId: exam.id,
+      totalMarks: exam.totalMarks,
+      passingMarks: exam.passingMarks,
+      examDate: exam.examDate,
+      marks: students.map((s: any) => {
+        const mark = exam.marks?.find((m: any) => m.studentId === s.studentId);
+        return {
+          studentId: s.studentId,
+          studentName: s.studentName,
+          admissionNumber: s.admissionNumber,
+          rollNumber: s.rollNumber,
+          marksObtained: mark ? mark.marksObtained : null,
+          isAbsent: mark ? mark.isAbsent : false,
+        };
+      }),
+    }));
+
+    return sendSuccess(res, { examEvent: event, students, subjects }, 'Event report card retrieved successfully');
+  } catch (error) {
+    logger.error('Error fetching event report card', { error });
+    return sendError(res, 'Failed to fetch event report card', 500);
+  }
+};
+
+export const getAnnualReportCard = async (req: Request, res: Response) => {
+  try {
+    const schoolId = parseInt(String(req.schoolId));
+    const { studentId, sessionId } = req.query;
+
+    if (!studentId || !sessionId) {
+      return sendError(res, 'studentId and sessionId are required', 400);
+    }
+
+    const student = await Student.findOne({
+      where: { id: parseInt(String(studentId)), schoolId },
+      attributes: ['id', 'firstName', 'lastName', 'admissionNumber', 'studentPhoto'],
+    });
+    if (!student) return sendError(res, 'Student not found', 404);
+
+    const enrollment = await StudentEnrollment.findOne({
+      where: { studentId: parseInt(String(studentId)), sessionId: parseInt(String(sessionId)) },
+      include: [
+        { association: 'class', attributes: ['id', 'name'] },
+        { association: 'section', attributes: ['id', 'name'] },
+      ],
+    });
+    if (!enrollment) return sendSuccess(res, { student, subjects: [] }, 'No enrollment found for this session');
+
+    // Get all exam events for this session (ordered by creation)
+    const examEvents = await ExamEvent.findAll({
+      where: { sessionId: parseInt(String(sessionId)), schoolId },
+      order: [['createdAt', 'ASC']],
+    });
+
+    // Get all subjects for this student's class+session
+    const subjects = await Subject.findAll({
+      where: { sessionId: parseInt(String(sessionId)), schoolId, classId: (enrollment as any).classId },
+      include: [
+        {
+          association: 'exams',
+          include: [
+            {
+              association: 'marks',
+              where: { studentId: parseInt(String(studentId)) },
+              required: false,
+            },
+            { association: 'examEvent', attributes: ['id', 'name'] },
+          ],
+        },
+      ],
+      order: [['name', 'ASC']],
+    });
+
+    const result = (subjects as any[]).map(subject => {
+      const classTests = subject.exams.filter((e: any) => !e.examEventId);
+      const classTestMarks = classTests.filter((e: any) => e.marks?.[0] && !e.marks[0].isAbsent && e.marks[0].marksObtained !== null);
+      const classTestObtained = classTestMarks.reduce((sum: number, e: any) => sum + Number(e.marks[0].marksObtained), 0);
+      const classTestTotal = classTestMarks.reduce((sum: number, e: any) => sum + e.totalMarks, 0);
+      const classTestAvgPct = classTestTotal > 0 ? Math.round((classTestObtained / classTestTotal) * 100) : null;
+
+      const eventResults = examEvents.map((event: any) => {
+        const exam = subject.exams.find((e: any) => e.examEventId === event.id);
+        if (!exam) return { eventId: event.id, eventName: event.name, marksObtained: null, totalMarks: null, passingMarks: null, isAbsent: false, examDate: null };
+        const mark = exam.marks?.[0] || null;
+        return {
+          eventId: event.id,
+          eventName: event.name,
+          examId: exam.id,
+          marksObtained: mark ? mark.marksObtained : null,
+          totalMarks: exam.totalMarks,
+          passingMarks: exam.passingMarks,
+          isAbsent: mark ? mark.isAbsent : false,
+          examDate: exam.examDate,
+        };
+      });
+
+      return {
+        subjectId: subject.id,
+        subjectName: subject.name,
+        classTestAvg: {
+          count: classTests.length,
+          obtained: classTestObtained,
+          total: classTestTotal,
+          percentage: classTestAvgPct,
+        },
+        examEvents: eventResults,
+      };
+    });
+
+    return sendSuccess(res, {
+      student,
+      enrollment: {
+        class: (enrollment as any).class,
+        section: (enrollment as any).section,
+        rollNumber: (enrollment as any).rollNumber,
+      },
+      examEvents: examEvents.map((e: any) => ({ id: e.id, name: e.name })),
+      subjects: result,
+    }, 'Annual report card retrieved successfully');
+  } catch (error) {
+    logger.error('Error fetching annual report card', { error });
+    return sendError(res, 'Failed to fetch annual report card', 500);
   }
 };
 

@@ -6,13 +6,12 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import { marksApi } from '../api';
-import { SubjectWithChapters } from '../types';
+import { SubjectWithExams } from '../types';
 import { academicSessionApi } from '../../sessions/api';
 import { getStudentById } from '../../students/api';
 import { useAppContext } from '../../../providers/AppContext';
 
 interface ExamRow {
-  chapterName: string;
   examName: string;
   marksObtained: number | null;
   totalMarks: number;
@@ -26,22 +25,19 @@ interface SubjectSummary {
   avgPct: number | null;
 }
 
-function buildSummaries(subjects: SubjectWithChapters[]): SubjectSummary[] {
+function buildSummaries(subjects: SubjectWithExams[]): SubjectSummary[] {
   return subjects.map(subject => {
     const exams: ExamRow[] = [];
-    for (const chapter of subject.chapters || []) {
-      for (const exam of chapter.exams || []) {
-        const mark = exam.marks?.[0];
-        if (mark !== undefined) {
-          exams.push({
-            chapterName: chapter.name,
-            examName: exam.name,
-            marksObtained: mark.marksObtained,
-            totalMarks: exam.totalMarks,
-            passingMarks: exam.passingMarks,
-            isAbsent: mark.isAbsent,
-          });
-        }
+    for (const exam of subject.exams || []) {
+      const mark = exam.marks?.[0];
+      if (mark !== undefined) {
+        exams.push({
+          examName: exam.name,
+          marksObtained: mark.marksObtained,
+          totalMarks: exam.totalMarks,
+          passingMarks: exam.passingMarks,
+          isAbsent: mark.isAbsent,
+        });
       }
     }
     const scored = exams.filter(e => !e.isAbsent && e.marksObtained !== null);
@@ -67,7 +63,7 @@ export default function StudentReportPage() {
     { enabled: !!id }
   );
   const { data: sessions = [] } = useQuery('sessions', academicSessionApi.getSessions);
-  const { data: subjects = [], isLoading } = useQuery<SubjectWithChapters[]>(
+  const { data: subjects = [], isLoading } = useQuery<SubjectWithExams[]>(
     ['student-marks', id, sessionId],
     () => marksApi.getByStudent(Number(id), sessionId as number),
     {
@@ -76,7 +72,7 @@ export default function StudentReportPage() {
     }
   );
 
-  const summaries = buildSummaries(subjects as SubjectWithChapters[]);
+  const summaries = buildSummaries(subjects as SubjectWithExams[]);
   const chartData = summaries
     .filter(s => s.avgPct !== null)
     .map(s => ({ subject: s.subjectName, avg: parseFloat(s.avgPct!.toFixed(1)) }));
@@ -180,7 +176,6 @@ export default function StudentReportPage() {
                   <table className="min-w-full divide-y divide-gray-100">
                     <thead>
                       <tr className="bg-white">
-                        <th className="px-6 py-2 text-left text-xs font-medium text-gray-400 uppercase">Chapter</th>
                         <th className="px-6 py-2 text-left text-xs font-medium text-gray-400 uppercase">Exam</th>
                         <th className="px-6 py-2 text-left text-xs font-medium text-gray-400 uppercase">Marks</th>
                         <th className="px-6 py-2 text-left text-xs font-medium text-gray-400 uppercase">%</th>
@@ -195,7 +190,6 @@ export default function StudentReportPage() {
                         const passed = !exam.isAbsent && exam.marksObtained !== null && exam.marksObtained >= exam.passingMarks;
                         return (
                           <tr key={i} className="hover:bg-gray-50">
-                            <td className="px-6 py-2.5 text-sm text-gray-500">{exam.chapterName}</td>
                             <td className="px-6 py-2.5 text-sm font-medium text-gray-800">{exam.examName}</td>
                             <td className="px-6 py-2.5 text-sm text-gray-700">
                               {exam.isAbsent ? '—' : `${exam.marksObtained} / ${exam.totalMarks}`}
