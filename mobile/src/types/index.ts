@@ -205,6 +205,9 @@ export interface AcademicExam {
   totalMarks: number;
   passingMarks: number;
   examDate: string | null;
+  subjectId: number;
+  examEventId: number | null;
+  examEvent?: { id: number; name: string } | null;
 }
 
 export interface ExamMark {

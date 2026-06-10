@@ -133,16 +133,7 @@ const MarksChapterSelectionScreen: React.FC = () => {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <View style={styles.item}>
-            <TouchableOpacity
-              style={styles.itemLeft}
-              onPress={() => navigation.navigate('MarksExamSelection', {
-                chapterId: item.id,
-                chapterName: item.name,
-                subjectName,
-                classId,
-                sectionId,
-              })}
-            >
+            <View style={styles.itemLeft}>
               <View style={styles.orderBadge}>
                 <Text style={styles.orderText}>{item.orderNumber}</Text>
               </View>
@@ -156,7 +147,7 @@ const MarksChapterSelectionScreen: React.FC = () => {
                   </Text>
                 )}
               </View>
-            </TouchableOpacity>
+            </View>
             <TouchableOpacity
               style={[styles.pdfButton, item.pdfUrl ? styles.pdfButtonActive : styles.pdfButtonEmpty]}
               onPress={() => handlePDFPress(item)}

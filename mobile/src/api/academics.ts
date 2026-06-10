@@ -28,9 +28,9 @@ export const academicApi = {
     return response.data.data;
   },
 
-  getExams: async (chapterId: number): Promise<AcademicExam[]> => {
+  getExams: async (subjectId: number): Promise<AcademicExam[]> => {
     const response = await apiClient.get<{ success: boolean; data: AcademicExam[] }>(
-      `/academic/exams?chapterId=${chapterId}`
+      `/academic/exams?subjectId=${subjectId}`
     );
     return response.data.data;
   },

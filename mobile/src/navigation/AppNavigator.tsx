@@ -39,7 +39,7 @@ export type RootStackParamList = {
   MarksSectionSelection: { classId: number; className: string; sessionId: number };
   MarksSubjectSelection: { classId: number; className: string; sectionId: number; sectionName: string; sessionId: number };
   MarksChapterSelection: { subjectId: number; subjectName: string; sectionId: number; sessionId: number; classId: number; sectionName: string };
-  MarksExamSelection: { chapterId: number; chapterName: string; subjectName: string; classId: number; sectionId: number };
+  MarksExamSelection: { subjectId: number; subjectName: string; classId: number; sectionId: number };
   MarksEntry: { examId: number; examName: string; totalMarks: number; passingMarks: number; classId: number; sectionId: number };
 };
 
@@ -174,7 +174,7 @@ const AppNavigator: React.FC = () => {
           <Stack.Screen
             name="MarksExamSelection"
             component={MarksExamSelectionScreen}
-            options={({ route }) => ({ title: route.params.chapterName })}
+            options={({ route }) => ({ title: `${route.params.subjectName} — Exams` })}
           />
           <Stack.Screen
             name="MarksEntry"

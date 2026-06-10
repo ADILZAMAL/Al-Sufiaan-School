@@ -17,7 +17,7 @@ type Route = RouteProp<RootStackParamList, 'MarksExamSelection'>;
 const MarksExamSelectionScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const { chapterId, chapterName, subjectName, classId, sectionId } = route.params;
+  const { subjectId, subjectName, classId, sectionId } = route.params;
   const { logout } = useAuth();
 
   const [exams, setExams] = useState<AcademicExam[]>([]);
@@ -30,7 +30,7 @@ const MarksExamSelectionScreen: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await academicApi.getExams(chapterId);
+      const data = await academicApi.getExams(subjectId);
       setExams(data);
     } catch (err: any) {
       if (err.response?.status === 401) { await logout(); return; }
@@ -67,6 +67,9 @@ const MarksExamSelectionScreen: React.FC = () => {
                 Total: {item.totalMarks} | Passing: {item.passingMarks}
                 {item.examDate ? `  |  ${new Date(item.examDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
               </Text>
+              {item.examEvent?.name && (
+                <Text style={styles.examEvent}>{item.examEvent.name}</Text>
+              )}
             </View>
             <Text style={styles.arrow}>→</Text>
           </TouchableOpacity>
@@ -75,7 +78,7 @@ const MarksExamSelectionScreen: React.FC = () => {
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>📝</Text>
             <Text style={styles.emptyTitle}>No Exams</Text>
-            <Text style={styles.emptyText}>No exams have been created for this chapter yet.</Text>
+            <Text style={styles.emptyText}>No exams have been created for this subject yet.</Text>
           </View>
         }
       />
@@ -95,6 +98,7 @@ const styles = StyleSheet.create({
   itemLeft: { flex: 1 },
   examName: { fontSize: 16, fontWeight: '700', color: '#1f2937', marginBottom: 4 },
   examMeta: { fontSize: 13, color: '#6b7280' },
+  examEvent: { fontSize: 12, color: '#7c3aed', marginTop: 2, fontWeight: '500' },
   arrow: { fontSize: 24, color: '#3b82f6', marginLeft: 8 },
   empty: { flex: 1, alignItems: 'center', paddingTop: 60 },
   emptyIcon: { fontSize: 50, marginBottom: 12 },

@@ -64,20 +64,33 @@ const MarksSubjectSelectionScreen: React.FC = () => {
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.item}
-              onPress={() => navigation.navigate('MarksChapterSelection', {
-                subjectId: item.id,
-                subjectName: item.name,
-                sectionId,
-                sessionId,
-                classId,
-                sectionName,
-              })}
-            >
-              <Text style={styles.name}>{item.name}</Text>
+            <View style={styles.item}>
+              <TouchableOpacity
+                style={styles.itemMain}
+                onPress={() => navigation.navigate('MarksExamSelection', {
+                  subjectId: item.id,
+                  subjectName: item.name,
+                  sectionId,
+                  classId,
+                })}
+              >
+                <Text style={styles.name}>{item.name}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.chaptersBtn}
+                onPress={() => navigation.navigate('MarksChapterSelection', {
+                  subjectId: item.id,
+                  subjectName: item.name,
+                  sectionId,
+                  sessionId,
+                  classId,
+                  sectionName,
+                })}
+              >
+                <Text style={styles.chaptersBtnText}>Chapters</Text>
+              </TouchableOpacity>
               <Text style={styles.arrow}>→</Text>
-            </TouchableOpacity>
+            </View>
           )}
         />
       )}
@@ -89,12 +102,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
   list: { padding: 15 },
   item: {
-    backgroundColor: '#fff', padding: 20, marginBottom: 10, borderRadius: 8,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: '#fff', paddingVertical: 16, paddingHorizontal: 20, marginBottom: 10, borderRadius: 8,
+    flexDirection: 'row', alignItems: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
   },
+  itemMain: { flex: 1 },
   name: { fontSize: 18, fontWeight: '600', color: '#1f2937' },
+  chaptersBtn: {
+    paddingHorizontal: 10, paddingVertical: 4, backgroundColor: '#ede9fe',
+    borderRadius: 6, marginRight: 8,
+  },
+  chaptersBtnText: { fontSize: 12, color: '#7c3aed', fontWeight: '600' },
   arrow: { fontSize: 24, color: '#3b82f6' },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
   emptyIcon: { fontSize: 60, marginBottom: 16 },
