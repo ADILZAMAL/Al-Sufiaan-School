@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import * as apiClient from "../api";
-import { TransactionType } from "../api";
+import { TransactionType, StockInType } from "../api";
 import { useAppContext } from "../../../providers/AppContext";
 import {
   FaPlus,
@@ -15,6 +15,7 @@ import {
   FaCheckCircle,
   FaClock,
   FaSearch,
+  FaArrowUp,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
@@ -24,10 +25,17 @@ export type AddProductFormData = {
   price: string;
 };
 
+export type StockInFormData = {
+  productId: number;
+  quantity: number;
+  note?: string;
+};
+
 const Inventory = () => {
   const { showToast, userRole } = useAppContext();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
   const [expandedTransactions, setExpandedTransactions] = useState<Set<number>>(new Set());
   const [productSearch, setProductSearch] = useState("");
 
@@ -37,6 +45,13 @@ const Inventory = () => {
     formState: { errors },
     reset,
   } = useForm<AddProductFormData>();
+
+  const {
+    register: registerStockIn,
+    handleSubmit: handleStockInSubmit,
+    formState: { errors: stockInErrors },
+    reset: resetStockIn,
+  } = useForm<StockInFormData>();
 
   const mutation = useMutation(apiClient.addProduct, {
     onSuccess: () => {
@@ -60,18 +75,54 @@ const Inventory = () => {
     },
   });
 
+  const stockInMutation = useMutation(
+    (data: { productId: number; quantity: number; note?: string }) =>
+      apiClient.stockInProduct(data.productId, data.quantity, data.note),
+    {
+      onSuccess: () => {
+        showToast({ message: "Stock added successfully!", type: "SUCCESS" });
+        resetStockIn();
+        setIsStockInModalOpen(false);
+        queryClient.invalidateQueries("fetchProducts");
+        queryClient.invalidateQueries("fetchAllProducts");
+        queryClient.invalidateQueries("fetchStockIns");
+      },
+      onError: (error: Error) => {
+        showToast({ message: error.message, type: "ERROR" });
+      },
+    }
+  );
+
   const onSubmit = handleSubmit((data) => {
     mutation.mutate(data);
   });
 
+  const onStockInSubmit = handleStockInSubmit((data) => {
+    stockInMutation.mutate({
+      productId: data.productId,
+      quantity: data.quantity,
+      note: data.note,
+    });
+  });
+
   const { data: products, isLoading } = useQuery(
     "fetchProducts",
-    apiClient.fetchProducts
+    () => apiClient.fetchProducts()
+  );
+
+  const { data: allProducts } = useQuery(
+    "fetchAllProducts",
+    () => apiClient.fetchProducts(true)
   );
 
   const { data: recentTransactions, isLoading: transactionsLoading } = useQuery(
     "fetchRecentTransactions",
     apiClient.fetchRecentTransactions
+  );
+
+  const { data: stockIns, isLoading: stockInsLoading } = useQuery(
+    "fetchStockIns",
+    () => apiClient.fetchStockIns()
   );
 
   const filteredProducts = useMemo(() => {
@@ -146,13 +197,22 @@ const Inventory = () => {
               Sell Product
             </Link>
             {(userRole === "SUPER_ADMIN" || userRole === null) && (
-              <button
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                onClick={() => setIsModalOpen(true)}
-              >
-                <FaPlus className="text-xs" />
-                Add Product
-              </button>
+              <>
+                <button
+                  className="flex items-center gap-2 bg-violet-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-violet-700 transition-colors"
+                  onClick={() => setIsStockInModalOpen(true)}
+                >
+                  <FaArrowUp className="text-xs" />
+                  Stock In
+                </button>
+                <button
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  <FaPlus className="text-xs" />
+                  Add Product
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -225,6 +285,44 @@ const Inventory = () => {
                     <span className="text-sm font-semibold text-gray-700 w-16 text-right">
                       ₹{product.price}
                     </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Stock Ins */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <h3 className="font-semibold text-gray-900">Recent Stock Ins</h3>
+          </div>
+          {stockInsLoading ? (
+            <div className="flex justify-center items-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            </div>
+          ) : !stockIns || stockIns.length === 0 ? (
+            <div className="text-center py-10 text-gray-400 text-sm">
+              No stock-in records yet.
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {stockIns.map((si: StockInType) => (
+                <div
+                  key={si.id}
+                  className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-sm font-medium text-gray-900 truncate">{si.productName}</span>
+                    {si.note && (
+                      <span className="text-xs text-gray-400 truncate max-w-[200px]">{si.note}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 flex-shrink-0">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                      +{si.quantity}
+                    </span>
+                    <span className="text-xs text-gray-400 whitespace-nowrap">{formatDate(si.createdAt)}</span>
                   </div>
                 </div>
               ))}
@@ -461,6 +559,95 @@ const Inventory = () => {
                   className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {mutation.isLoading ? "Adding…" : "Add Product"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Stock In Modal */}
+      {isStockInModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Add Stock</h3>
+              <button
+                onClick={() => { setIsStockInModalOpen(false); resetStockIn(); }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <form onSubmit={onStockInSubmit}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Product
+                  </label>
+                  <select
+                    className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white ${
+                      stockInErrors.productId ? "border-red-300 bg-red-50" : "border-gray-200"
+                    }`}
+                    {...registerStockIn("productId", { required: "Please select a product", valueAsNumber: true })}
+                  >
+                    <option value="">Select a product...</option>
+                    {allProducts?.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.qty} in stock)
+                      </option>
+                    ))}
+                  </select>
+                  {stockInErrors.productId && (
+                    <p className="text-red-500 text-xs mt-1">{stockInErrors.productId.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
+                      stockInErrors.quantity ? "border-red-300 bg-red-50" : "border-gray-200"
+                    }`}
+                    placeholder="e.g. 50"
+                    {...registerStockIn("quantity", {
+                      required: "This field is required",
+                      valueAsNumber: true,
+                      min: { value: 1, message: "Must be at least 1" },
+                    })}
+                  />
+                  {stockInErrors.quantity && (
+                    <p className="text-red-500 text-xs mt-1">{stockInErrors.quantity.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Note <span className="text-gray-300 font-normal lowercase normal-case">(optional)</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+                    placeholder="e.g. Restocked from supplier"
+                    {...registerStockIn("note")}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                  onClick={() => { setIsStockInModalOpen(false); resetStockIn(); }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={stockInMutation.isLoading}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-violet-600 text-white hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {stockInMutation.isLoading ? "Adding…" : "Add Stock"}
                 </button>
               </div>
             </form>

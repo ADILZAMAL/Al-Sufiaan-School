@@ -40,6 +40,16 @@ export type TransactionType = {
     transactionItems: TransactionItemType[];
 }
 
+export type StockInType = {
+    id: number;
+    productId: number;
+    productName: string;
+    quantity: number;
+    note: string | null;
+    addedBy: string;
+    createdAt: string;
+}
+
 export const fetchClasses = async (): Promise<ClassType[]> => {
     const response = await fetch(`${API_BASE_URL}/api/classes`, {
         credentials: "include"
@@ -68,8 +78,12 @@ export const addProduct = async (formData: AddProductFormData) => {
     return body
 }
 
-export const fetchProducts = async(): Promise<ProductType[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/products`, {
+export const fetchProducts = async(includeOutOfStock?: boolean): Promise<ProductType[]> => {
+    const params = new URLSearchParams();
+    if (includeOutOfStock) {
+        params.append("includeOutOfStock", "true");
+    }
+    const response = await fetch(`${API_BASE_URL}/api/products?${params.toString()}`, {
         method: "GET",
         credentials: "include"
     })
@@ -150,4 +164,37 @@ export const verifyTransaction = async (transactionId: number) => {
         throw new Error(body.error?.message || body.message)
     }
     return body
+}
+
+export const stockInProduct = async (productId: number, quantity: number, note?: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/products/stock-in`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ productId, quantity, note })
+    })
+
+    const body = await response.json()
+    if (!body.success) {
+        throw new Error(body.error?.message || body.message)
+    }
+    return body
+}
+
+export const fetchStockIns = async (productId?: number): Promise<StockInType[]> => {
+    const params = new URLSearchParams();
+    if (productId) {
+        params.append("productId", productId.toString());
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/products/stock-in?${params.toString()}`, {
+        credentials: "include"
+    })
+    const body = await response.json();
+    if (!body.success) {
+        throw new Error(body.error?.message || body.message)
+    }
+    return body.data;
 }

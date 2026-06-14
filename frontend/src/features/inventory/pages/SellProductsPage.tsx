@@ -52,7 +52,7 @@ const SellProductsPage: React.FC = () => {
     });
 
     const { data: classes } = useQuery("fetchClasses", apiClient.fetchClasses);
-    const { data: products } = useQuery("fetchProducts", apiClient.fetchProducts);
+    const { data: products } = useQuery("fetchProducts", () => apiClient.fetchProducts());
 
     const availableSections = useMemo(() => {
         if (!classes || !watchClassId) return [];
