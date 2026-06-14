@@ -14,6 +14,7 @@ import Transaction from './Transaction';
 import Expense from './Expense';
 import ExpenseCategory from './ExpenseCategory';
 import TransactionItem from './TransactionItem';
+import StockIn from './StockIn';
 import Staff from './Staff';
 import Payslip from './Payslip';
 import PayslipPayment from './PayslipPayment';
@@ -74,6 +75,13 @@ Section.belongsTo(Class, { foreignKey: 'classId', as: 'class' });
 // Product associations
 Product.belongsTo(School, { foreignKey: 'schoolId'});
 Product.hasMany(TransactionItem, { foreignKey: 'productId', as : 'items' });
+Product.hasMany(StockIn, { foreignKey: 'productId', as: 'stockIns' });
+
+// StockIn associations
+StockIn.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
+StockIn.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+StockIn.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
+School.hasMany(StockIn, { foreignKey: 'schoolId', as: 'stockIns' });
 
 // Transaction associations
 Transaction.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
@@ -242,4 +250,4 @@ StudentEnrollment.belongsTo(Section, { foreignKey: 'sectionId', as: 'section' })
 StudentEnrollment.belongsTo(User, { foreignKey: 'promotedBy', as: 'promoter' });
 Student.hasMany(StudentEnrollment, { foreignKey: 'studentId', as: 'enrollments' });
 
-export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, Staff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, TransportationAreaPricing, Student, AcademicSession, StudentEnrollment, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday, Designation, Subject, TeacherSubjectAssignment, Chapter, Exam, ExamEvent, ExamChapter, StudentExamMark, FeeHead, FeeHeadClassPricing };
+export { School, User, Class, Section, Product, Transaction, Expense, ExpenseCategory, TransactionItem, StockIn, Staff, Payslip, PayslipPayment, Vendor, VendorBill, VendorPayment, TransportationAreaPricing, Student, AcademicSession, StudentEnrollment, StudentMonthlyFee, StudentMonthlyFeeItem, StudentFeePayment, Attendance, Holiday, Designation, Subject, TeacherSubjectAssignment, Chapter, Exam, ExamEvent, ExamChapter, StudentExamMark, FeeHead, FeeHeadClassPricing };

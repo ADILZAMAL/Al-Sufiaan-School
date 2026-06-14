@@ -34,6 +34,7 @@ import {initExamChapterModel} from "../models/ExamChapter"
 import {initStudentExamMarkModel} from "../models/StudentExamMark"
 import {initFeeHeadModel} from '../models/FeeHead';
 import {initFeeHeadClassPricingModel} from '../models/FeeHeadClassPricing';
+import {initStockInModel} from '../models/StockIn';
 import "dotenv/config";
 import { getRequestId } from '../utils/context';
 
@@ -88,6 +89,7 @@ initExamChapterModel(sequelize);
 initStudentExamMarkModel(sequelize);
 initFeeHeadModel(sequelize);
 initFeeHeadClassPricingModel(sequelize);
+initStockInModel(sequelize);
 //Sync the Model with the database
 sequelize.sync()
     .then(() => {
