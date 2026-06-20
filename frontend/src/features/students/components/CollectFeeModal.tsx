@@ -87,6 +87,11 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
       return;
     }
 
+    if (paymentMode !== 'Cash' && !referenceNumber.trim()) {
+      setError('Reference number is required for non-cash payments');
+      return;
+    }
+
     try {
       await onCollect({
         amountPaid,
@@ -185,7 +190,7 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
                 <select
                   id="paymentMode"
                   value={paymentMode}
-                  onChange={(e) => setPaymentMode(e.target.value)}
+                  onChange={(e) => { setPaymentMode(e.target.value); setReferenceNumber(''); }}
                   className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   disabled={loading}
                 >
@@ -201,29 +206,28 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
               </div>
             </div>
 
-            {/* Reference Number */}
-            <div>
-              <label htmlFor="referenceNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                Reference Number (Optional)
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  id="referenceNumber"
-                  value={referenceNumber}
-                  onChange={(e) => setReferenceNumber(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter reference number..."
-                  disabled={loading}
-                />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiFileText className="h-5 w-5 text-gray-400" />
+            {/* Reference Number — only for non-Cash payments */}
+            {paymentMode && paymentMode !== 'Cash' && (
+              <div>
+                <label htmlFor="referenceNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                  Reference Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="referenceNumber"
+                    value={referenceNumber}
+                    onChange={(e) => setReferenceNumber(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Transaction ID, cheque number, UPI ref..."
+                    disabled={loading}
+                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiFileText className="h-5 w-5 text-gray-400" />
+                  </div>
                 </div>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Transaction ID, cheque number, etc.
-              </p>
-            </div>
+            )}
 
             {/* Remarks */}
             <div>

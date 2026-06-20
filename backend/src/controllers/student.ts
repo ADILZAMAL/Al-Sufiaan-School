@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Student, StudentMonthlyFee, StudentFeePayment, AcademicSession, StudentEnrollment, School } from '../models';
+import { Student, StudentMonthlyFee, StudentFeePayment, AcademicSession, StudentEnrollment, School, Class, Section } from '../models';
 import { sendSuccess, sendError } from '../utils/response';
 import { validationResult } from 'express-validator';
 import { generateAdmissionNumber } from '../utils/studentUtils';
@@ -467,5 +467,52 @@ export const markStudentLeftSchool = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Error marking student as left school', { error });
     return sendError(res, 'Failed to update student status', 500);
+  }
+};
+
+export const searchStudents = async (req: Request, res: Response) => {
+  try {
+    const schoolId = req.schoolId;
+    const q = (req.query.q as string || '').trim();
+
+    const active = await AcademicSession.findOne({ where: { schoolId, isActive: true } });
+
+    const enrollments = await StudentEnrollment.findAll({
+      where: active ? { sessionId: active.id } : {},
+      include: [
+        {
+          model: Student,
+          as: 'student',
+          where: {
+            schoolId,
+            active: true,
+            ...(q.length >= 2 && {
+              [Op.or]: [
+                { firstName: { [Op.like]: `%${q}%` } },
+                { lastName: { [Op.like]: `%${q}%` } },
+              ],
+            }),
+          },
+          attributes: ['id', 'firstName', 'lastName', 'fatherName'],
+        },
+        { model: Class, as: 'class', attributes: ['id', 'name'] },
+        { model: Section, as: 'section', attributes: ['id', 'name'] },
+      ],
+    });
+
+    const data = enrollments.map((e: any) => ({
+      id: e.student.id,
+      name: `${e.student.firstName} ${e.student.lastName}`,
+      fatherName: e.student.fatherName ?? null,
+      classId: e.classId,
+      sectionId: e.sectionId,
+      className: e.class?.name ?? '',
+      sectionName: e.section?.name ?? '',
+    }));
+
+    return res.json({ success: true, data });
+  } catch (error) {
+    logger.error('Error searching students', { error });
+    return sendError(res, 'Failed to search students', 500);
   }
 };

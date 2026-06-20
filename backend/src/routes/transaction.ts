@@ -219,7 +219,12 @@ router.post(
     const t = await sequelize.transaction();
 
     try {
-      const { studentsName, classId, sectionId, modeOfPayment, products } = req.body;
+      const { studentsName, classId, sectionId, modeOfPayment, referenceId, products } = req.body;
+
+      if (modeOfPayment !== 'Cash' && !referenceId?.toString().trim()) {
+        await t.rollback();
+        return res.status(400).json({ success: false, error: { code: 'REFERENCE_ID_REQUIRED', message: 'Reference ID is required for non-cash payments' } });
+      }
 
       // Verify class and section exist and belong to the school
       const classInstance = await Class.findOne({
@@ -249,6 +254,7 @@ router.post(
           classId: classId,
           sectionId: sectionId,
           modeOfPayment,
+          referenceId: referenceId || null,
           userId: req.userId,
           schoolId: req.schoolId,
         },

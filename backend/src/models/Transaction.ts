@@ -13,6 +13,7 @@ class Transaction extends Model {
   public classId!: number;
   public sectionId!: number;
   public modeOfPayment!: string;
+  public referenceId!: string | null;
   public userId!: number;
   public schoolId!: number;
   public isVerified!: boolean;
@@ -57,6 +58,10 @@ export const initTransactionModel = (sequelize: Sequelize): void => {
       modeOfPayment: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      referenceId: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
       userId: {
         type: DataTypes.INTEGER,

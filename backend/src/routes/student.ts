@@ -12,7 +12,8 @@ import {
   getStudentsByClass,
   getStudentsWithPaymentReminders,
   updatePaymentReminder,
-  markStudentLeftSchool
+  markStudentLeftSchool,
+  searchStudents
 } from '../controllers/student';
 import { generateMonthlyFee, getStudentFeeTimelineController, collectFeePaymentController, regenerateMonthlyFee, getLastGeneratedFee } from '../controllers/monthlyFee';
 
@@ -194,6 +195,7 @@ const createStudentValidation = [
   })
 ];
 
+router.get('/search', verifyToken, searchStudents);
 router.get('/', verifyToken, getAllStudents);
 
 router.post('/', verifyToken, createStudentValidation, createStudent);

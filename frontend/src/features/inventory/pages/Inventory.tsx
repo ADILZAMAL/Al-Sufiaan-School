@@ -18,6 +18,7 @@ import {
   FaArrowUp,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import SellProductModal from "../components/SellProductModal";
 
 export type AddProductFormData = {
   name: string;
@@ -36,6 +37,7 @@ const Inventory = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
+  const [isSellModalOpen, setIsSellModalOpen] = useState(false);
   const [expandedTransactions, setExpandedTransactions] = useState<Set<number>>(new Set());
   const [productSearch, setProductSearch] = useState("");
 
@@ -190,12 +192,12 @@ const Inventory = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h2 className="text-2xl font-bold text-gray-900">Inventory Management</h2>
           <div className="flex items-center gap-3">
-            <Link
-              to="/dashboard/sell-products"
+            <button
+              onClick={() => setIsSellModalOpen(true)}
               className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
             >
               Sell Product
-            </Link>
+            </button>
             {(userRole === "SUPER_ADMIN" || userRole === null) && (
               <>
                 <button
@@ -564,6 +566,11 @@ const Inventory = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Sell Product Modal */}
+      {isSellModalOpen && (
+        <SellProductModal onClose={() => setIsSellModalOpen(false)} />
       )}
 
       {/* Stock In Modal */}

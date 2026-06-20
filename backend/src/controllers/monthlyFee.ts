@@ -489,6 +489,10 @@ export async function collectFeePaymentController(req: Request, res: Response) {
     return sendError(res, 'Payment mode is required', 400);
   }
 
+  if (paymentMode !== 'Cash' && !referenceNumber?.toString().trim()) {
+    return sendError(res, 'Reference number is required for non-cash payments', 400);
+  }
+
   try {
     // Verify the monthly fee exists and belongs to the student
     const monthlyFee = await StudentMonthlyFee.findOne({

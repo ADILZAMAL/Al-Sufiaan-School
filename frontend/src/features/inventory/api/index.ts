@@ -50,6 +50,16 @@ export type StockInType = {
     createdAt: string;
 }
 
+export type StudentSearchResult = {
+    id: number;
+    name: string;
+    fatherName: string | null;
+    classId: number;
+    sectionId: number;
+    className: string;
+    sectionName: string;
+}
+
 export const fetchClasses = async (): Promise<ClassType[]> => {
     const response = await fetch(`${API_BASE_URL}/api/classes`, {
         credentials: "include"
@@ -181,6 +191,18 @@ export const stockInProduct = async (productId: number, quantity: number, note?:
         throw new Error(body.error?.message || body.message)
     }
     return body
+}
+
+export const searchStudents = async (q: string): Promise<StudentSearchResult[]> => {
+    const params = new URLSearchParams({ q });
+    const response = await fetch(`${API_BASE_URL}/api/students/search?${params.toString()}`, {
+        credentials: "include"
+    })
+    const body = await response.json();
+    if (!body.success) {
+        throw new Error(body.error?.message || body.message)
+    }
+    return body.data;
 }
 
 export const fetchStockIns = async (productId?: number): Promise<StockInType[]> => {
