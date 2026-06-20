@@ -18,11 +18,17 @@ router.post("/", verifyToken, requireRole(['SUPER_ADMIN']), [
     if(!errors.isEmpty()){
         return res.status(400).json({success: false, error: {code: 'INVALID_INPUT', message: errors.array() }});
     }
+    const t = await Product.sequelize!.transaction()
     try {
         let {name, qty, price } = req.body
-        let product = await Product.create({name, price, qty, buyPrice: price, schoolId: req.schoolId});
+        let product = await Product.create({name, price, qty, buyPrice: price, schoolId: req.schoolId}, { transaction: t });
+        if (qty > 0) {
+            await StockIn.create({ productId: product.id, quantity: qty, note: 'Initial stock', userId: req.userId, schoolId: req.schoolId }, { transaction: t })
+        }
+        await t.commit()
         res.status(200).json({success: true})
     } catch (error) {
+        await t.rollback()
         logger.error('Error creating product', { error });
         res.status(500).json({success: false, error: {code: 'INTERNAL_SERVER_ERROR', message: "Someting went wrong"}})
     }
