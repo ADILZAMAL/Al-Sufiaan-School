@@ -489,8 +489,14 @@ export async function collectFeePaymentController(req: Request, res: Response) {
     return sendError(res, 'Payment mode is required', 400);
   }
 
-  if (paymentMode !== 'Cash' && !referenceNumber?.toString().trim()) {
-    return sendError(res, 'Reference number is required for non-cash payments', 400);
+  if (paymentMode !== 'Cash') {
+    const trimmedReferenceNumber = referenceNumber?.toString().trim();
+    if (!trimmedReferenceNumber) {
+      return sendError(res, 'Reference number is required for non-cash payments', 400);
+    }
+    if (!/^\d{12}$/.test(trimmedReferenceNumber)) {
+      return sendError(res, 'Reference number must be exactly 12 digits', 400);
+    }
   }
 
   try {

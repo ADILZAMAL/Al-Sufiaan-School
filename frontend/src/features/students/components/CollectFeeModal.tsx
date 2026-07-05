@@ -87,9 +87,15 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
       return;
     }
 
-    if (paymentMode !== 'Cash' && !referenceNumber.trim()) {
-      setError('Reference number is required for non-cash payments');
-      return;
+    if (paymentMode !== 'Cash') {
+      if (!referenceNumber.trim()) {
+        setError('Reference number is required for non-cash payments');
+        return;
+      }
+      if (!/^\d{12}$/.test(referenceNumber.trim())) {
+        setError('Reference number must be exactly 12 digits');
+        return;
+      }
     }
 
     try {
@@ -215,11 +221,13 @@ const CollectFeeModal: React.FC<CollectFeeModalProps> = ({
                 <div className="relative">
                   <input
                     type="text"
+                    inputMode="numeric"
+                    maxLength={12}
                     id="referenceNumber"
                     value={referenceNumber}
                     onChange={(e) => setReferenceNumber(e.target.value)}
                     className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Transaction ID, cheque number, UPI ref..."
+                    placeholder="12-digit transaction reference number"
                     disabled={loading}
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

@@ -234,9 +234,16 @@ router.post(
     try {
       const { studentId, classId, sectionId, modeOfPayment, referenceId, products } = req.body;
 
-      if (modeOfPayment !== 'Cash' && !referenceId?.toString().trim()) {
-        await t.rollback();
-        return res.status(400).json({ success: false, error: { code: 'REFERENCE_ID_REQUIRED', message: 'Reference ID is required for non-cash payments' } });
+      if (modeOfPayment !== 'Cash') {
+        const trimmedReferenceId = referenceId?.toString().trim();
+        if (!trimmedReferenceId) {
+          await t.rollback();
+          return res.status(400).json({ success: false, error: { code: 'REFERENCE_ID_REQUIRED', message: 'Reference ID is required for non-cash payments' } });
+        }
+        if (!/^\d{12}$/.test(trimmedReferenceId)) {
+          await t.rollback();
+          return res.status(400).json({ success: false, error: { code: 'INVALID_REFERENCE_ID', message: 'Reference ID must be exactly 12 digits' } });
+        }
       }
 
       const studentInstance = await Student.findOne({

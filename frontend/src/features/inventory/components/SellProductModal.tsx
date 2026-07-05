@@ -262,9 +262,15 @@ const SellProductModal: React.FC<Props> = ({ onClose }) => {
                             </label>
                             <input
                                 type="text"
+                                inputMode="numeric"
+                                maxLength={12}
                                 className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${errors.referenceId ? "border-red-300 bg-red-50" : "border-gray-200"}`}
-                                placeholder="Transaction / cheque / UPI reference"
-                                {...register("referenceId", { required: "Reference ID is required for non-cash payments", shouldUnregister: true })}
+                                placeholder="12-digit transaction reference number"
+                                {...register("referenceId", {
+                                    required: "Reference ID is required for non-cash payments",
+                                    pattern: { value: /^\d{12}$/, message: "Reference ID must be exactly 12 digits" },
+                                    shouldUnregister: true,
+                                })}
                             />
                             {errors.referenceId && (
                                 <p className="text-red-500 text-xs mt-1">{errors.referenceId.message}</p>
