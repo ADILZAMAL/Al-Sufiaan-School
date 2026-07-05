@@ -353,18 +353,17 @@ const Inventory = () => {
                         <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Date</th>
                         <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Student</th>
                         <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Class</th>
-                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Sold By</th>
                         <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Payment</th>
                         <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Amount</th>
-                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
                         <th className="py-3 px-5" />
+                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider sticky right-0 bg-white z-10 border-l border-gray-100">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {recentTransactions.map((transaction: TransactionType) => (
                         <React.Fragment key={transaction.id}>
                           <tr
-                            className="hover:bg-gray-50 transition-colors cursor-pointer"
+                            className="group hover:bg-gray-50 transition-colors cursor-pointer"
                             onClick={() => toggleTransactionExpansion(transaction.id)}
                           >
                             <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
@@ -377,9 +376,6 @@ const Inventory = () => {
                               {transaction.className} – {transaction.sectionName}
                             </td>
                             <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
-                              {transaction.soldBy}
-                            </td>
-                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
                               {transaction.modeOfPayment}
                               {transaction.referenceId && (
                                 <div className="text-xs text-gray-400">Ref: {transaction.referenceId}</div>
@@ -388,7 +384,17 @@ const Inventory = () => {
                             <td className="py-3.5 px-5 whitespace-nowrap text-sm font-semibold text-gray-900">
                               ₹{transaction.totalAmount.toFixed(2)}
                             </td>
-                            <td className="py-3.5 px-5 whitespace-nowrap">
+                            <td className="py-3.5 px-5 whitespace-nowrap text-gray-400 text-sm">
+                              {expandedTransactions.has(transaction.id) ? (
+                                <FaChevronUp />
+                              ) : (
+                                <FaChevronDown />
+                              )}
+                            </td>
+                            <td
+                              className="py-3.5 px-5 whitespace-nowrap sticky right-0 bg-white group-hover:bg-gray-50 z-10 border-l border-gray-100 transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               {transaction.isVerified ? (
                                 <div className="flex items-center gap-1.5">
                                   <FaCheckCircle className="text-emerald-500 text-sm" />
@@ -406,10 +412,7 @@ const Inventory = () => {
                                   </div>
                                   {userRole === "SUPER_ADMIN" && (
                                     <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        verifyMutation.mutate(transaction.id);
-                                      }}
+                                      onClick={() => verifyMutation.mutate(transaction.id)}
                                       className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                                       disabled={verifyMutation.isLoading}
                                     >
@@ -419,17 +422,13 @@ const Inventory = () => {
                                 </div>
                               )}
                             </td>
-                            <td className="py-3.5 px-5 whitespace-nowrap text-gray-400 text-sm">
-                              {expandedTransactions.has(transaction.id) ? (
-                                <FaChevronUp />
-                              ) : (
-                                <FaChevronDown />
-                              )}
-                            </td>
                           </tr>
                           {expandedTransactions.has(transaction.id) && (
                             <tr>
-                              <td colSpan={8} className="px-5 py-4 bg-gray-50">
+                              <td colSpan={7} className="px-5 py-4 bg-gray-50">
+                                <p className="text-xs text-gray-500 mb-3">
+                                  Sold by <span className="font-medium text-gray-700">{transaction.soldBy}</span>
+                                </p>
                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                                   Products Purchased
                                 </p>

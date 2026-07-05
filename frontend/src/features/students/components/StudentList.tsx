@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiUser } from 'react-icons/fi';
+import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import { Student, Gender } from '../types';
 
 interface StudentListProps {
@@ -28,6 +29,19 @@ const StudentList: React.FC<StudentListProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [dueSortOrder, setDueSortOrder] = useState<'asc' | 'desc' | null>(null);
+
+  const toggleDueSort = () => {
+    setDueSortOrder(prev => (prev === 'desc' ? 'asc' : prev === 'asc' ? null : 'desc'));
+  };
+
+  const sortedStudents = useMemo(() => {
+    if (!dueSortOrder) return students;
+    return [...students].sort((a, b) => {
+      const diff = (a.totalDue || 0) - (b.totalDue || 0);
+      return dueSortOrder === 'asc' ? diff : -diff;
+    });
+  }, [students, dueSortOrder]);
 
   const handleView = (student: Student) => {
     const searchParams = location.search;
@@ -78,11 +92,25 @@ const StudentList: React.FC<StudentListProps> = ({
             <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Class</th>
             <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Gender</th>
             <th className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Contact</th>
-            <th className="px-5 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">Due</th>
+            <th className="px-5 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <button
+                onClick={toggleDueSort}
+                className="inline-flex items-center gap-1 hover:text-gray-600 transition-colors"
+              >
+                Due
+                {dueSortOrder === 'asc' ? (
+                  <FaSortUp className="w-3 h-3" />
+                ) : dueSortOrder === 'desc' ? (
+                  <FaSortDown className="w-3 h-3" />
+                ) : (
+                  <FaSort className="w-3 h-3" />
+                )}
+              </button>
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {students.map((student) => {
+          {sortedStudents.map((student) => {
             const enrollment = getEnrollment(student);
             const fullName = `${student.firstName} ${student.lastName}`;
             const avatarColor = getAvatarColor(student.firstName);

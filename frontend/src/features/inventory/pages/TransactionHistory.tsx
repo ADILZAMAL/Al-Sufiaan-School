@@ -94,41 +94,21 @@ const TransactionHistory = () => {
 
     const isVerifying = verifyTransactionMutation.isLoading && pendingVerifyId === transaction.id;
 
-    if (pendingVerifyId === transaction.id) {
-      return (
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          <span className="text-xs text-gray-600">Confirm?</span>
-          <button
-            onClick={() => verifyTransactionMutation.mutate(transaction.id)}
-            disabled={isVerifying}
-            className="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-1"
-          >
-            {isVerifying ? (
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
-            ) : (
-              <FaCheck className="text-xs" />
-            )}
-            Yes
-          </button>
-          <button
-            onClick={() => setPendingVerifyId(null)}
-            className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            No
-          </button>
-        </div>
-      );
-    }
-
     return (
       <button
         onClick={(e) => {
           e.stopPropagation();
           setPendingVerifyId(transaction.id);
+          verifyTransactionMutation.mutate(transaction.id);
         }}
-        className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
+        disabled={isVerifying}
+        className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
       >
-        <FaCheck className="text-xs" />
+        {isVerifying ? (
+          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+        ) : (
+          <FaCheck className="text-xs" />
+        )}
         Verify
       </button>
     );
