@@ -19,6 +19,8 @@ import {
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import SellProductModal from "../components/SellProductModal";
+import TransactionItemsList from "../components/TransactionItemsList";
+import { formatDate } from "../utils";
 
 export type AddProductFormData = {
   name: string;
@@ -152,17 +154,6 @@ const Inventory = () => {
       newExpanded.add(transactionId);
     }
     setExpandedTransactions(newExpanded);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   const getQtyBadge = (qty: number) => {
@@ -390,6 +381,9 @@ const Inventory = () => {
                             </td>
                             <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
                               {transaction.modeOfPayment}
+                              {transaction.referenceId && (
+                                <div className="text-xs text-gray-400">Ref: {transaction.referenceId}</div>
+                              )}
                             </td>
                             <td className="py-3.5 px-5 whitespace-nowrap text-sm font-semibold text-gray-900">
                               ₹{transaction.totalAmount.toFixed(2)}
@@ -439,24 +433,7 @@ const Inventory = () => {
                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                                   Products Purchased
                                 </p>
-                                <div className="space-y-2">
-                                  {transaction.transactionItems.map((item, idx) => (
-                                    <div
-                                      key={idx}
-                                      className="flex justify-between items-center py-2 px-4 bg-white rounded-lg border border-gray-200"
-                                    >
-                                      <span className="text-sm font-medium text-gray-900">
-                                        {item.productName}
-                                      </span>
-                                      <span className="text-sm text-gray-500">
-                                        {item.quantity} × ₹{item.unitPrice} ={" "}
-                                        <span className="font-semibold text-gray-900">
-                                          ₹{item.totalPrice.toFixed(2)}
-                                        </span>
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
+                                <TransactionItemsList items={transaction.transactionItems} />
                                 <p className="text-right text-xs text-gray-400 mt-3">
                                   Transaction #{transaction.id}
                                 </p>

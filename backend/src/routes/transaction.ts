@@ -7,6 +7,7 @@ import TransactionItem from '../models/TransactionItem';
 import Class from '../models/Class';
 import Section from '../models/Section';
 import User from '../models/User';
+import Student from '../models/Student';
 import sequelize from '../config/database';
 import logger from '../utils/logger';
 
@@ -40,6 +41,11 @@ router.get('/recent', verifyToken, async (req: Request, res: Response) => {
           attributes: ['name']
         },
         {
+          model: Student,
+          as: 'transactionStudent',
+          attributes: ['firstName', 'lastName']
+        },
+        {
           model: User,
           as: 'user',
           attributes: ['firstName', 'lastName']
@@ -62,10 +68,11 @@ router.get('/recent', verifyToken, async (req: Request, res: Response) => {
 
       return {
         id: transaction.id,
-        studentName: transaction.studentName,
-        className: transaction.transactionClass?.name || transaction.class,
+        studentName: transaction.transactionStudent?.fullName || 'Unknown',
+        className: transaction.transactionClass?.name || '',
         sectionName: transaction.transactionSection?.name || '',
         modeOfPayment: transaction.modeOfPayment,
+        referenceId: transaction.referenceId,
         totalAmount: totalAmount,
         soldBy: transaction.user ? `${transaction.user.firstName} ${transaction.user.lastName}` : 'Unknown',
         userId: transaction.userId,
@@ -137,6 +144,11 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
           attributes: ['name']
         },
         {
+          model: Student,
+          as: 'transactionStudent',
+          attributes: ['firstName', 'lastName']
+        },
+        {
           model: User,
           as: 'user',
           attributes: ['firstName', 'lastName']
@@ -160,10 +172,11 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
 
       return {
         id: transaction.id,
-        studentName: transaction.studentName,
-        className: transaction.transactionClass?.name || transaction.class,
+        studentName: transaction.transactionStudent?.fullName || 'Unknown',
+        className: transaction.transactionClass?.name || '',
         sectionName: transaction.transactionSection?.name || '',
         modeOfPayment: transaction.modeOfPayment,
+        referenceId: transaction.referenceId,
         totalAmount: totalAmount,
         soldBy: transaction.user ? `${transaction.user.firstName} ${transaction.user.lastName}` : 'Unknown',
         userId: transaction.userId,
@@ -180,8 +193,8 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
       };
     });
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: {
         transactions: formattedTransactions,
         pagination: {
@@ -202,7 +215,7 @@ router.post(
   '/',
   verifyToken,
   [
-    check('studentsName', 'Student name is required').isString(),
+    check('studentId', 'Student ID is required').isInt(),
     check('classId', 'Class ID is required').isInt(),
     check('sectionId', 'Section ID is required').isInt(),
     check('modeOfPayment', 'Mode of payment is required').isString(),
@@ -219,11 +232,21 @@ router.post(
     const t = await sequelize.transaction();
 
     try {
-      const { studentsName, classId, sectionId, modeOfPayment, referenceId, products } = req.body;
+      const { studentId, classId, sectionId, modeOfPayment, referenceId, products } = req.body;
 
       if (modeOfPayment !== 'Cash' && !referenceId?.toString().trim()) {
         await t.rollback();
         return res.status(400).json({ success: false, error: { code: 'REFERENCE_ID_REQUIRED', message: 'Reference ID is required for non-cash payments' } });
+      }
+
+      const studentInstance = await Student.findOne({
+        where: { id: studentId, schoolId: req.schoolId },
+        transaction: t
+      });
+
+      if (!studentInstance) {
+        await t.rollback();
+        return res.status(404).json({ success: false, error: { code: 'STUDENT_NOT_FOUND', message: 'Student not found' } });
       }
 
       // Verify class and section exist and belong to the school
@@ -249,8 +272,7 @@ router.post(
 
       const transaction = await Transaction.create(
         {
-          studentName: studentsName,
-          class: (classInstance as any).name, // Keep the class name for backward compatibility
+          studentId: studentId,
           classId: classId,
           sectionId: sectionId,
           modeOfPayment,

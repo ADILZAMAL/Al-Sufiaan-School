@@ -89,6 +89,7 @@ Transaction.hasMany(TransactionItem, { foreignKey: 'transactionId', as: 'items'}
 Transaction.belongsTo(School, { foreignKey: 'schoolId', as: 'school' });
 Transaction.belongsTo(Class, { foreignKey: 'classId', as: 'transactionClass' });
 Transaction.belongsTo(Section, { foreignKey: 'sectionId', as: 'transactionSection' });
+Transaction.belongsTo(Student, { foreignKey: 'studentId', as: 'transactionStudent' });
 Transaction.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Transaction.belongsTo(User, { foreignKey: 'verifiedBy', as: 'verifier' });
 

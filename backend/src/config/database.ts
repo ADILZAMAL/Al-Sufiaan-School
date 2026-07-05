@@ -61,6 +61,7 @@ initAcademicSessionModel(sequelize)
 initClassModel(sequelize)
 initSectionModel(sequelize)
 initProductModel(sequelize)
+initStudentModel(sequelize);
 initTransactionModel(sequelize)
 initTransactionItemModel(sequelize);
 initExpenseCategoryModel(sequelize);
@@ -72,7 +73,6 @@ initVendorModel(sequelize);
 initVendorBillModel(sequelize);
 initVendorPaymentModel(sequelize);
 initTransportationAreaPricingModel(sequelize);
-initStudentModel(sequelize);
 initStudentEnrollmentModel(sequelize);
 initStudentMonthlyFeeModel(sequelize);
 initStudentMonthlyFeeItemModel(sequelize);

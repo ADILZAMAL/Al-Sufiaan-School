@@ -10,7 +10,7 @@ import { FaPlus, FaTimes } from "react-icons/fa";
 import { ProductType } from "../../../api/type";
 
 interface SellForm {
-    studentsName: string;
+    studentId: number;
     classId: number;
     sectionId: number;
     modeOfPayment: string;
@@ -49,7 +49,7 @@ const SellProductModal: React.FC<Props> = ({ onClose }) => {
         reset,
     } = useForm<SellForm>({
         defaultValues: {
-            studentsName: "",
+            studentId: 0,
             classId: 0,
             sectionId: 0,
             modeOfPayment: "",
@@ -120,7 +120,7 @@ const SellProductModal: React.FC<Props> = ({ onClose }) => {
         setSelectedStudent(student);
         setStudentQuery(student.name);
         setShowSuggestions(false);
-        setValue("studentsName", student.name);
+        setValue("studentId", student.id);
         setValue("classId", student.classId);
         setValue("sectionId", student.sectionId);
     };
@@ -128,7 +128,7 @@ const SellProductModal: React.FC<Props> = ({ onClose }) => {
     const clearStudent = () => {
         setSelectedStudent(null);
         setStudentQuery("");
-        setValue("studentsName", "");
+        setValue("studentId", 0);
         setValue("classId", 0);
         setValue("sectionId", 0);
     };
@@ -196,8 +196,8 @@ const SellProductModal: React.FC<Props> = ({ onClose }) => {
                                 {selectedStudent.className} — {selectedStudent.sectionName}
                             </p>
                         )}
-                        {!selectedStudent && errors.studentsName && (
-                            <p className="text-red-500 text-xs mt-1">{errors.studentsName.message}</p>
+                        {!selectedStudent && errors.studentId && (
+                            <p className="text-red-500 text-xs mt-1">{errors.studentId.message}</p>
                         )}
 
                         {/* Autocomplete dropdown */}
@@ -230,7 +230,7 @@ const SellProductModal: React.FC<Props> = ({ onClose }) => {
                         )}
 
                         {/* Hidden fields for form submission */}
-                        <input type="hidden" {...register("studentsName", { required: "Select a student" })} />
+                        <input type="hidden" {...register("studentId", { valueAsNumber: true, validate: v => v > 0 || "Select a student" })} />
                         <input type="hidden" {...register("classId", { valueAsNumber: true, validate: v => v > 0 || "Select a student" })} />
                         <input type="hidden" {...register("sectionId", { valueAsNumber: true, validate: v => v > 0 || "Select a student" })} />
                     </div>

@@ -15,7 +15,6 @@ import ExpenseDashboard from "./features/expenses/pages/Expense"
 import ExpenseSettings from "./features/expenses/pages/ExpenseSettings"
 import VendorDashboard from "./features/vendors/pages/VendorDashboard"
 import VendorDetail from "./features/vendors/pages/VendorDetail"
-import SellProductsPage from "./features/inventory/pages/SellProductsPage"
 import TransactionHistory from "./features/inventory/pages/TransactionHistory"
 import StaffManagement from "./features/staff/pages/StaffManagement"
 import AddStaff from "./features/staff/pages/AddStaff"
@@ -130,10 +129,6 @@ const router = createBrowserRouter([
       {
         path: "inventory",
         element: <Inventory />
-      },
-      {
-        path: "sell-products",
-        element: <SellProductsPage />
       },
       {
         path: "transaction-history",

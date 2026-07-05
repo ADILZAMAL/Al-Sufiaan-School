@@ -5,11 +5,11 @@ import TransactionItem from './TransactionItem';
 import Class from './Class';
 import Section from './Section';
 import User from './User';
+import Student from './Student';
 
 class Transaction extends Model {
   public id!: number;
-  public studentName!: string;
-  public class!: string;
+  public studentId!: number;
   public classId!: number;
   public sectionId!: number;
   public modeOfPayment!: string;
@@ -31,13 +31,13 @@ export const initTransactionModel = (sequelize: Sequelize): void => {
         autoIncrement: true,
         primaryKey: true,
       },
-      studentName: {
-        type: DataTypes.STRING,
+      studentId: {
+        type: DataTypes.INTEGER,
         allowNull: false,
-      },
-      class: {
-        type: DataTypes.STRING,
-        allowNull: false,
+        references: {
+          model: Student,
+          key: 'id'
+        }
       },
       classId: {
         type: DataTypes.INTEGER,

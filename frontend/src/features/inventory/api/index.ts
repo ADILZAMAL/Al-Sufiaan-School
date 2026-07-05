@@ -30,6 +30,7 @@ export type TransactionType = {
     className: string;
     sectionName: string;
     modeOfPayment: string;
+    referenceId: string | null;
     totalAmount: number;
     soldBy: string;
     userId: number;

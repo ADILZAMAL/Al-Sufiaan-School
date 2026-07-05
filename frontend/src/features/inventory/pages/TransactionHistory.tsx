@@ -6,6 +6,8 @@ import { FaChevronDown, FaChevronUp, FaCheck, FaCheckCircle, FaClock } from "rea
 import { Link } from "react-router-dom";
 import { getCurrentSchool } from "../../../api/school";
 import { useAppContext } from "../../../providers/AppContext";
+import TransactionItemsList from "../components/TransactionItemsList";
+import { formatDate } from "../utils";
 
 const TransactionHistory = () => {
   const { userRole } = useAppContext();
@@ -37,17 +39,6 @@ const TransactionHistory = () => {
       newExpanded.add(transactionId);
     }
     setExpandedTransactions(newExpanded);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   const handlePageChange = (page: number) => {
@@ -255,6 +246,9 @@ const TransactionHistory = () => {
                             </td>
                             <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-500">
                               {transaction.modeOfPayment}
+                              {transaction.referenceId && (
+                                <div className="text-xs text-gray-400">Ref: {transaction.referenceId}</div>
+                              )}
                             </td>
                             <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
                               {transaction.soldBy}
@@ -285,24 +279,7 @@ const TransactionHistory = () => {
                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                                   Products Purchased
                                 </p>
-                                <div className="space-y-2">
-                                  {transaction.transactionItems.map((item, index) => (
-                                    <div
-                                      key={index}
-                                      className="flex justify-between items-center py-2 px-4 bg-white rounded-lg border border-gray-200"
-                                    >
-                                      <span className="text-sm font-medium text-gray-900">
-                                        {item.productName}
-                                      </span>
-                                      <span className="text-sm text-gray-500">
-                                        {item.quantity} × ₹{item.unitPrice} ={" "}
-                                        <span className="font-semibold text-gray-900">
-                                          ₹{item.totalPrice.toFixed(2)}
-                                        </span>
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
+                                <TransactionItemsList items={transaction.transactionItems} />
                                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
                                   <div>
                                     <span className="text-sm font-semibold text-gray-900">
@@ -310,6 +287,7 @@ const TransactionHistory = () => {
                                     </span>
                                     <span className="text-sm text-gray-400 ml-3">
                                       via {transaction.modeOfPayment}
+                                      {transaction.referenceId && ` (Ref: ${transaction.referenceId})`}
                                     </span>
                                   </div>
                                   <div className="flex flex-col items-end gap-1">
