@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import verifyToken from '../middleware/auth';
 import { body } from 'express-validator';
-import {Gender, BloodGroup, Religion} from "../models/Student"
+import {Gender, BloodGroup, Religion, AdmissionType} from "../models/Student"
 
 import {
   getAllStudents,
@@ -83,7 +83,17 @@ const createStudentValidation = [
     .optional()
     .matches(/^[0-9]{12}$/)
     .withMessage('Aadhaar number must be exactly 12 digits'),
-  
+
+  body('penNumber')
+    .optional()
+    .matches(/^[0-9]{11}$/)
+    .withMessage('PEN number must be exactly 11 digits'),
+
+  body('admissionType')
+    .optional()
+    .isIn(Object.values(AdmissionType))
+    .withMessage('Admission type must be FRESH or TRANSFER'),
+
   body('classId')
     .notEmpty()
     .withMessage('Class is required')

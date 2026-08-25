@@ -225,6 +225,13 @@ export const createStudent = async (req: Request, res: Response) => {
       const message = error.errors?.[0]?.message ?? 'Validation failed';
       return sendError(res, message, 400);
     }
+    if (error?.name === 'SequelizeUniqueConstraintError') {
+      const field = error.errors?.[0]?.path;
+      const message = field === 'penNumber'
+        ? 'PEN number is already registered to another student'
+        : 'A student with this value already exists';
+      return sendError(res, message, 400);
+    }
     return sendError(res, 'Failed to create student', 500);
   }
 };
@@ -270,8 +277,19 @@ export const updateStudent = async (req: Request, res: Response) => {
     });
 
     return sendSuccess(res, updatedStudent, 'Student updated successfully');
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Error updating student', { error });
+    if (error?.name === 'SequelizeValidationError') {
+      const message = error.errors?.[0]?.message ?? 'Validation failed';
+      return sendError(res, message, 400);
+    }
+    if (error?.name === 'SequelizeUniqueConstraintError') {
+      const field = error.errors?.[0]?.path;
+      const message = field === 'penNumber'
+        ? 'PEN number is already registered to another student'
+        : 'A student with this value already exists';
+      return sendError(res, message, 400);
+    }
     return sendError(res, 'Failed to update student', 500);
   }
 };

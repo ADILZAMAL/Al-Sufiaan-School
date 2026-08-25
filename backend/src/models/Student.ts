@@ -35,6 +35,11 @@ export enum Religion {
   OTHER = 'Other'
 }
 
+export enum AdmissionType {
+  FRESH = 'FRESH',
+  TRANSFER = 'TRANSFER',
+}
+
 
 class Student extends Model {
   public id!: number;
@@ -50,6 +55,8 @@ class Student extends Model {
   public bloodGroup!: BloodGroup;
   public religion!: Religion;
   public aadhaarNumber!: string;
+  public penNumber?: string;
+  public admissionType!: AdmissionType;
   public address!: string;
   public fatherName!: string;
   public fatherPhone?: string;
@@ -191,6 +198,22 @@ Student.init(
           msg: 'Aadhaar number must be 12 digits',
         },
       },
+    },
+    penNumber: {
+      type: DataTypes.STRING(11),
+      allowNull: true,
+      unique: true,
+      validate: {
+        is: {
+          args: [/^[0-9]{11}$/],
+          msg: 'PEN number must be 11 digits',
+        },
+      },
+    },
+    admissionType: {
+      type: DataTypes.ENUM(...Object.values(AdmissionType)),
+      allowNull: false,
+      defaultValue: AdmissionType.FRESH,
     },
     address: {
       type: DataTypes.TEXT,

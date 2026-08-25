@@ -4,7 +4,7 @@ import {FiUser, FiPhone, FiCalendar, FiBookOpen, FiMapPin, FiMail, FiHome, FiBri
 import { useQuery } from "react-query";
 import { getStudentById, getStudentFeeTimeline, markStudentLeftSchool } from '../api';
 import { getSchoolById } from '../../../api/school';
-import { Student } from '../types';
+import { Student, AdmissionType } from '../types';
 import EditStudentModal from '../components/EditStudentModal';
 import AdmissionFormModal from '../components/AdmissionFormModal';
 import FeeTimeline from '../components/FeeTimeline';
@@ -258,7 +258,9 @@ const ViewStudentProfile: React.FC = () => {
                 Gender: <span className="font-medium">{student.gender}</span> | 
                 DOB: <span className="font-medium">{formatDateOnly(student.dateOfBirth)}</span> | 
                 Blood Group: <span className="font-medium">{student.bloodGroup || 'N/A'}</span> | 
-                Aadhaar: <span className="font-medium">{student.aadhaarNumber || 'N/A'}</span>
+                Aadhaar: <span className="font-medium">{student.aadhaarNumber || 'N/A'}</span> |
+                PEN: <span className="font-medium">{student.penNumber || 'N/A'}</span> |
+                Admission: <span className="font-medium">{student.admissionType === AdmissionType.TRANSFER ? 'Transferred In' : 'Fresh Admission'}</span>
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { studentApi } from '../api';
 import { useAppContext } from '../../../providers/AppContext'; 
-import { CreateStudentRequest, Gender, Religion, BloodGroup, Student } from '../types';
+import { CreateStudentRequest, Gender, Religion, BloodGroup, AdmissionType, Student } from '../types';
 import PhotoUpload from '../../../components/common/PhotoUpload';
 import AdmissionFormModal from './AdmissionFormModal';
 import { School } from '../../../api/school';
@@ -36,6 +36,8 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
     bloodGroup: '' as BloodGroup | '',
     religion: '' as Religion | '',
     aadhaarNumber: '',
+    penNumber: '',
+    admissionType: AdmissionType.FRESH as AdmissionType,
     phone: '',
     email: '',
     address: '',
@@ -285,6 +287,8 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
         bloodGroup: formData.bloodGroup as BloodGroup,
         religion: formData.religion as Religion,
         aadhaarNumber: formData.aadhaarNumber,
+        penNumber: formData.penNumber || undefined,
+        admissionType: formData.admissionType,
         classId: formData.classId as number,
         sectionId: formData.sectionId as number,
         rollNumber: formData.rollNumber || undefined,
@@ -357,6 +361,8 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
       bloodGroup: '' as BloodGroup | '',
       religion: '' as Religion | '',
       aadhaarNumber: '',
+      penNumber: '',
+      admissionType: AdmissionType.FRESH as AdmissionType,
       phone: '',
       email: '',
       address: '',
@@ -565,6 +571,35 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  PEN Number
+                </label>
+                <input
+                  type="text"
+                  name="penNumber"
+                  value={formData.penNumber}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  maxLength={11}
+                  pattern="[0-9]{11}"
+                  placeholder="e.g. 22790793265"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Admission Type
+                </label>
+                <select
+                  name="admissionType"
+                  value={formData.admissionType}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value={AdmissionType.FRESH}>Fresh Admission</option>
+                  <option value={AdmissionType.TRANSFER}>Transferred In</option>
+                </select>
               </div>
             </div>
           </div>

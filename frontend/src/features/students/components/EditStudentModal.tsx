@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { studentApi } from '../api';
 import { useAppContext } from '../../../providers/AppContext';
-import { Student, UpdateStudentRequest, Gender, Religion, BloodGroup, StudentFormData } from '../types';
+import { Student, UpdateStudentRequest, Gender, Religion, BloodGroup, AdmissionType, StudentFormData } from '../types';
 import PhotoUpload from '../../../components/common/PhotoUpload';
 import { enrollmentApi } from '../../sessions/api';
 import { UpdateEnrollmentRequest } from '../../sessions/types';
@@ -42,6 +42,8 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
     bloodGroup: '' as any,
     religion: '' as any,
     aadhaarNumber: '',
+    penNumber: '',
+    admissionType: AdmissionType.FRESH,
     classId: null,
     sectionId: null,
     rollNumber: '',
@@ -102,6 +104,8 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         bloodGroup: student.bloodGroup,
         religion: student.religion,
         aadhaarNumber: student.aadhaarNumber || '',
+        penNumber: student.penNumber || '',
+        admissionType: student.admissionType || AdmissionType.FRESH,
         classId: student.classId ?? null,
         sectionId: student.sectionId ?? null,
         rollNumber: student.rollNumber || '',
@@ -324,6 +328,8 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         bloodGroup: formData.bloodGroup as BloodGroup,
         religion: formData.religion as Religion,
         aadhaarNumber: formData.aadhaarNumber,
+        penNumber: formData.penNumber || undefined,
+        admissionType: formData.admissionType,
         address: formData.address,
         fatherName: formData.fatherName,
         fatherPhone: formData.fatherPhone || undefined,
@@ -423,6 +429,31 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
                     <input type="text" value={enrollRoll || ''} className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" disabled />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">PEN Number</label>
+                    <input
+                      type="text"
+                      name="penNumber"
+                      value={formData.penNumber}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      maxLength={11}
+                      pattern="[0-9]{11}"
+                      placeholder="e.g. 22790793265"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Admission Type</label>
+                    <select
+                      name="admissionType"
+                      value={formData.admissionType}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value={AdmissionType.FRESH}>Fresh Admission</option>
+                      <option value={AdmissionType.TRANSFER}>Transferred In</option>
+                    </select>
                   </div>
                 </div>
               );

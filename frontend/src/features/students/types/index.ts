@@ -27,6 +27,11 @@ export enum Religion {
   OTHER = 'Other'
 }
 
+export enum AdmissionType {
+  FRESH = 'FRESH',
+  TRANSFER = 'TRANSFER',
+}
+
 // Common interfaces
 export interface Class {
   id: number;
@@ -78,6 +83,8 @@ export interface Student {
   bloodGroup: BloodGroup;
   religion: Religion;
   aadhaarNumber: string;
+  penNumber?: string;
+  admissionType: AdmissionType;
   // classId/sectionId/rollNumber removed from students table post-migration; kept optional for compat
   classId?: number;
   sectionId?: number;
@@ -139,6 +146,8 @@ export interface CreateStudentRequest {
   bloodGroup: BloodGroup;
   religion: Religion;
   aadhaarNumber?: string; // Optional in backend, but required in our validation rules
+  penNumber?: string;
+  admissionType?: AdmissionType;
   classId: number;
   sectionId?: number; // Optional in some contexts
   rollNumber?: string;
@@ -199,7 +208,9 @@ export interface StudentFormData {
   bloodGroup: BloodGroup | '';
   religion: Religion | '';
   aadhaarNumber: string;
-  
+  penNumber: string;
+  admissionType: AdmissionType;
+
   // Contact Information
   phone: string;
   email: string;
@@ -345,6 +356,7 @@ export const isValidReligion = (value: string): value is Religion => {
 export const VALIDATION_PATTERNS = {
   INDIAN_PHONE: /^(\+91)?[6-9]\d{9}$/,
   AADHAAR: /^[0-9]{12}$/,
+  PEN_NUMBER: /^[0-9]{11}$/,
   PINCODE: /^[0-9]{6}$/,
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   NAME: /^[a-zA-Z\s]{1,100}$/,
@@ -359,6 +371,7 @@ export const VALIDATION_MESSAGES = {
   EMAIL_INVALID: 'Please provide a valid email address',
   PHONE_INVALID: 'Phone number must be a valid Indian mobile number',
   AADHAAR_INVALID: 'Aadhaar number must be 12 digits',
+  PEN_INVALID: 'PEN number must be 11 digits',
   PINCODE_INVALID: 'Pincode must be 6 digits',
   NAME_LENGTH: 'Name must be between 1 and 100 characters',
   DATE_FUTURE: 'Date of birth must be in the past',
