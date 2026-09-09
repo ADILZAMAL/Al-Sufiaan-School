@@ -38,15 +38,12 @@ import SessionManagement from "./features/sessions/pages/SessionManagement"
 import StudentPromotion from "./features/sessions/pages/StudentPromotion"
 import SubjectsPage from "./features/academics/pages/SubjectsPage"
 import ChaptersPage from "./features/academics/pages/ChaptersPage"
-import ExamsPage from "./features/academics/pages/ExamsPage"
+import ClassTestsPage from "./features/academics/pages/ClassTestsPage"
 import ExamEventsPage from "./features/academics/pages/ExamEventsPage"
 import ExamEventDetailPage from "./features/academics/pages/ExamEventDetailPage"
 import ReportCardPage from "./features/academics/pages/ReportCardPage"
 import AssignmentsPage from "./features/academics/pages/AssignmentsPage"
-import MarksViewerPage from "./features/academics/pages/MarksViewerPage"
-import PendingMarksPage from "./features/academics/pages/PendingMarksPage"
 import StudentReportPage from "./features/academics/pages/StudentReportPage"
-import SyllabusProgressPage from "./features/academics/pages/SyllabusProgressPage"
 import OnboardSchool from "./features/general/pages/OnboardSchool"
 import OnboardSchoolDetail from "./features/general/pages/OnboardSchoolDetail"
 
@@ -209,15 +206,12 @@ const router = createBrowserRouter([
         children: [
           { path: "subjects", element: <SubjectsPage /> },
           { path: "chapters", element: <ChaptersPage /> },
-          { path: "exams", element: <ExamsPage /> },
+          { path: "class-tests", element: <ClassTestsPage /> },
           { path: "exam-events", element: <ExamEventsPage /> },
           { path: "exam-events/:examEventId", element: <ExamEventDetailPage /> },
           { path: "report-card", element: <ReportCardPage /> },
           { path: "assignments", element: <AssignmentsPage /> },
-          { path: "marks-viewer", element: <MarksViewerPage /> },
-          { path: "pending-marks", element: <PendingMarksPage /> },
           { path: "student-report/:id", element: <StudentReportPage /> },
-          { path: "syllabus-progress", element: <SyllabusProgressPage /> },
         ]
       },
       {

@@ -1,4 +1,4 @@
-import { Subject, Chapter, Exam, ExamEvent, TeacherSubjectAssignment, StudentExamMark, SubjectWithExams, PendingExam, SyllabusSubject, EventReportCard, AnnualReportCard } from '../types';
+import { Subject, Chapter, Exam, ExamEvent, TeacherSubjectAssignment, StudentExamMark, SubjectWithExams, SyllabusSubject, EventReportCard, AnnualReportCard } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || '';
 
@@ -123,10 +123,6 @@ export const marksApi = {
   },
   getByStudent: async (studentId: number, sessionId: number): Promise<SubjectWithExams[]> => {
     const body = await req(`/api/academic/marks/student/${studentId}?sessionId=${sessionId}`);
-    return body.data;
-  },
-  getPending: async (classId: number, sectionId: number, sessionId: number): Promise<PendingExam[]> => {
-    const body = await req(`/api/academic/marks/pending?classId=${classId}&sectionId=${sectionId}&sessionId=${sessionId}`);
     return body.data;
   },
   bulkSubmit: async (examId: number, marks: { studentId: number; marksObtained?: number; isAbsent?: boolean }[]): Promise<void> => {

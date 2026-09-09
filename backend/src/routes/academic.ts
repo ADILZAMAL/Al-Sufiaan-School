@@ -7,7 +7,7 @@ import {
   uploadChapterPDF, deleteChapterPDF,
   createExamEvent, getExamEvents, updateExamEvent, deleteExamEvent,
   createExam, getExams, updateExam, deleteExam,
-  bulkSubmitMarks, getMarksByExam, getStudentMarks, getPendingMarks,
+  bulkSubmitMarks, getMarksByExam, getStudentMarks,
   getEventReportCard, getAnnualReportCard,
   getSyllabusProgress,
 } from '../controllers/academic';
@@ -51,7 +51,6 @@ router.delete('/exams/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), deleteExam);
 // Marks
 router.post('/marks/bulk', requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']), bulkSubmitMarks);
 router.get('/marks', getMarksByExam);
-router.get('/marks/pending', requireRole(['SUPER_ADMIN', 'ADMIN']), getPendingMarks);
 router.get('/marks/student/:studentId', getStudentMarks);
 
 // Report cards

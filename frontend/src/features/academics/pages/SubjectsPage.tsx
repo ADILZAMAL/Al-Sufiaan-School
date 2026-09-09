@@ -1,41 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaBookOpen, FaTimes, FaChevronDown, FaChevronRight, FaClipboardList } from 'react-icons/fa';
-import { HiOutlinePencil, HiOutlineTrash } from 'react-icons/hi';
-import { subjectApi, chapterApi } from '../api';
-import { Subject, Chapter } from '../types';
+import { FaPlus, FaBookOpen, FaTimes, FaChevronDown } from 'react-icons/fa';
+import { HiOutlinePencil, HiOutlineTrash, HiOutlineCheckCircle, HiOutlineXCircle } from 'react-icons/hi';
+import { subjectApi, chapterApi, syllabusApi } from '../api';
+import { Subject, SyllabusSubject, SyllabusChapter } from '../types';
 import { fetchClasses, ClassType } from '../../class/api';
 import { academicSessionApi } from '../../sessions/api';
 import { AcademicSession } from '../../sessions/types';
 import SessionSelector from '../../sessions/components/SessionSelector';
 import { useAppContext } from '../../../providers/AppContext';
 
-// ── Expandable chapter list for a subject ────────────────────────────────────
+const progressColor = (pct: number) =>
+  pct === 100 ? 'bg-emerald-500' : pct >= 50 ? 'bg-blue-500' : 'bg-amber-500';
+const progressTextColor = (pct: number) =>
+  pct === 100 ? 'text-emerald-600' : pct >= 50 ? 'text-blue-600' : 'text-amber-600';
 
-function SubjectChapters({ subject, subjectName }: { subject: Subject; subjectName: string }) {
+// ── Expandable chapter list for a subject (with teaching-progress toggle) ─────
+
+function SubjectChapters({ chapters, subjectId, subjectName, classId, sessionId }: {
+  chapters: SyllabusChapter[];
+  subjectId: number;
+  subjectName: string;
+  classId: number;
+  sessionId: number;
+}) {
   const navigate = useNavigate();
-  const { data: chapters = [], isLoading } = useQuery<Chapter[]>(
-    ['chapters', subject.id],
-    () => chapterApi.list(subject.id),
-    { staleTime: 30_000 }
-  );
+  const queryClient = useQueryClient();
+  const { showToast } = useAppContext();
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center gap-2 px-6 py-4 text-sm text-gray-400">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
-        Loading chapters…
-      </div>
-    );
-  }
+  const toggleTaught = useMutation(
+    ({ chapterId, isTaught }: { chapterId: number; isTaught: boolean }) =>
+      chapterApi.update(chapterId, {
+        isTaught,
+        taughtOn: isTaught ? new Date().toISOString().split('T')[0] : undefined,
+      }),
+    {
+      onSuccess: () => queryClient.invalidateQueries(['syllabus-progress', classId, sessionId]),
+      onError: (e: unknown) => showToast({ message: (e as Error).message, type: 'ERROR' }),
+    }
+  );
 
   if (chapters.length === 0) {
     return (
-      <p className="px-6 py-4 text-sm text-gray-400 italic">
+      <p className="px-6 py-4 text-sm text-gray-400 italic bg-gray-50">
         No chapters yet. Go to{' '}
         <button
-          onClick={() => navigate(`/dashboard/academics/chapters?subjectId=${subject.id}&subjectName=${encodeURIComponent(subjectName)}`)}
+          onClick={() => navigate(`/dashboard/academics/chapters?subjectId=${subjectId}&subjectName=${encodeURIComponent(subjectName)}`)}
           className="text-blue-500 hover:underline"
         >
           Chapters page
@@ -48,24 +59,38 @@ function SubjectChapters({ subject, subjectName }: { subject: Subject; subjectNa
   return (
     <ul className="divide-y divide-gray-100 bg-gray-50">
       {chapters.map(ch => (
-        <li
-          key={ch.id}
-          className="flex items-center gap-3 px-8 py-2.5 hover:bg-blue-50 transition cursor-pointer group"
-          onClick={() => navigate(`/dashboard/academics/exams?chapterId=${ch.id}&chapterName=${encodeURIComponent(ch.name)}&subjectName=${encodeURIComponent(subjectName)}`)}
-        >
-          <span className="w-6 text-xs text-gray-400 text-right shrink-0">{ch.orderNumber}.</span>
-          <span className="flex-1 text-sm text-gray-700 group-hover:text-blue-700 font-medium">{ch.name}</span>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
-            ch.isTaught ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-          }`}>
-            {ch.isTaught ? '✓ Taught' : 'Not taught'}
-          </span>
-          <FaChevronRight className="text-gray-300 group-hover:text-blue-400 text-xs shrink-0" />
+        <li key={ch.id} className="flex items-center justify-between px-8 py-2.5 hover:bg-gray-100/60 transition">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="w-5 text-xs text-gray-400 text-right shrink-0">{ch.orderNumber}.</span>
+            <span className={`text-sm truncate ${ch.isTaught ? 'text-gray-800 font-medium' : 'text-gray-500'}`}>
+              {ch.name}
+            </span>
+            {ch.isTaught && ch.taughtOn && (
+              <span className="text-xs text-gray-400 shrink-0">
+                {new Date(ch.taughtOn).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => toggleTaught.mutate({ chapterId: ch.id, isTaught: !ch.isTaught })}
+            disabled={toggleTaught.isLoading}
+            className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded-full transition-colors disabled:opacity-50 shrink-0 ml-4 font-medium ${
+              ch.isTaught
+                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                : 'bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600'
+            }`}
+          >
+            {ch.isTaught ? (
+              <><HiOutlineCheckCircle className="text-base" /> Taught</>
+            ) : (
+              <><HiOutlineXCircle className="text-base" /> Not Taught</>
+            )}
+          </button>
         </li>
       ))}
       <li className="px-8 py-2.5">
         <button
-          onClick={() => navigate(`/dashboard/academics/chapters?subjectId=${subject.id}&subjectName=${encodeURIComponent(subjectName)}`)}
+          onClick={() => navigate(`/dashboard/academics/chapters?subjectId=${subjectId}&subjectName=${encodeURIComponent(subjectName)}`)}
           className="text-xs text-blue-500 hover:text-blue-700 hover:underline"
         >
           Manage chapters →
@@ -80,7 +105,6 @@ function SubjectChapters({ subject, subjectName }: { subject: Subject; subjectNa
 export default function SubjectsPage() {
   const { showToast } = useAppContext();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
 
   const [manualSessionId, setManualSessionId] = useState<number | null>(null);
   const [activeClass, setActiveClass] = useState<ClassType | null>(null);
@@ -111,6 +135,16 @@ export default function SubjectsPage() {
     { enabled: selectedSessionId !== null && activeClass !== null }
   );
 
+  const { data: progress = [] } = useQuery<SyllabusSubject[]>(
+    ['syllabus-progress', activeClass?.id, selectedSessionId],
+    () => syllabusApi.getProgress(activeClass!.id, selectedSessionId as number),
+    { enabled: selectedSessionId !== null && activeClass !== null }
+  );
+  const progressMap = new Map(progress.map(p => [p.subjectId, p]));
+  const totalChapters = progress.reduce((s, p) => s + p.totalChapters, 0);
+  const taughtChapters = progress.reduce((s, p) => s + p.taughtChapters, 0);
+  const overallPct = totalChapters > 0 ? Math.round((taughtChapters / totalChapters) * 100) : 0;
+
   useEffect(() => {
     if (classes.length > 0) {
       setActiveClass(prev => {
@@ -131,6 +165,7 @@ export default function SubjectsPage() {
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['subjects', selectedSessionId, activeClass?.id]);
+        queryClient.invalidateQueries(['syllabus-progress', activeClass?.id, selectedSessionId]);
         setShowAddModal(false);
         setFormName('');
         showToast({ message: 'Subject created successfully', type: 'SUCCESS' });
@@ -144,6 +179,7 @@ export default function SubjectsPage() {
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['subjects', selectedSessionId, activeClass?.id]);
+        queryClient.invalidateQueries(['syllabus-progress', activeClass?.id, selectedSessionId]);
         setEditingSubject(null);
         setFormName('');
         showToast({ message: 'Subject updated successfully', type: 'SUCCESS' });
@@ -157,6 +193,7 @@ export default function SubjectsPage() {
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['subjects', selectedSessionId, activeClass?.id]);
+        queryClient.invalidateQueries(['syllabus-progress', activeClass?.id, selectedSessionId]);
         setDeletingSubject(null);
         showToast({ message: 'Subject deleted successfully', type: 'SUCCESS' });
       },
@@ -192,7 +229,7 @@ export default function SubjectsPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Subjects</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Manage subjects per class and academic session</p>
+            <p className="text-sm text-gray-500 mt-0.5">Manage subjects, chapters and teaching progress per class</p>
           </div>
           <div className="flex items-center gap-3">
             <SessionSelector value={selectedSessionId} onChange={handleSessionChange} />
@@ -288,6 +325,24 @@ export default function SubjectsPage() {
                     </button>
                   </div>
 
+                  {/* Overall teaching progress */}
+                  {!subjectsLoading && subjects.length > 0 && totalChapters > 0 && (
+                    <div className="px-6 py-3 border-b border-gray-100 bg-gray-50/60">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Overall Progress</span>
+                        <span className={`text-xs font-bold ${progressTextColor(overallPct)}`}>
+                          {taughtChapters} / {totalChapters} chapters ({overallPct}%)
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-500 ${progressColor(overallPct)}`}
+                          style={{ width: `${overallPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {subjectsLoading ? (
                     <div className="flex justify-center items-center h-48">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
@@ -296,6 +351,7 @@ export default function SubjectsPage() {
                     <ul className="divide-y divide-gray-100">
                       {subjects.map(subject => {
                         const isOpen = expandedSubjectId === subject.id;
+                        const p = progressMap.get(subject.id);
                         return (
                           <li key={subject.id}>
                             {/* Subject row */}
@@ -303,27 +359,38 @@ export default function SubjectsPage() {
                               {/* Expand toggle */}
                               <button
                                 onClick={() => toggleExpand(subject.id)}
-                                className="flex items-center gap-2 flex-1 text-left min-w-0"
+                                className="flex items-center gap-3 flex-1 text-left min-w-0"
                               >
                                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
                                   <FaBookOpen className="text-blue-500" size={12} />
                                 </div>
-                                <span className="text-sm font-semibold text-gray-800 flex-1">{subject.name}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-semibold text-gray-800 truncate">{subject.name}</span>
+                                    {p && p.totalChapters > 0 && (
+                                      <span className={`text-xs font-semibold shrink-0 ${progressTextColor(p.progressPct)}`}>
+                                        {p.taughtChapters}/{p.totalChapters} ({p.progressPct}%)
+                                      </span>
+                                    )}
+                                  </div>
+                                  {p && p.totalChapters > 0 ? (
+                                    <div className="w-full max-w-[220px] bg-gray-100 rounded-full h-1.5 mt-1.5">
+                                      <div
+                                        className={`h-1.5 rounded-full transition-all duration-300 ${progressColor(p.progressPct)}`}
+                                        style={{ width: `${p.progressPct}%` }}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">No chapters</span>
+                                  )}
+                                </div>
                                 <FaChevronDown
-                                  className={`text-gray-400 text-xs transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                                  className={`text-gray-400 text-xs transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
                                 />
                               </button>
 
                               {/* Actions */}
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
-                                <button
-                                  onClick={() => navigate(`/dashboard/academics/exams?subjectId=${subject.id}&subjectName=${encodeURIComponent(subject.name)}`)}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition whitespace-nowrap"
-                                  title="Class Tests"
-                                >
-                                  <FaClipboardList size={11} />
-                                  Class Tests
-                                </button>
                                 <button
                                   onClick={() => { setEditingSubject(subject); setFormName(subject.name); }}
                                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
@@ -343,7 +410,13 @@ export default function SubjectsPage() {
 
                             {/* Chapters — expanded */}
                             {isOpen && (
-                              <SubjectChapters subject={subject} subjectName={subject.name} />
+                              <SubjectChapters
+                                chapters={p?.chapters ?? []}
+                                subjectId={subject.id}
+                                subjectName={subject.name}
+                                classId={activeClass.id}
+                                sessionId={selectedSessionId}
+                              />
                             )}
                           </li>
                         );

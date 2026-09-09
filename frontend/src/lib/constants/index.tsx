@@ -134,6 +134,12 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				icon: <HiOutlineBookOpen />
 			},
 			{
+				key: 'academics-class-tests',
+				label: 'Class Tests',
+				path: 'academics/class-tests',
+				icon: <HiOutlineClipboardList />
+			},
+			{
 				key: 'academics-exam-events',
 				label: 'Exam Events',
 				path: 'academics/exam-events',
@@ -146,28 +152,10 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 				icon: <HiOutlineClipboardList />
 			},
 			{
-				key: 'academics-marks-viewer',
-				label: 'Marks Viewer',
-				path: 'academics/marks-viewer',
-				icon: <HiOutlineChartBar />
-			},
-			{
-				key: 'academics-pending-marks',
-				label: 'Pending Marks',
-				path: 'academics/pending-marks',
-				icon: <HiOutlineClipboardList />
-			},
-			{
 				key: 'academics-report-card',
 				label: 'Report Card',
 				path: 'academics/report-card',
 				icon: <HiOutlineChartBar />
-			},
-			{
-				key: 'academics-syllabus',
-				label: 'Syllabus Progress',
-				path: 'academics/syllabus-progress',
-				icon: <HiOutlineBookOpen />
 			}
 		]
 	},

@@ -126,6 +126,7 @@ function MarksEntryPanel({
                       max={exam.totalMarks}
                       value={val.obtained}
                       disabled={val.absent}
+                      onWheel={e => e.currentTarget.blur()}
                       onChange={e => setMarkValues(prev => ({
                         ...prev,
                         [m.studentId]: { ...val, obtained: e.target.value },

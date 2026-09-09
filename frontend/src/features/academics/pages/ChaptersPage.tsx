@@ -242,9 +242,9 @@ export default function ChaptersPage() {
                     {chapter.orderNumber}
                   </div>
 
-                  {/* Name — clickable to exams */}
+                  {/* Name — clickable to class tests */}
                   <button
-                    onClick={() => navigate(`/dashboard/academics/exams?chapterId=${chapter.id}&chapterName=${encodeURIComponent(chapter.name)}&subjectName=${encodeURIComponent(subjectName)}`)}
+                    onClick={() => navigate(`/dashboard/academics/class-tests?subjectId=${subjectId}`)}
                     className="flex-1 text-left flex items-center gap-2 font-medium text-gray-800 hover:text-blue-600 transition text-sm"
                   >
                     {chapter.name}

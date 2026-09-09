@@ -51,14 +51,14 @@ export interface Exam {
 }
 
 export interface StudentExamMark {
-  id: number;
+  id: number | null;
   examId: number;
   studentId: number;
   schoolId: number;
   marksObtained: number | null;
   isAbsent: boolean;
-  enteredBy: number;
-  enteredAt: string;
+  enteredBy: number | null;
+  enteredAt: string | null;
   student?: {
     id: number;
     firstName: string;
@@ -88,19 +88,6 @@ export interface SubjectWithChapters extends Subject {
   chapters: ChapterWithExams[];
 }
 
-export interface PendingExam {
-  examId: number;
-  examName: string;
-  subjectName: string;
-  subjectId: number;
-  examEventName: string | null;
-  totalMarks: number;
-  examDate: string | null;
-  teacher: { id: number; name: string } | null;
-  totalStudents: number;
-  marksEntered: number;
-  status: string;
-}
 
 // ── Report Card Types ──────────────────────────────────────────────────────────
 
@@ -123,9 +110,21 @@ export interface EventReportSubject {
   marks: EventReportStudentMark[];
 }
 
+export interface EventReportStudent {
+  studentId: number;
+  studentName: string;
+  admissionNumber: string | null;
+  rollNumber: string | null;
+  fatherName: string | null;
+  studentPhoto: string | null;
+}
+
 export interface EventReportCard {
   examEvent: ExamEvent;
-  students: { studentId: number; studentName: string; admissionNumber: string | null; rollNumber: string | null }[];
+  class: { id: number; name: string };
+  section: { id: number; name: string };
+  session: { id: number; name: string };
+  students: EventReportStudent[];
   subjects: EventReportSubject[];
 }
 
