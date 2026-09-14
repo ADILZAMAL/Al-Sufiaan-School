@@ -260,7 +260,8 @@ const ViewStudentProfile: React.FC = () => {
                 Blood Group: <span className="font-medium">{student.bloodGroup || 'N/A'}</span> | 
                 Aadhaar: <span className="font-medium">{student.aadhaarNumber || 'N/A'}</span> |
                 PEN: <span className="font-medium">{student.penNumber || 'N/A'}</span> |
-                Admission: <span className="font-medium">{student.admissionType === AdmissionType.TRANSFER ? 'Transferred In' : 'Fresh Admission'}</span>
+                Admission: <span className="font-medium">{student.admissionType === AdmissionType.TRANSFER ? 'Transferred In' : 'Fresh Admission'}</span> |
+                Tag #: <span className="font-medium">{student.hostelTagNumber ?? 'N/A'}</span>
               </div>
             </div>
           </div>

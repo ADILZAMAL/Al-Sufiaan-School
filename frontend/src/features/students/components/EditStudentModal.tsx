@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery } from 'react-query';
 import { X } from 'lucide-react';
 import { studentApi } from '../api';
 import { useAppContext } from '../../../providers/AppContext';
-import { Student, UpdateStudentRequest, Gender, Religion, BloodGroup, AdmissionType, StudentFormData } from '../types';
+import { Student, UpdateStudentRequest, Gender, Religion, BloodGroup, AdmissionType, StudentFormData, HOSTEL_TAG_NUMBER_MAX } from '../types';
 import PhotoUpload from '../../../components/common/PhotoUpload';
 import { enrollmentApi } from '../../sessions/api';
 import { UpdateEnrollmentRequest } from '../../sessions/types';
@@ -64,12 +65,26 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
     guardianPhoto: '',
     dayboarding: false,
     hostel: false,
+    hostelTagNumber: '',
     areaTransportationId: null
   });
   const [loading, setLoading] = useState(false);
   const [, setUploadingPhotos] = useState(false);
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [transportationAreas, setTransportationAreas] = useState<Array<{ id: number; areaName: string; price: number }>>([]);
+
+  const { data: usedTagNumbers = [] } = useQuery(
+    ['usedHostelTagNumbers', student.id],
+    () => studentApi.getUsedHostelTagNumbers(student.id),
+    { enabled: isOpen }
+  );
+  const currentTagNumber = student.hostelTagNumber;
+  const availableTagNumbers = Array.from({ length: HOSTEL_TAG_NUMBER_MAX }, (_, i) => i + 1)
+    .filter(n => !usedTagNumbers.includes(n) || n === currentTagNumber);
+  if (currentTagNumber && currentTagNumber > HOSTEL_TAG_NUMBER_MAX && !availableTagNumbers.includes(currentTagNumber)) {
+    availableTagNumbers.push(currentTagNumber);
+  }
+
   const [photoFiles, setPhotoFiles] = useState<{
     studentPhoto: PhotoFile | null;
     fatherPhoto: PhotoFile | null;
@@ -126,6 +141,7 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         guardianPhoto: student.guardianPhoto || '',
         dayboarding: student.dayboarding || false,
         hostel: student.hostel || false,
+        hostelTagNumber: student.hostelTagNumber?.toString() || '',
         areaTransportationId: student.areaTransportationId || null
       });
       // Store existing photos
@@ -343,6 +359,7 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
         guardianPhone: formData.guardianPhone || undefined,
         dayboarding: formData.dayboarding,
         hostel: formData.hostel,
+        hostelTagNumber: formData.hostelTagNumber ? Number(formData.hostelTagNumber) : null,
         areaTransportationId: formData.areaTransportationId || undefined,
         // Add photo URLs
         studentPhoto: finalPhotos.studentPhoto,
@@ -590,6 +607,25 @@ const EditStudentModal: React.FC<Props> = ({ student, isOpen, onClose, onSuccess
                   Not available with dayboarding service
                 </p>
               )}
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Hostel Tag Number
+                </label>
+                <select
+                  name="hostelTagNumber"
+                  value={formData.hostelTagNumber}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+                  <option value="">-- No tag assigned --</option>
+                  {availableTagNumbers.map(n => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  {availableTagNumbers.length} of {HOSTEL_TAG_NUMBER_MAX} numbers available. The number stitched/stuck on this student's belongings, for lost-and-found lookup
+                </p>
+              </div>
             </div>
             <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
               <label className="block text-sm font-medium text-gray-700 mb-2">

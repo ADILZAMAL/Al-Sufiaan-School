@@ -106,6 +106,7 @@ export interface Student {
   guardianPhoto?: string;
   dayboarding: boolean;
   hostel: boolean;
+  hostelTagNumber?: number;
   areaTransportationId?: number;
   createdBy: number;
 
@@ -168,13 +169,16 @@ export interface CreateStudentRequest {
   guardianPhoto?: string;
   dayboarding: boolean;
   hostel: boolean;
+  hostelTagNumber?: number;
   areaTransportationId?: number;
 }
 
 // Update Student Request - partial of CreateStudentRequest
-export interface UpdateStudentRequest extends Partial<CreateStudentRequest> {
+export interface UpdateStudentRequest extends Partial<Omit<CreateStudentRequest, 'hostelTagNumber'>> {
   // Add any fields that might be needed specifically for updates
   id?: number; // Sometimes needed for update operations
+  // null explicitly unsets the tag number (e.g. student left, freeing it for reassignment)
+  hostelTagNumber?: number | null;
 }
 
 // Update Payment Reminder Request
@@ -242,7 +246,21 @@ export interface StudentFormData {
   guardianPhoto: string;
   dayboarding: boolean;
   hostel: boolean;
+  hostelTagNumber: string;
   areaTransportationId: number | null;
+}
+
+// Result shape returned by the hostel tag number lookup (lost-and-found) endpoint
+export interface StudentTagLookupResult {
+  id: number;
+  name: string;
+  fatherName: string | null;
+  admissionNumber: string;
+  hostel: boolean;
+  studentPhoto: string | null;
+  hostelTagNumber: number;
+  className: string;
+  sectionName: string;
 }
 
 // API Response Types
@@ -353,6 +371,9 @@ export const isValidReligion = (value: string): value is Religion => {
 };
 
 // Common validation patterns (matching backend patterns)
+// Current physical sticker sheet range (1-175); bump if more stickers are bought later
+export const HOSTEL_TAG_NUMBER_MAX = 175;
+
 export const VALIDATION_PATTERNS = {
   INDIAN_PHONE: /^(\+91)?[6-9]\d{9}$/,
   AADHAAR: /^[0-9]{12}$/,

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery } from 'react-query';
 import { X } from 'lucide-react';
 import { studentApi } from '../api';
-import { useAppContext } from '../../../providers/AppContext'; 
-import { CreateStudentRequest, Gender, Religion, BloodGroup, AdmissionType, Student } from '../types';
+import { useAppContext } from '../../../providers/AppContext';
+import { CreateStudentRequest, Gender, Religion, BloodGroup, AdmissionType, Student, HOSTEL_TAG_NUMBER_MAX } from '../types';
 import PhotoUpload from '../../../components/common/PhotoUpload';
 import AdmissionFormModal from './AdmissionFormModal';
 import { School } from '../../../api/school';
@@ -56,6 +57,7 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
     guardianPhone: '',
     dayboarding: false,
     hostel: false,
+    hostelTagNumber: '',
     areaTransportationId: null as number | null
   });
   const [photoFiles, setPhotoFiles] = useState<{
@@ -74,6 +76,14 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [sections, setSections] = useState<Array<{ id: number; name: string }>>([]);
   const [transportationAreas, setTransportationAreas] = useState<Array<{ id: number; areaName: string; price: number }>>([]);
+
+  const { data: usedTagNumbers = [] } = useQuery(
+    'usedHostelTagNumbers',
+    () => studentApi.getUsedHostelTagNumbers(),
+    { enabled: isOpen }
+  );
+  const availableTagNumbers = Array.from({ length: HOSTEL_TAG_NUMBER_MAX }, (_, i) => i + 1)
+    .filter(n => !usedTagNumbers.includes(n));
 
   useEffect(() => {
     if (isOpen) {
@@ -305,6 +315,7 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
         guardianPhone: formData.guardianPhone || undefined,
         dayboarding: formData.dayboarding,
         hostel: formData.hostel,
+        hostelTagNumber: formData.hostelTagNumber ? Number(formData.hostelTagNumber) : undefined,
         areaTransportationId: formData.areaTransportationId || undefined,
         // Add photo URLs if uploaded
         studentPhoto: photoUrls.studentPhoto || undefined,
@@ -381,6 +392,7 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
       guardianPhone: '',
       dayboarding: false,
       hostel: false,
+      hostelTagNumber: '',
       areaTransportationId: null
     });
     setPhotoFiles({
@@ -484,6 +496,25 @@ const AddStudentModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, sessionI
                   Note: Selecting hostel will remove transportation assignment
                 </p>
               )}
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Hostel Tag Number
+                </label>
+                <select
+                  name="hostelTagNumber"
+                  value={formData.hostelTagNumber}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+                  <option value="">-- No tag assigned --</option>
+                  {availableTagNumbers.map(n => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  {availableTagNumbers.length} of {HOSTEL_TAG_NUMBER_MAX} numbers available. The number stitched/stuck on this student's belongings, for lost-and-found lookup
+                </p>
+              </div>
             </div>
             <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
               <label className="block text-sm font-medium text-gray-700 mb-2">

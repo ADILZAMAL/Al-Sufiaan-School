@@ -31,6 +31,7 @@ import StudentsWithDues from "./features/fees/pages/StudentsWithDues"
 import UserManagement from "./features/users/pages/UserManagement"
 import StudentPage from "./features/students/pages/StudentPage"
 import ViewStudentProfile from "./features/students/pages/ViewStudentProfile"
+import LostAndFound from "./features/students/pages/LostAndFound"
 import SchoolSettings from "./features/general/pages/SchoolSettings"
 import Holidays from "./features/attendance/pages/Holidays"
 import AttendanceDashboard from "./features/attendance/pages/AttendanceDashboard"
@@ -190,6 +191,10 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <StudentPage />
+          },
+          {
+            path: "lost-found",
+            element: <LostAndFound />
           },
           {
             path: ":id",

@@ -74,6 +74,7 @@ class Student extends Model {
   public guardianPhoto?: string;
   public dayboarding!: boolean;
   public hostel!: boolean;
+  public hostelTagNumber?: number;
   public areaTransportationId?: number; // Foreign Key to TransportationAreaPricing
   public createdBy!: number; //Foreign Key
   public paymentReminderDate?: Date; // Payment reminder date
@@ -324,6 +325,16 @@ Student.init(
       allowNull: false,
       defaultValue: false,
     },
+    hostelTagNumber: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: {
+          args: [1],
+          msg: 'Tag number must be a positive number',
+        },
+      },
+    },
     areaTransportationId: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -378,6 +389,11 @@ Student.init(
       unique: true,
       fields: ['schoolId', 'admissionNumber'],
       name: 'students_school_id_admission_number_unique',
+    },
+    {
+      unique: true,
+      fields: ['schoolId', 'hostelTagNumber'],
+      name: 'students_school_id_hostel_tag_number_unique',
     },
     {
       fields: ['schoolId'],

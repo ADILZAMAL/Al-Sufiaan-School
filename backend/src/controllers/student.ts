@@ -229,6 +229,8 @@ export const createStudent = async (req: Request, res: Response) => {
       const field = error.errors?.[0]?.path;
       const message = field === 'penNumber'
         ? 'PEN number is already registered to another student'
+        : field === 'hostelTagNumber'
+        ? 'This tag number is already assigned to another student'
         : 'A student with this value already exists';
       return sendError(res, message, 400);
     }
@@ -287,6 +289,8 @@ export const updateStudent = async (req: Request, res: Response) => {
       const field = error.errors?.[0]?.path;
       const message = field === 'penNumber'
         ? 'PEN number is already registered to another student'
+        : field === 'hostelTagNumber'
+        ? 'This tag number is already assigned to another student'
         : 'A student with this value already exists';
       return sendError(res, message, 400);
     }
@@ -532,5 +536,77 @@ export const searchStudents = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error('Error searching students', { error });
     return sendError(res, 'Failed to search students', 500);
+  }
+};
+
+// Look up a student by their hostel tag number (for lost-and-found)
+export const lookupStudentByTagNumber = async (req: Request, res: Response) => {
+  try {
+    const schoolId = req.schoolId;
+    const tagNumber = parseInt(req.params.tagNumber);
+    if (!tagNumber || isNaN(tagNumber) || tagNumber < 1) {
+      return sendError(res, 'A valid tag number is required', 400);
+    }
+
+    const student = await Student.findOne({
+      where: { schoolId, hostelTagNumber: tagNumber, active: true },
+      attributes: ['id', 'firstName', 'lastName', 'fatherName', 'hostel', 'studentPhoto', 'admissionNumber', 'hostelTagNumber'],
+    });
+
+    if (!student) {
+      return sendError(res, 'No student found with this tag number', 404);
+    }
+
+    const active = await AcademicSession.findOne({ where: { schoolId, isActive: true } });
+    const enrollment = active
+      ? await StudentEnrollment.findOne({
+          where: { studentId: student.id, sessionId: active.id },
+          include: [
+            { model: Class, as: 'class', attributes: ['id', 'name'] },
+            { model: Section, as: 'section', attributes: ['id', 'name'] },
+          ],
+        })
+      : null;
+
+    return sendSuccess(res, {
+      id: student.id,
+      name: `${(student as any).firstName} ${(student as any).lastName}`,
+      fatherName: (student as any).fatherName ?? null,
+      admissionNumber: (student as any).admissionNumber,
+      hostel: (student as any).hostel,
+      studentPhoto: (student as any).studentPhoto ?? null,
+      hostelTagNumber: (student as any).hostelTagNumber,
+      className: (enrollment as any)?.class?.name ?? '',
+      sectionName: (enrollment as any)?.section?.name ?? '',
+    }, 'Student found');
+  } catch (error) {
+    logger.error('Error looking up student by tag number', { error });
+    return sendError(res, 'Failed to look up student', 500);
+  }
+};
+
+// Get the list of hostel tag numbers already assigned in this school (for the assignment picker)
+export const getUsedHostelTagNumbers = async (req: Request, res: Response) => {
+  try {
+    const schoolId = req.schoolId;
+    const excludeId = req.query.excludeId ? parseInt(req.query.excludeId as string) : undefined;
+
+    const students = await Student.findAll({
+      where: {
+        schoolId,
+        hostelTagNumber: { [Op.not]: null },
+        ...(excludeId && { id: { [Op.ne]: excludeId } }),
+      },
+      attributes: ['hostelTagNumber'],
+    });
+
+    const usedNumbers = students
+      .map((s: any) => s.hostelTagNumber as number)
+      .sort((a, b) => a - b);
+
+    return sendSuccess(res, usedNumbers, 'Used tag numbers retrieved successfully');
+  } catch (error) {
+    logger.error('Error fetching used hostel tag numbers', { error });
+    return sendError(res, 'Failed to fetch used tag numbers', 500);
   }
 };

@@ -138,7 +138,10 @@ const StudentList: React.FC<StudentListProps> = ({
                     )}
                     <div>
                       <p className="text-sm font-medium text-gray-900">{fullName}</p>
-                      <p className="text-xs text-gray-400">{student.admissionNumber}</p>
+                      <p className="text-xs text-gray-400">
+                        {student.admissionNumber}
+                        {student.hostelTagNumber ? ` · Tag #${student.hostelTagNumber}` : ''}
+                      </p>
                     </div>
                   </div>
                 </td>

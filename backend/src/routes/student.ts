@@ -13,7 +13,9 @@ import {
   getStudentsWithPaymentReminders,
   updatePaymentReminder,
   markStudentLeftSchool,
-  searchStudents
+  searchStudents,
+  lookupStudentByTagNumber,
+  getUsedHostelTagNumbers
 } from '../controllers/student';
 import { generateMonthlyFee, getStudentFeeTimelineController, collectFeePaymentController, regenerateMonthlyFee, getLastGeneratedFee } from '../controllers/monthlyFee';
 
@@ -88,6 +90,12 @@ const createStudentValidation = [
     .optional()
     .matches(/^[0-9]{11}$/)
     .withMessage('PEN number must be exactly 11 digits'),
+
+  body('hostelTagNumber')
+    .optional({ nullable: true })
+    .isInt({ min: 1 })
+    .withMessage('Tag number must be a positive whole number')
+    .toInt(),
 
   body('admissionType')
     .optional()
@@ -206,6 +214,8 @@ const createStudentValidation = [
 ];
 
 router.get('/search', verifyToken, searchStudents);
+router.get('/lookup-by-tag/:tagNumber', verifyToken, lookupStudentByTagNumber);
+router.get('/hostel-tag-numbers', verifyToken, getUsedHostelTagNumbers);
 router.get('/', verifyToken, getAllStudents);
 
 router.post('/', verifyToken, createStudentValidation, createStudent);

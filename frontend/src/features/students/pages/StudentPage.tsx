@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { FaPlus, FaSearch, FaUserGraduate, FaMale, FaFemale } from 'react-icons/fa';
 import { FiUsers, FiXCircle } from 'react-icons/fi';
 import { HiCurrencyRupee } from 'react-icons/hi';
@@ -28,6 +28,7 @@ const fetchClassesBySession = async (sessionId: number): Promise<ClassType[]> =>
 
 const StudentPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isInitialMount = useRef(true);
 
@@ -195,6 +196,13 @@ const StudentPage: React.FC = () => {
               onChange={handleSessionChange}
               className=""
             />
+            <button
+              onClick={() => navigate('/dashboard/students/lost-found')}
+              className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+            >
+              <FaSearch className="w-3.5 h-3.5" />
+              Lost & Found
+            </button>
             <button
               onClick={() => setShowAddModal(true)}
               disabled={selectedSessionId === null}

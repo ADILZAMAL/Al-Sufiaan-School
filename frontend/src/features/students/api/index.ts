@@ -6,7 +6,8 @@ import {
   StudentFilters,
   UpdateStudentRequest,
   UpdatePaymentReminderRequest,
-  RegenerateMonthlyFeeRequest
+  RegenerateMonthlyFeeRequest,
+  StudentTagLookupResult
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
@@ -91,6 +92,17 @@ export const studentApi = {
   // Search students
   searchStudents: async (query: string): Promise<StudentListResponse> => {
     return await apiRequest(`/students/search?q=${encodeURIComponent(query)}`);
+  },
+
+  // Look up a student by hostel tag number (lost-and-found)
+  lookupByTagNumber: async (tagNumber: number | string): Promise<{ success: boolean; message: string; data: StudentTagLookupResult }> => {
+    return await apiRequest(`/students/lookup-by-tag/${tagNumber}`);
+  },
+
+  // Get hostel tag numbers already assigned in this school (for the assignment picker)
+  getUsedHostelTagNumbers: async (excludeId?: number): Promise<number[]> => {
+    const body = await apiRequest(`/students/hostel-tag-numbers${excludeId ? `?excludeId=${excludeId}` : ''}`);
+    return body.data;
   },
 
   // Get student statistics
