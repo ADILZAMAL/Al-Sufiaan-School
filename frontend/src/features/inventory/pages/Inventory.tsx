@@ -125,8 +125,8 @@ const Inventory = () => {
   );
 
   const { data: stockIns, isLoading: stockInsLoading } = useQuery(
-    "fetchStockIns",
-    () => apiClient.fetchStockIns()
+    "fetchRecentStockIns",
+    () => apiClient.fetchRecentStockIns()
   );
 
   const filteredProducts = useMemo(() => {
@@ -289,6 +289,12 @@ const Inventory = () => {
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <h3 className="font-semibold text-gray-900">Recent Stock Ins</h3>
+            <Link
+              to="/dashboard/stock-in-history"
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              View All →
+            </Link>
           </div>
           {stockInsLoading ? (
             <div className="flex justify-center items-center h-32">
@@ -315,7 +321,10 @@ const Inventory = () => {
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
                       +{si.quantity}
                     </span>
-                    <span className="text-xs text-gray-400 whitespace-nowrap">{formatDate(si.createdAt)}</span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs text-gray-400 whitespace-nowrap">{formatDate(si.createdAt)}</span>
+                      <span className="text-xs text-gray-400 whitespace-nowrap">by {si.addedBy}</span>
+                    </div>
                   </div>
                 </div>
               ))}

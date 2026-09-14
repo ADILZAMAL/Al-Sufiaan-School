@@ -51,6 +51,16 @@ export type StockInType = {
     createdAt: string;
 }
 
+export type StockInHistoryResponse = {
+    stockIns: StockInType[];
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        totalItems: number;
+        itemsPerPage: number;
+    };
+}
+
 export type StudentSearchResult = {
     id: number;
     name: string;
@@ -206,8 +216,30 @@ export const searchStudents = async (q: string): Promise<StudentSearchResult[]> 
     return body.data;
 }
 
-export const fetchStockIns = async (productId?: number): Promise<StockInType[]> => {
+export const fetchRecentStockIns = async (productId?: number): Promise<StockInType[]> => {
     const params = new URLSearchParams();
+    if (productId) {
+        params.append("productId", productId.toString());
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/products/stock-in/recent?${params.toString()}`, {
+        credentials: "include"
+    })
+    const body = await response.json();
+    if (!body.success) {
+        throw new Error(body.error?.message || body.message)
+    }
+    return body.data;
+}
+
+export const fetchStockIns = async (
+    page: number = 1,
+    limit: number = 20,
+    productId?: number
+): Promise<StockInHistoryResponse> => {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
     if (productId) {
         params.append("productId", productId.toString());
     }

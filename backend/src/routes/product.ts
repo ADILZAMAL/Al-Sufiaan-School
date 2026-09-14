@@ -97,8 +97,8 @@ router.post('/stock-in', verifyToken, requireRole(['SUPER_ADMIN']), [
     }
 })
 
-// GET stock-in history
-router.get('/stock-in', verifyToken, async (req: Request, res: Response) => {
+// GET recent stock-ins (last 5)
+router.get('/stock-in/recent', verifyToken, async (req: Request, res: Response) => {
     try {
         const { productId } = req.query
         const where: any = { schoolId: req.schoolId }
@@ -122,7 +122,7 @@ router.get('/stock-in', verifyToken, async (req: Request, res: Response) => {
                 }
             ],
             order: [['createdAt', 'DESC']],
-            limit: 50
+            limit: 5
         })
 
         const formatted = stockIns.map((si: any) => ({
@@ -136,6 +136,67 @@ router.get('/stock-in', verifyToken, async (req: Request, res: Response) => {
         }))
 
         res.status(200).json({ success: true, data: formatted })
+    } catch (error) {
+        logger.error('Error fetching recent stock-ins', { error })
+        res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' } })
+    }
+})
+
+// GET stock-in history (paginated)
+router.get('/stock-in', verifyToken, async (req: Request, res: Response) => {
+    try {
+        const page = parseInt(req.query.page as string) || 1
+        const limit = parseInt(req.query.limit as string) || 20
+        const offset = (page - 1) * limit
+
+        const { productId } = req.query
+        const where: any = { schoolId: req.schoolId }
+
+        if (productId) {
+            where.productId = parseInt(productId as string)
+        }
+
+        const { count, rows: stockIns } = await StockIn.findAndCountAll({
+            where,
+            include: [
+                {
+                    model: Product,
+                    as: 'product',
+                    attributes: ['name']
+                },
+                {
+                    model: User,
+                    as: 'user',
+                    attributes: ['firstName', 'lastName']
+                }
+            ],
+            order: [['createdAt', 'DESC']],
+            limit,
+            offset
+        })
+
+        const formatted = stockIns.map((si: any) => ({
+            id: si.id,
+            productId: si.productId,
+            productName: si.product?.name || 'Unknown',
+            quantity: si.quantity,
+            note: si.note,
+            addedBy: si.user ? `${si.user.firstName} ${si.user.lastName}` : 'Unknown',
+            createdAt: si.createdAt,
+        }))
+
+        res.status(200).json({
+            success: true,
+            data: {
+                stockIns: formatted,
+                pagination: {
+                    currentPage: page,
+                    totalPages: Math.ceil(count / limit),
+                    totalItems: count,
+                    itemsPerPage: limit
+                }
+            }
+        })
     } catch (error) {
         logger.error('Error fetching stock-ins', { error })
         res.status(500).json({ success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' } })
