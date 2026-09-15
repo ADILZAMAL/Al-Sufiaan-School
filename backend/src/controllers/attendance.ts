@@ -893,9 +893,10 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
     });
     totalHolidayDays += Array.from(holidayMap.values()).filter((h: any) => h.name === 'Sunday').length;
 
-    // Build summary — always include class; conditionally include hostel/dayboarding
-    const hasHostel = student.hostel;
-    const hasDayboarding = student.dayboarding;
+    // Build summary — always include class; conditionally include hostel/dayboarding.
+    // OR'd with actual recorded attendance so history survives a later boarding-type change.
+    const hasHostel = student.hostel || attendances.some((a) => a.attendanceType === AttendanceType.HOSTEL);
+    const hasDayboarding = student.dayboarding || attendances.some((a) => a.attendanceType === AttendanceType.DAYBOARDING);
 
     const summary: any = {
       class: typeSummary(AttendanceType.CLASS),
