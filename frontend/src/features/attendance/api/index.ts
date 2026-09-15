@@ -61,15 +61,16 @@ export interface StudentWithAttendance {
   firstName: string;
   lastName: string;
   rollNumber: string;
-  classId: number;
-  sectionId: number;
+  fatherPhone?: string | null;
+  motherPhone?: string | null;
+  guardianPhone?: string | null;
   class?: { id: number; name: string };
   section?: { id: number; name: string };
   attendance?: {
     id: number;
     status: 'PRESENT' | 'ABSENT';
     remarks: string | null;
-  };
+  } | null;
   daysAbsentSinceLastPresent: number | null;
 }
 
@@ -209,7 +210,8 @@ export const attendanceApi = {
     sectionId: number,
     date: string
   ): Promise<StudentWithAttendance[]> => {
-    return await apiRequest(`/attendance/students/${classId}/${sectionId}?date=${date}`);
+    const response = await apiRequest(`/attendance/students/${classId}/${sectionId}?date=${date}`);
+    return response.data;
   },
 
   // Get student's attendance calendar

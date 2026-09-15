@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useCallback, useContext, useMemo, useState } from "react";
 import Toast from "../components/common/Toast";
 import { useQuery } from "react-query";
 import * as apiClient from "../features/auth/api";
@@ -35,23 +35,31 @@ export const AppContextProvider = ({
     }
   );
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen((prev) => !prev);
+  }, []);
+
+  const showToast = useCallback((toastMessage: ToastMessage) => {
+    setToast(toastMessage);
+  }, []);
+
+  const isLoggedIn = !!userData?.data;
+  const userRole = userData?.data?.role || null;
+
+  const contextValue = useMemo(
+    () => ({
+      showToast,
+      isLoggedIn,
+      isAuthLoading,
+      userRole,
+      isSidebarOpen,
+      toggleSidebar,
+    }),
+    [showToast, isLoggedIn, isAuthLoading, userRole, isSidebarOpen, toggleSidebar]
+  );
 
   return (
-    <AppContext.Provider
-      value={{
-        showToast: (toastMessage) => {
-          setToast(toastMessage);
-        },
-        isLoggedIn: !!userData?.data, // Check for actual user data, not just absence of error
-        isAuthLoading,
-        userRole: userData?.data?.role || null,
-        isSidebarOpen,
-        toggleSidebar,
-      }}
-    >
+    <AppContext.Provider value={contextValue}>
       {toast && (
         <Toast
           message={toast.message}

@@ -441,7 +441,8 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
 
     const classes = await Class.findAll({
       where: { sessionId: session.id },
-      attributes: ['id', 'name'],
+      attributes: ['id', 'name', 'sequence'],
+      order: [['sequence', 'ASC']],
     });
 
     const classIds = enrollments.map((e: any) => e.classId);
@@ -451,6 +452,7 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
     });
 
     const classMap = new Map(classes.map((c: any) => [c.id, c.name]));
+    const classSequenceMap = new Map(classes.map((c: any) => [c.id, c.sequence]));
     const sectionMap = new Map(sections.map((s: any) => [s.id, s.name]));
 
     // Build stats for each class/section combination
@@ -492,12 +494,12 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
       });
     }
 
-    // Sort by class name then section name
+    // Sort by class sequence (pedagogical order), then section name
     allStats.sort((a: any, b: any) => {
-      const aClassName = String(a.className);
-      const bClassName = String(b.className);
-      if (aClassName !== bClassName) {
-        return aClassName.localeCompare(bClassName);
+      const aSequence = Number(classSequenceMap.get(a.classId) ?? Number.MAX_SAFE_INTEGER);
+      const bSequence = Number(classSequenceMap.get(b.classId) ?? Number.MAX_SAFE_INTEGER);
+      if (aSequence !== bSequence) {
+        return aSequence - bSequence;
       }
       return String(a.sectionName).localeCompare(String(b.sectionName));
     });

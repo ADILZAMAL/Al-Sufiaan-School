@@ -5,6 +5,7 @@ export type ClassType = {
     name: string;
     schoolId: number;
     sessionId?: number;
+    sequence?: number | null;
     sections?: SectionType[];
 }
 
@@ -40,6 +41,23 @@ export const addClass = async (formData: { name: string; sessionId?: number }) =
     const body = await response.json()
     if(!body.success) {
         throw new Error(body.error?.message || body.message || 'Failed to add class')
+    }
+    return body
+}
+
+export const updateClassOrder = async (id: number, sequence: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sequence })
+    })
+
+    const body = await response.json()
+    if(!body.success) {
+        throw new Error(body.error?.message || body.message || 'Failed to update class order')
     }
     return body
 }

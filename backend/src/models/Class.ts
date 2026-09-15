@@ -7,6 +7,7 @@ class Class extends Model {
     public name!: string;
     public schoolId!: number;
     public sessionId!: number | null;
+    public sequence!: number | null;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
@@ -41,6 +42,10 @@ export const initClassModel = (sequelize: Sequelize): void => {
                 },
                 onUpdate: 'CASCADE',
                 onDelete: 'RESTRICT',
+            },
+            sequence: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
             },
             createdAt: {
                 type: DataTypes.DATE,

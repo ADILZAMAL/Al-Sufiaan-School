@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useQuery } from 'react-query';
 import { getAllAttendanceStats } from '../api';
 import { useAppContext } from '../../../providers/AppContext';
 import SessionSelector from '../../sessions/components/SessionSelector';
 import { academicSessionApi } from '../../sessions/api';
 import { AcademicSession } from '../../sessions/types';
+import ClassAttendanceDetailPanel from '../components/ClassAttendanceDetailPanel';
 import {
   FaUsers,
   FaCheckCircle,
@@ -13,6 +14,7 @@ import {
   FaCalendarAlt,
   FaExclamationTriangle,
 } from 'react-icons/fa';
+import { HiChevronDown, HiChevronUp } from 'react-icons/hi';
 
 export default function AttendanceDashboard() {
   const { showToast } = useAppContext();
@@ -24,6 +26,15 @@ export default function AttendanceDashboard() {
     new Date().toISOString().split('T')[0]
   );
   const [manualSessionId, setManualSessionId] = useState<number | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (key: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
 
   const { data: activeSession } = useQuery<AcademicSession | null>(
     'activeSession',
@@ -176,6 +187,7 @@ export default function AttendanceDashboard() {
                     <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Not Marked</th>
                     <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
                     <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Attendance</th>
+                    <th className="px-5 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -184,9 +196,12 @@ export default function AttendanceDashboard() {
                     const pctStr = pct.toFixed(1);
                     const barColor = pct >= 75 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
                     const pctTextColor = pct >= 75 ? 'text-emerald-700' : pct >= 50 ? 'text-amber-700' : 'text-red-700';
+                    const rowKey = `${item.classId}-${item.sectionId}`;
+                    const isExpanded = expandedRows.has(rowKey);
 
                     return (
-                      <tr key={`${item.classId}-${item.sectionId}`} className="hover:bg-gray-50 transition-colors">
+                      <React.Fragment key={rowKey}>
+                      <tr className="hover:bg-gray-50 transition-colors">
                         <td className="px-5 py-3.5 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-gray-900">{item.className}</span>
@@ -228,7 +243,27 @@ export default function AttendanceDashboard() {
                             </span>
                           </div>
                         </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <button
+                            onClick={() => toggleExpand(rowKey)}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                            title={isExpanded ? 'Hide students' : 'Show students'}
+                          >
+                            {isExpanded ? <HiChevronUp className="text-base" /> : <HiChevronDown className="text-base" />}
+                          </button>
+                        </td>
                       </tr>
+                      {isExpanded && (
+                        <tr>
+                          <ClassAttendanceDetailPanel
+                            classId={item.classId}
+                            sectionId={item.sectionId}
+                            date={selectedDate}
+                            colSpan={7}
+                          />
+                        </tr>
+                      )}
+                      </React.Fragment>
                     );
                   })}
                 </tbody>

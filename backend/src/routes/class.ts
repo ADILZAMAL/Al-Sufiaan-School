@@ -5,6 +5,7 @@ import {check, validationResult} from 'express-validator'
 import Section from '../models/Section';
 import AcademicSession from '../models/AcademicSession';
 import logger from '../utils/logger';
+import { getCanonicalClassRank } from '../utils/classOrder';
 
 
 // INVALID_INPUT: Indicates that the input data provided in the request is invalid or missing.
@@ -29,7 +30,8 @@ router.get("/", verifyToken,  async(req: Request, res: Response) => {
             include: [{
                 model: Section,
                 as: 'sections'
-            }]
+            }],
+            order: [['sequence', 'ASC'], ['id', 'ASC']]
         })
         res.status(200).send({success: true, data: classes})
     } catch (error) {
@@ -61,13 +63,44 @@ router.post("/", verifyToken,
             return res.status(400).json({success: false, error: {code: 'INVALID_INPUT',  message: "Duplicate class is not allowed"}})
         }
 
-        classRecord = await Class.create({name: req.body.name, schoolId: req.schoolId, sessionId: req.body.sessionId ?? null});
+        const canonicalRank = getCanonicalClassRank(req.body.name);
+        let sequence = canonicalRank;
+        if (sequence == null) {
+            const maxSequence = await Class.max('sequence', { where: { schoolId: req.schoolId } }) as number | null;
+            sequence = (maxSequence ?? 0) + 1;
+        }
+
+        classRecord = await Class.create({name: req.body.name, schoolId: req.schoolId, sessionId: req.body.sessionId ?? null, sequence});
         res.status(200).json({success: true})
     } catch (error) {
         logger.error('Error creating class', { error });
         res.status(500).json({success: false, error: {code: 'INTERNAL_SERVER_ERROR', message: "Someting went wrong"}})
     }
 
+})
+
+router.patch("/:id", verifyToken,
+[
+    check("sequence", "Order number is required and must be an integer").isInt()
+],
+ async(req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if(!errors.isEmpty()){
+        return res.status(400).json({success: false, error: {code: 'INVALID_INPUT', message: errors.array() }});
+    }
+    try {
+        const classRecord = await Class.findOne({ where: { id: req.params.id, schoolId: req.schoolId } });
+
+        if(!classRecord){
+            return res.status(404).json({success: false, error: {code: 'NOT_FOUND', message: "Class not found"}})
+        }
+
+        await classRecord.update({ sequence: Number(req.body.sequence) });
+        res.status(200).json({success: true, data: classRecord})
+    } catch (error) {
+        logger.error('Error updating class order', { error });
+        res.status(500).json({success: false, error: {code: 'INTERNAL_SERVER_ERROR', message: "Something went wrong"}})
+    }
 })
 
 export default router;

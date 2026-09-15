@@ -19,6 +19,7 @@ const Class: React.FC = () => {
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
   const [manualSessionId, setManualSessionId] = useState<number | null>(null);
+  const [orderDrafts, setOrderDrafts] = useState<Record<number, string>>({});
 
   const { data: activeSession } = useQuery<AcademicSession | null>(
     "activeSession",
@@ -75,6 +76,50 @@ const Class: React.FC = () => {
       showToast({ message: error.message, type: "ERROR" });
     },
   });
+
+  const clearOrderDraft = (classId: number) => {
+    setOrderDrafts((prev) => {
+      const next = { ...prev };
+      delete next[classId];
+      return next;
+    });
+  };
+
+  const orderMutation = useMutation(
+    ({ id, sequence }: { id: number; sequence: number }) =>
+      apiClient.updateClassOrder(id, sequence),
+    {
+      onSuccess: (_data, variables) => {
+        showToast({ message: "Class order updated!", type: "SUCCESS" });
+        clearOrderDraft(variables.id);
+        queryClient.invalidateQueries(["fetchClasses", selectedSessionId]);
+      },
+      onError: (error: Error, variables) => {
+        showToast({ message: error.message, type: "ERROR" });
+        clearOrderDraft(variables.id);
+      },
+    }
+  );
+
+  const handleOrderBlur = (cls: ClassType) => {
+    const raw = orderDrafts[cls.id];
+    if (raw === undefined) return;
+
+    const trimmed = raw.trim();
+    const parsed = parseInt(trimmed, 10);
+    if (Number.isNaN(parsed) || String(parsed) !== trimmed) {
+      showToast({ message: "Order must be a whole number", type: "ERROR" });
+      clearOrderDraft(cls.id);
+      return;
+    }
+
+    if (parsed === cls.sequence) {
+      clearOrderDraft(cls.id);
+      return;
+    }
+
+    orderMutation.mutate({ id: cls.id, sequence: parsed });
+  };
 
   const onSubmitClass = handleSubmitClass((data) => {
     classMutation.mutate(data);
@@ -180,31 +225,63 @@ const Class: React.FC = () => {
                 Classes ({classes.length})
               </p>
               <div className="space-y-2">
-                {classes.map((cls: ClassType) => (
-                  <button
-                    key={cls.id}
-                    onClick={() => setActiveClass(cls)}
-                    type="button"
-                    className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-150 ${
-                      activeClass?.id === cls.id
-                        ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200"
-                        : "bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm">{cls.name}</span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          activeClass?.id === cls.id
-                            ? "bg-blue-500 text-blue-100"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
-                        {cls.sections?.length ?? 0}
-                      </span>
+                {classes.map((cls: ClassType) => {
+                  const isActive = activeClass?.id === cls.id;
+                  const orderValue =
+                    orderDrafts[cls.id] ?? (cls.sequence != null ? String(cls.sequence) : "");
+                  return (
+                    <div
+                      key={cls.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setActiveClass(cls)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") setActiveClass(cls);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-150 cursor-pointer ${
+                        isActive
+                          ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200"
+                          : "bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-sm">{cls.name}</span>
+                        <div
+                          className="flex items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="number"
+                            value={orderValue}
+                            title="Order number"
+                            onFocus={(e) => e.stopPropagation()}
+                            onChange={(e) =>
+                              setOrderDrafts((prev) => ({ ...prev, [cls.id]: e.target.value }))
+                            }
+                            onBlur={() => handleOrderBlur(cls)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                            }}
+                            className={`w-12 text-xs text-center rounded-md border px-1 py-0.5 focus:outline-none focus:ring-1 ${
+                              isActive
+                                ? "bg-blue-500 border-blue-400 text-white placeholder-blue-100 focus:ring-white"
+                                : "bg-gray-50 border-gray-200 text-gray-700 focus:ring-blue-400"
+                            }`}
+                          />
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              isActive
+                                ? "bg-blue-500 text-blue-100"
+                                : "bg-gray-100 text-gray-500"
+                            }`}
+                          >
+                            {cls.sections?.length ?? 0}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
