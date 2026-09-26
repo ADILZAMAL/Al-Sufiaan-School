@@ -1,26 +1,22 @@
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "react-query";
+import { useSearchParams } from "react-router-dom";
 import * as apiClient from "../api";
-import { TransactionType, StockInType } from "../api";
 import { useAppContext } from "../../../providers/AppContext";
-import {
-  FaPlus,
-  FaChevronDown,
-  FaChevronUp,
-  FaTimes,
-  FaBoxOpen,
-  FaExclamationTriangle,
-  FaCubes,
-  FaCheckCircle,
-  FaClock,
-  FaSearch,
-  FaArrowUp,
-} from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { FaPlus, FaTimes, FaArrowUp } from "react-icons/fa";
 import SellProductModal from "../components/SellProductModal";
-import TransactionItemsList from "../components/TransactionItemsList";
-import { formatDate } from "../utils";
+import ProductsTab from "../components/ProductsTab";
+import SalesTab from "../components/SalesTab";
+import StockInTab from "../components/StockInTab";
+
+type InventoryTab = "products" | "sales" | "stock-in";
+
+const TABS: { key: InventoryTab; label: string }[] = [
+  { key: "products", label: "Products" },
+  { key: "sales", label: "Sales" },
+  { key: "stock-in", label: "Stock In" },
+];
 
 export type AddProductFormData = {
   name: string;
@@ -40,8 +36,13 @@ const Inventory = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
-  const [expandedTransactions, setExpandedTransactions] = useState<Set<number>>(new Set());
-  const [productSearch, setProductSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab: InventoryTab = TABS.some((t) => t.key === searchParams.get("tab"))
+    ? (searchParams.get("tab") as InventoryTab)
+    : "products";
+
+  const setActiveTab = (tab: InventoryTab) =>
+    setSearchParams((p) => { p.set("tab", tab); return p; }, { replace: true });
 
   const {
     register,
@@ -63,16 +64,6 @@ const Inventory = () => {
       reset();
       setIsModalOpen(false);
       queryClient.invalidateQueries("fetchProducts");
-    },
-    onError: (error: Error) => {
-      showToast({ message: error.message, type: "ERROR" });
-    },
-  });
-
-  const verifyMutation = useMutation(apiClient.verifyTransaction, {
-    onSuccess: () => {
-      showToast({ message: "Transaction verified successfully!", type: "SUCCESS" });
-      queryClient.invalidateQueries("fetchRecentTransactions");
     },
     onError: (error: Error) => {
       showToast({ message: error.message, type: "ERROR" });
@@ -109,72 +100,10 @@ const Inventory = () => {
     });
   });
 
-  const { data: products, isLoading } = useQuery(
-    "fetchProducts",
-    () => apiClient.fetchProducts()
-  );
-
   const { data: allProducts } = useQuery(
     "fetchAllProducts",
     () => apiClient.fetchProducts(true)
   );
-
-  const { data: recentTransactions, isLoading: transactionsLoading } = useQuery(
-    "fetchRecentTransactions",
-    apiClient.fetchRecentTransactions
-  );
-
-  const { data: stockIns, isLoading: stockInsLoading } = useQuery(
-    "fetchRecentStockIns",
-    () => apiClient.fetchRecentStockIns()
-  );
-
-  const filteredProducts = useMemo(() => {
-    if (!products) return [];
-    if (!productSearch.trim()) return products;
-    return products.filter((p) =>
-      p.name.toLowerCase().includes(productSearch.toLowerCase())
-    );
-  }, [products, productSearch]);
-
-  const stats = useMemo(() => {
-    if (!products) return { total: 0, lowStock: 0, totalUnits: 0 };
-    return {
-      total: products.length,
-      lowStock: products.filter((p) => p.qty <= 5).length,
-      totalUnits: products.reduce((acc, p) => acc + p.qty, 0),
-    };
-  }, [products]);
-
-  const toggleTransactionExpansion = (transactionId: number) => {
-    const newExpanded = new Set(expandedTransactions);
-    if (newExpanded.has(transactionId)) {
-      newExpanded.delete(transactionId);
-    } else {
-      newExpanded.add(transactionId);
-    }
-    setExpandedTransactions(newExpanded);
-  };
-
-  const getQtyBadge = (qty: number) => {
-    if (qty <= 2)
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-          {qty} left
-        </span>
-      );
-    if (qty <= 5)
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-          {qty} left
-        </span>
-      );
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-        {qty} in stock
-      </span>
-    );
-  };
 
   return (
     <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
@@ -210,253 +139,26 @@ const Inventory = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-            <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <FaBoxOpen className="text-blue-600 text-sm" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Total Products</p>
-              <p className="text-xl font-bold text-gray-900">{isLoading ? "—" : stats.total}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-            <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-              <FaExclamationTriangle className="text-red-600 text-sm" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Low Stock</p>
-              <p className="text-xl font-bold text-gray-900">{isLoading ? "—" : stats.lowStock}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-            <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
-              <FaCubes className="text-purple-600 text-sm" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Total Units</p>
-              <p className="text-xl font-bold text-gray-900">{isLoading ? "—" : stats.totalUnits}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Products Section */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900">Products</h3>
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                className="pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-52"
-              />
-            </div>
-          </div>
-
-          {isLoading ? (
-            <div className="flex justify-center items-center h-40">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 text-sm">
-              {productSearch ? "No products match your search." : "No products found."}
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {filteredProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
-                >
-                  <span className="text-sm font-medium text-gray-900">{product.name}</span>
-                  <div className="flex items-center gap-4">
-                    {getQtyBadge(product.qty)}
-                    <span className="text-sm font-semibold text-gray-700 w-16 text-right">
-                      ₹{product.price}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Recent Stock Ins */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900">Recent Stock Ins</h3>
-            <Link
-              to="/dashboard/stock-in-history"
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+        {/* Tabs */}
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                activeTab === tab.key
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
             >
-              View All →
-            </Link>
-          </div>
-          {stockInsLoading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            </div>
-          ) : !stockIns || stockIns.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 text-sm">
-              No stock-in records yet.
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {stockIns.map((si: StockInType) => (
-                <div
-                  key={si.id}
-                  className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-sm font-medium text-gray-900 truncate">{si.productName}</span>
-                    {si.note && (
-                      <span className="text-xs text-gray-400 truncate max-w-[200px]">{si.note}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4 flex-shrink-0">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                      +{si.quantity}
-                    </span>
-                    <div className="flex flex-col items-end">
-                      <span className="text-xs text-gray-400 whitespace-nowrap">{formatDate(si.createdAt)}</span>
-                      <span className="text-xs text-gray-400 whitespace-nowrap">by {si.addedBy}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* Recent Transactions */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900 text-lg">Recent Transactions</h3>
-            <Link
-              to="/dashboard/transaction-history"
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-            >
-              View All →
-            </Link>
-          </div>
-
-          {transactionsLoading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
-              {(!recentTransactions || recentTransactions.length === 0) ? (
-                <div className="text-center py-10 text-gray-400 text-sm">
-                  No recent transactions found.
-                </div>
-              ) : (
-                <>
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="border-b border-gray-100">
-                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Date</th>
-                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Student</th>
-                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Class</th>
-                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Payment</th>
-                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Amount</th>
-                        <th className="py-3 px-5" />
-                        <th className="py-3 px-5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider sticky right-0 bg-white z-10 border-l border-gray-100">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {recentTransactions.map((transaction: TransactionType) => (
-                        <React.Fragment key={transaction.id}>
-                          <tr
-                            className="group hover:bg-gray-50 transition-colors cursor-pointer"
-                            onClick={() => toggleTransactionExpansion(transaction.id)}
-                          >
-                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
-                              {formatDate(transaction.createdAt)}
-                            </td>
-                            <td className="py-3.5 px-5 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {transaction.studentName}
-                            </td>
-                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-500">
-                              {transaction.className} – {transaction.sectionName}
-                            </td>
-                            <td className="py-3.5 px-5 whitespace-nowrap text-sm text-gray-600">
-                              {transaction.modeOfPayment}
-                              {transaction.referenceId && (
-                                <div className="text-xs text-gray-400">Ref: {transaction.referenceId}</div>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-5 whitespace-nowrap text-sm font-semibold text-gray-900">
-                              ₹{transaction.totalAmount.toFixed(2)}
-                            </td>
-                            <td className="py-3.5 px-5 whitespace-nowrap text-gray-400 text-sm">
-                              {expandedTransactions.has(transaction.id) ? (
-                                <FaChevronUp />
-                              ) : (
-                                <FaChevronDown />
-                              )}
-                            </td>
-                            <td
-                              className="py-3.5 px-5 whitespace-nowrap sticky right-0 bg-white group-hover:bg-gray-50 z-10 border-l border-gray-100 transition-colors"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {transaction.isVerified ? (
-                                <div className="flex items-center gap-1.5">
-                                  <FaCheckCircle className="text-emerald-500 text-sm" />
-                                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
-                                    Verified
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <div className="flex items-center gap-1.5">
-                                    <FaClock className="text-amber-500 text-sm" />
-                                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                                      Pending
-                                    </span>
-                                  </div>
-                                  {userRole === "SUPER_ADMIN" && (
-                                    <button
-                                      onClick={() => verifyMutation.mutate(transaction.id)}
-                                      className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                                      disabled={verifyMutation.isLoading}
-                                    >
-                                      {verifyMutation.isLoading ? "…" : "Verify"}
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                          {expandedTransactions.has(transaction.id) && (
-                            <tr>
-                              <td colSpan={7} className="px-5 py-4 bg-gray-50">
-                                <p className="text-xs text-gray-500 mb-3">
-                                  Sold by <span className="font-medium text-gray-700">{transaction.soldBy}</span>
-                                </p>
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                                  Products Purchased
-                                </p>
-                                <TransactionItemsList items={transaction.transactionItems} />
-                                <p className="text-right text-xs text-gray-400 mt-3">
-                                  Transaction #{transaction.id}
-                                </p>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </table>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+        {activeTab === "products" && <ProductsTab />}
+        {activeTab === "sales" && <SalesTab />}
+        {activeTab === "stock-in" && <StockInTab />}
       </div>
 
       {/* Add Product Modal */}

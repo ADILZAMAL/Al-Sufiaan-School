@@ -1,4 +1,4 @@
-import {createBrowserRouter, RouterProvider} from "react-router-dom"
+import {createBrowserRouter, Navigate, RouterProvider} from "react-router-dom"
 import Landing from "./features/general/pages/Landing"
 import About from "./features/general/pages/About"
 import Team from "./features/general/pages/Team"
@@ -15,8 +15,6 @@ import ExpenseDashboard from "./features/expenses/pages/Expense"
 import ExpenseSettings from "./features/expenses/pages/ExpenseSettings"
 import VendorDashboard from "./features/vendors/pages/VendorDashboard"
 import VendorDetail from "./features/vendors/pages/VendorDetail"
-import TransactionHistory from "./features/inventory/pages/TransactionHistory"
-import StockInHistory from "./features/inventory/pages/StockInHistory"
 import StaffManagement from "./features/staff/pages/StaffManagement"
 import AddStaff from "./features/staff/pages/AddStaff"
 import ViewStaffDetails from "./features/staff/pages/ViewStaffDetails"
@@ -131,11 +129,11 @@ const router = createBrowserRouter([
       },
       {
         path: "transaction-history",
-        element: <TransactionHistory />
+        element: <Navigate to="/dashboard/inventory?tab=sales" replace />
       },
       {
         path: "stock-in-history",
-        element: <StockInHistory />
+        element: <Navigate to="/dashboard/inventory?tab=stock-in" replace />
       },
       {
         path: "staff",

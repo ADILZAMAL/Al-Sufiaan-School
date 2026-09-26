@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { check, validationResult } from 'express-validator';
+import { Op } from 'sequelize';
 import verifyToken from '../middleware/auth';
 import Transaction from '../models/Transaction';
 import Product from '../models/Product';
@@ -96,14 +97,14 @@ router.get('/recent', verifyToken, async (req: Request, res: Response) => {
   }
 });
 
-// GET all transactions with pagination
+// GET all transactions (paginated only when `limit` is provided)
 router.get('/', verifyToken, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const offset = (page - 1) * limit;
+    const limit = parseInt(req.query.limit as string) || null;
+    const offset = limit ? (page - 1) * limit : 0;
 
-    const { paymentMode, status } = req.query;
+    const { paymentMode, status, fromDate, toDate } = req.query;
 
     const where: any = {
       schoolId: req.schoolId,
@@ -117,6 +118,18 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
       where.isVerified = true;
     } else if (status === 'pending') {
       where.isVerified = false;
+    }
+
+    if (fromDate || toDate) {
+      where.createdAt = {};
+      if (fromDate) {
+        where.createdAt[Op.gte] = new Date(fromDate as string);
+      }
+      if (toDate) {
+        const to = new Date(toDate as string);
+        to.setHours(23, 59, 59, 999);
+        where.createdAt[Op.lte] = to;
+      }
     }
 
     const { count, rows: transactions } = await Transaction.findAndCountAll({
@@ -161,8 +174,7 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
         }
       ],
       order: [['createdAt', 'DESC']],
-      limit,
-      offset
+      ...(limit !== null && { limit, offset })
     });
 
     const formattedTransactions = transactions.map((transaction: any) => {
@@ -199,9 +211,9 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
         transactions: formattedTransactions,
         pagination: {
           currentPage: page,
-          totalPages: Math.ceil(count / limit),
+          totalPages: limit ? Math.ceil(count / limit) : 1,
           totalItems: count,
-          itemsPerPage: limit
+          itemsPerPage: limit ?? count
         }
       }
     });

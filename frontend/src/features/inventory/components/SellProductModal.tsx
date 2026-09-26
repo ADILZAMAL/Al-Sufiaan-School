@@ -65,6 +65,7 @@ const SellProductModal: React.FC<Props> = ({ onClose }) => {
         onSuccess: () => {
             showToast({ message: "Products sold successfully!", type: "SUCCESS" });
             queryClient.invalidateQueries("fetchProducts");
+            queryClient.invalidateQueries("fetchTransactions");
             queryClient.invalidateQueries("fetchRecentTransactions");
             reset();
             setStudentQuery("");

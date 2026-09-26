@@ -41,6 +41,16 @@ export type TransactionType = {
     transactionItems: TransactionItemType[];
 }
 
+export type TransactionsResponse = {
+    transactions: TransactionType[];
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        totalItems: number;
+        itemsPerPage: number;
+    };
+}
+
 export type StockInType = {
     id: number;
     productId: number;
@@ -144,14 +154,16 @@ export const fetchRecentTransactions = async (): Promise<TransactionType[]> => {
 }
 
 export const fetchTransactions = async (
-    page: number = 1,
-    limit: number = 20,
+    page?: number,
+    limit?: number,
     paymentMode?: string,
-    status?: "verified" | "pending"
-) => {
+    status?: "verified" | "pending",
+    fromDate?: Date,
+    toDate?: Date
+): Promise<TransactionsResponse> => {
     const params = new URLSearchParams();
-    params.append("page", page.toString());
-    params.append("limit", limit.toString());
+    if (page) params.append("page", page.toString());
+    if (limit) params.append("limit", limit.toString());
 
     if (paymentMode) {
         params.append("paymentMode", paymentMode);
@@ -159,6 +171,14 @@ export const fetchTransactions = async (
 
     if (status) {
         params.append("status", status);
+    }
+
+    if (fromDate) {
+        params.append("fromDate", fromDate.toISOString().split("T")[0]);
+    }
+
+    if (toDate) {
+        params.append("toDate", toDate.toISOString().split("T")[0]);
     }
 
     const response = await fetch(`${API_BASE_URL}/api/transactions?${params.toString()}`, {
