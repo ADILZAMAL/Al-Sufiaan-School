@@ -91,14 +91,16 @@ export const examEventApi = {
 // ── Exams ─────────────────────────────────────────────────────────────────────
 
 export const examApi = {
-  list: async (subjectId?: number, examEventId?: number): Promise<Exam[]> => {
+  /** With sectionId: that section's class tests plus all-section exams. */
+  list: async (subjectId?: number, examEventId?: number, sectionId?: number): Promise<Exam[]> => {
     const params = new URLSearchParams();
     if (subjectId) params.append('subjectId', String(subjectId));
     if (examEventId) params.append('examEventId', String(examEventId));
+    if (sectionId) params.append('sectionId', String(sectionId));
     const body = await req(`/api/academic/exams?${params.toString()}`);
     return body.data;
   },
-  create: async (data: { subjectId: number; name?: string; examEventId?: number; totalMarks: number; passingMarks: number; examDate?: string; chapterIds?: number[] }): Promise<Exam> => {
+  create: async (data: { subjectId: number; sectionId?: number; name?: string; examEventId?: number; totalMarks: number; passingMarks: number; examDate?: string; chapterIds?: number[] }): Promise<Exam> => {
     const body = await req('/api/academic/exams', { method: 'POST', body: JSON.stringify(data) });
     return body.data;
   },

@@ -1,6 +1,6 @@
 import express from 'express';
 import { check } from 'express-validator';
-import { login, changePassword } from '../controllers/auth';
+import { login, changePassword, validateSession } from '../controllers/auth';
 import { Request, Response } from 'express';
 import verifyToken from '../middleware/auth';
 import { sendSuccess } from '../utils/response';
@@ -103,9 +103,7 @@ router.post(
  *       401:
  *         description: Invalid or expired token
  */
-router.get("/validate-token", verifyToken, (req: Request, res: Response) => {
-    sendSuccess(res, { userId: req.userId, schoolId: req.schoolId, role: req.userRole }, 'Token validated');
-});
+router.get("/validate-token", verifyToken, validateSession);
 
 /**
  * @swagger

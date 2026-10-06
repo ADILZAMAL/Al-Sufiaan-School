@@ -10,7 +10,7 @@ import logger from '../utils/logger';
 
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
-    const user = await User.findByPk(req.userId);
+    const user = await User.findByPk(req.userId, { attributes: { exclude: ['password'] } });
     if (!user) {
       return sendError(res, 'User not found', 404);
     }

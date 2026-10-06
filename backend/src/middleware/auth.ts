@@ -3,12 +3,16 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import logger from '../utils/logger';
 import { sendError } from '../utils/response';
 
+type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
+
 declare global {
   namespace Express {
     interface Request {
       userId: string;
       schoolId: string;
-      userRole: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
+      userRole: UserRole;
+      /** Staff row linked to the user (TEACHER logins); null for admin accounts. */
+      staffId: number | null;
     }
   }
 }
@@ -39,6 +43,7 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
     req.userId = (decoded as JwtPayload).userId;
     req.schoolId = (decoded as JwtPayload).schoolId;
     req.userRole = (decoded as JwtPayload).role;
+    req.staffId = (decoded as JwtPayload).staffId ?? null;
     next();
   } catch (error) {
     logger.warn('Token verification failed', {
@@ -49,7 +54,7 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export const requireRole = (allowedRoles: ('SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER')[]) => {
+export const requireRole = (allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.userRole) {
       return res.status(401).json({ 
@@ -65,6 +70,20 @@ export const requireRole = (allowedRoles: ('SUPER_ADMIN' | 'ADMIN' | 'CASHIER' |
       });
     }
 
+    next();
+  };
+};
+
+/** Inverse of requireRole: blocks only the listed roles, everyone else passes. */
+export const denyRoles = (deniedRoles: UserRole[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (deniedRoles.includes(req.userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions',
+        error: { code: 'FORBIDDEN', message: 'Insufficient permissions' }
+      });
+    }
     next();
   };
 };

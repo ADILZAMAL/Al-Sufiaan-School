@@ -1,10 +1,10 @@
-import express, { Router, Request, Response } from 'express';
+import express, { Router, Request, Response, NextFunction } from 'express';
 import { getSchoolById, getAllSchools, onboardSchool, updateSchool, getCurrentSchool, createSuperAdmin, getSchoolSuperAdmin, getLogoBase64 } from '../controllers/school';
 import { check, body } from 'express-validator';
 import { sendError } from '../utils/response';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import verifyToken, { verifyOnboardToken } from '../middleware/auth';
+import verifyToken, { verifyOnboardToken, requireRole } from '../middleware/auth';
 
 const router: Router = express.Router();
 
@@ -38,7 +38,30 @@ router.post("/verify-onboard", (req: Request, res: Response) => {
   return res.json({ success: true, data: { token }, message: 'Credentials verified' });
 });
 
-router.put("/:id", [
+// School details can be edited by the onboarding operator (onboard token) or by
+// an admin of that same school (auth cookie / bearer).
+const canUpdateSchool = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (bearer) {
+    try {
+      const payload = jwt.verify(bearer, process.env.ONBOARD_JWT_SECRET as string) as { onboard?: boolean };
+      if (payload.onboard) return next();
+    } catch {
+      // not an onboard token — fall through to normal auth
+    }
+  }
+  verifyToken(req, res, () =>
+    requireRole(['SUPER_ADMIN', 'ADMIN'])(req, res, () => {
+      if (String(req.schoolId) !== String(req.params.id)) {
+        return sendError(res, 'You can only update your own school', 403);
+      }
+      next();
+    })
+  );
+};
+
+router.put("/:id", canUpdateSchool, [
     check("name", "School Name is required").optional().isString(),
     check("street", "Street is required").optional().isString(),
     check("city", "City is required").optional().isString(),

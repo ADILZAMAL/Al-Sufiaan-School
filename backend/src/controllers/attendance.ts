@@ -4,195 +4,157 @@ import { AttendanceType } from '../models/Attendance';
 import { sendSuccess, sendError } from '../utils/response';
 import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
-import sequelize from '../config/database';
 import logger from '../utils/logger';
+import { handleError } from '../utils/httpError';
+import { todayISO, addDaysISO, dayOfWeekISO, diffDaysISO, eachDateISO, isISODate } from '../utils/date';
+import { byRollThenName } from '../utils/rollNumber';
+import { isTeacher } from '../utils/teacherScope';
 
-// Helper function to check if a date is Sunday
-const isSunday = (date: Date): boolean => {
-  const dayOfWeek = date.getDay();
-  return dayOfWeek === 0; // 0 = Sunday
-};
+/** How many days back a teacher may mark or correct attendance (admins: unlimited). */
+const ATTENDANCE_EDIT_WINDOW_DAYS = Number(process.env.ATTENDANCE_EDIT_WINDOW_DAYS ?? 7);
 
-// Check if a specific date is a holiday (including Sundays)
-const isHolidayCheck = async (schoolId: number, date: Date): Promise<Holiday | null> => {
-  // First check if it's a Sunday
-  if (isSunday(date)) {
-    return {
-      id: -1,
-      schoolId,
-      startDate: date,
-      endDate: date,
-      name: 'Sunday',
-      reason: 'Weekly holiday',
-      createdBy: -1,
-      createdAt: date,
-      updatedAt: date,
-    } as Holiday;
+/** How far back to look when computing a student's current absence streak. */
+const ABSENCE_STREAK_LOOKBACK_DAYS = 60;
+
+// Check if a date (YYYY-MM-DD) is a holiday, including Sundays
+const isHolidayCheck = async (schoolId: number, date: string): Promise<{ name: string } | null> => {
+  if (dayOfWeekISO(date) === 0) {
+    return { name: 'Sunday' };
   }
 
-  const holiday = await Holiday.findOne({
+  return Holiday.findOne({
     where: {
       schoolId,
       startDate: { [Op.lte]: date },
       endDate: { [Op.gte]: date },
     },
+    attributes: ['id', 'name'],
   });
-  return holiday;
 };
 
-// Bulk mark attendance
+/** Returns an error if the user may not write attendance for `date`, else null. */
+const checkAttendanceDateWindow = (req: Request, date: string): { status: number; message: string } | null => {
+  const today = todayISO();
+  if (date > today) {
+    return { status: 400, message: 'Cannot mark attendance for a future date' };
+  }
+  if (isTeacher(req) && date < addDaysISO(today, -ATTENDANCE_EDIT_WINDOW_DAYS)) {
+    return { status: 403, message: `Attendance can only be changed for the last ${ATTENDANCE_EDIT_WINDOW_DAYS} days` };
+  }
+  return null;
+};
+
+// Bulk mark attendance for one date (defaults to today in the school's timezone)
 export const bulkMarkAttendance = async (req: Request, res: Response) => {
   const errorsResult = validationResult(req);
   if (!errorsResult.isEmpty()) {
     return sendError(res, 'Validation failed', 400, errorsResult.array());
   }
 
-  const { attendances, attendanceType = AttendanceType.CLASS } = req.body;
-  const schoolId = req.schoolId;
-  const userId = req.userId;
+  try {
+    const { attendances, attendanceType = AttendanceType.CLASS } = req.body;
+    const schoolId = Number(req.schoolId);
+    const userId = Number(req.userId);
+    const date: string = req.body.date ?? todayISO();
 
-  if (!schoolId || !userId) {
-    return sendError(res, 'School ID or User ID not found in request', 400);
-  }
+    if (!isISODate(date)) {
+      return sendError(res, 'date must be in YYYY-MM-DD format', 400);
+    }
 
-  if (!Array.isArray(attendances) || attendances.length === 0) {
-    return sendError(res, 'Attendances array is required and cannot be empty', 400);
-  }
+    const windowError = checkAttendanceDateWindow(req, date);
+    if (windowError) {
+      return sendError(res, windowError.message, windowError.status);
+    }
 
-  // Normalize date to today
-  const attendanceDate = new Date();
-  attendanceDate.setHours(0, 0, 0, 0);
+    const holiday = await isHolidayCheck(schoolId, date);
+    if (holiday) {
+      return sendError(res, `Cannot mark attendance on holiday: ${holiday.name}`, 400);
+    }
 
-  // Holiday check (NO transaction)
-  const holiday = await isHolidayCheck(Number(schoolId), attendanceDate);
-  if (holiday) {
-    return sendError(res, `Cannot mark attendance on holiday: ${holiday.name}`, 400);
-  }
-
-  // Derive academic session from the attendance date
-  const session = await AcademicSession.findOne({
-    where: {
-      schoolId,
-      startDate: { [Op.lte]: attendanceDate },
-      endDate: { [Op.gte]: attendanceDate },
-    },
-  });
-  if (!session) {
-    return sendError(res, 'No academic session covers the attendance date', 400);
-  }
-
-  const studentIds = attendances.map((a: any) => a.studentId);
-
-  // Fetch students in ONE query
-  const students = await Student.findAll({
-    where: {
-      id: { [Op.in]: studentIds },
-      schoolId,
-    },
-  });
-
-  const studentMap = new Map(students.map(s => [s.id, s]));
-
-  let successCount = 0;
-  let failedCount = 0;
-  const resultAttendances: any[] = [];
-  const errors: any[] = [];
-
-  // Managed transaction (auto commit / rollback)
-  await sequelize.transaction(async (transaction) => {
-    // Fetch existing attendance in bulk
-    const existingAttendances = await Attendance.findAll({
+    // Derive academic session from the attendance date
+    const session = await AcademicSession.findOne({
       where: {
-        studentId: { [Op.in]: studentIds },
         schoolId,
-        date: attendanceDate,
-        attendanceType,
+        startDate: { [Op.lte]: date },
+        endDate: { [Op.gte]: date },
       },
-      transaction,
+    });
+    if (!session) {
+      return sendError(res, 'No academic session covers the attendance date', 400);
+    }
+
+    // One entry per student — if a student appears twice, the last entry wins
+    const entries = new Map<number, { status: string; remarks: string | null }>();
+    for (const entry of attendances) {
+      entries.set(Number(entry.studentId), { status: entry.status, remarks: entry.remarks || null });
+    }
+    const studentIds = Array.from(entries.keys());
+
+    const students = await Student.findAll({
+      where: { id: { [Op.in]: studentIds }, schoolId },
+      attributes: ['id'],
+    });
+    const validIds = new Set(students.map(s => s.id));
+
+    const errors = studentIds
+      .filter(id => !validIds.has(id))
+      .map(studentId => ({ studentId, error: 'Student not found or does not belong to this school' }));
+
+    const rows = studentIds
+      .filter(id => validIds.has(id))
+      .map(studentId => ({
+        studentId,
+        status: entries.get(studentId)!.status,
+        remarks: entries.get(studentId)!.remarks,
+        markedBy: userId,
+        schoolId,
+        date,
+        sessionId: session.id,
+        attendanceType,
+      }));
+
+    if (rows.length === 0) {
+      return sendError(res, 'None of the students could be marked', 400, { errors });
+    }
+
+    // Upsert on the (studentId, date, schoolId, attendanceType) unique index
+    await Attendance.bulkCreate(rows as any[], {
+      updateOnDuplicate: ['status', 'remarks', 'markedBy', 'sessionId', 'updatedAt'],
     });
 
-    const attendanceMap = new Map(existingAttendances.map(a => [`${a.studentId}-${a.attendanceType}`, a]));
-
-    for (const entry of attendances) {
-      const { studentId, status, remarks } = entry;
-
-      if (!studentId || !status) {
-        errors.push({ studentId, error: 'Student ID and status are required' });
-        failedCount++;
-        continue;
-      }
-
-      if (!studentMap.has(studentId)) {
-        errors.push({
-          studentId,
-          error: 'Student not found or does not belong to this school',
-        });
-        failedCount++;
-        continue;
-      }
-
-      const existing = attendanceMap.get(`${studentId}-${attendanceType}`);
-
-      if (existing) {
-        await existing.update(
-          {
-            status,
-            remarks: remarks || null,
-            markedBy: userId,
-          },
-          { transaction }
-        );
-        resultAttendances.push(existing);
-      } else {
-        const created = await Attendance.create(
-          {
-            studentId,
-            status,
-            remarks: remarks || null,
-            markedBy: userId,
-            schoolId,
-            date: attendanceDate,
-            sessionId: session.id,
-            attendanceType,
-          },
-          { transaction }
-        );
-        resultAttendances.push(created);
-      }
-
-      successCount++;
-    }
-
-    if (successCount === 0) {
-      throw new Error('All attendance records failed');
-    }
-  });
-
-  // Fetch enriched response AFTER commit
-  const attendancesWithDetails = await Attendance.findAll({
-    where: { id: resultAttendances.map(a => a.id) },
-    include: [
-      {
-        association: 'student',
-        attributes: ['id', 'firstName', 'lastName'],
+    const attendancesWithDetails = await Attendance.findAll({
+      where: {
+        schoolId,
+        date,
+        attendanceType,
+        studentId: { [Op.in]: rows.map(r => r.studentId) },
       },
-      {
-        association: 'markedByUser',
-        attributes: ['id', 'firstName', 'lastName'],
-      },
-    ],
-  });
+      include: [
+        {
+          association: 'student',
+          attributes: ['id', 'firstName', 'lastName'],
+        },
+        {
+          association: 'markedByUser',
+          attributes: ['id', 'firstName', 'lastName'],
+        },
+      ],
+    });
 
-  return sendSuccess(
-    res,
-    {
-      success: successCount,
-      failed: failedCount,
-      attendances: attendancesWithDetails,
-      errors: errors.length ? errors : undefined,
-    },
-    `Attendance marked successfully for ${successCount} student(s)${failedCount ? `. ${failedCount} failed.` : ''}`
-  );
+    return sendSuccess(
+      res,
+      {
+        date,
+        success: attendancesWithDetails.length,
+        failed: errors.length,
+        attendances: attendancesWithDetails,
+        errors: errors.length ? errors : undefined,
+      },
+      `Attendance marked successfully for ${attendancesWithDetails.length} student(s)${errors.length ? `. ${errors.length} failed.` : ''}`
+    );
+  } catch (error) {
+    return handleError(res, error, 'Failed to mark attendance');
+  }
 };
 
 // Get attendance records
@@ -323,14 +285,10 @@ export const updateAttendance = async (req: Request, res: Response) => {
       return sendError(res, 'Attendance record not found', 404);
     }
 
-    // Validate date is not in the future
-    const attendanceDate = new Date(attendance.date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    attendanceDate.setHours(0, 0, 0, 0);
-
-    if (attendanceDate > today) {
-      return sendError(res, 'Cannot modify attendance for future dates', 400);
+    const attendanceDate = String(attendance.date).slice(0, 10);
+    const windowError = checkAttendanceDateWindow(req, attendanceDate);
+    if (windowError) {
+      return sendError(res, windowError.message, windowError.status);
     }
 
     // Check if the date is a holiday
@@ -379,8 +337,6 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
       return sendError(res, 'Date is required', 400);
     }
 
-    const queryDate = new Date(date as string);
-
     // Use active session for the school
     const session = await AcademicSession.findOne({
       where: { schoolId, isActive: true },
@@ -417,7 +373,7 @@ export const getAllAttendanceStats = async (req: Request, res: Response) => {
     });
 
     // Check if the date is a holiday
-    const holiday = await isHolidayCheck(parseInt(String(schoolId)), queryDate);
+    const holiday = await isHolidayCheck(parseInt(String(schoolId)), String(date));
 
     // Group enrollments by class/section
     const classSectionGroups = new Map<string, Array<any>>();
@@ -534,14 +490,12 @@ export const getAttendanceStats = async (req: Request, res: Response) => {
       return sendError(res, 'Date is required', 400);
     }
 
-    const queryDate = new Date(date as string);
-
     // Derive session from date
     const session = await AcademicSession.findOne({
       where: {
         schoolId,
-        startDate: { [Op.lte]: queryDate },
-        endDate: { [Op.gte]: queryDate },
+        startDate: { [Op.lte]: String(date) },
+        endDate: { [Op.gte]: String(date) },
       },
     });
 
@@ -586,7 +540,7 @@ export const getAttendanceStats = async (req: Request, res: Response) => {
     const totalCount = attendances.length;
 
     // Check if the date is a holiday
-    const holiday = await isHolidayCheck(parseInt(String(schoolId)), queryDate);
+    const holiday = await isHolidayCheck(parseInt(String(schoolId)), String(date));
 
     const attendancePercentage =
       totalStudents > 0 ? ((presentCount / totalStudents) * 100).toFixed(2) : '0';
@@ -613,27 +567,22 @@ export const getAttendanceStats = async (req: Request, res: Response) => {
   }
 };
 
-// Get students with today's attendance status
+// Get a class/section roster with each student's attendance for a date
 export const getStudentsWithAttendance = async (req: Request, res: Response) => {
   try {
     const { classId, sectionId } = req.params;
     const { date } = req.query;
-    const schoolId = req.schoolId;
+    const schoolId = Number(req.schoolId);
 
-    if (!schoolId) {
-      return sendError(res, 'School ID not found in request', 400);
+    if (!isISODate(date)) {
+      return sendError(res, 'date is required in YYYY-MM-DD format', 400);
     }
 
-    if (!date) {
-      return sendError(res, 'Date is required', 400);
-    }
-
-    const attendanceDate = new Date(date as string);
-
-    // Use active session for the school
-    const session = await AcademicSession.findOne({
-      where: { schoolId, isActive: true },
-    });
+    // Session covering the date, falling back to the active session
+    const session =
+      (await AcademicSession.findOne({
+        where: { schoolId, startDate: { [Op.lte]: date }, endDate: { [Op.gte]: date } },
+      })) ?? (await AcademicSession.findOne({ where: { schoolId, isActive: true } }));
 
     const enrollmentWhere: any = {
       classId: parseInt(classId),
@@ -652,74 +601,55 @@ export const getStudentsWithAttendance = async (req: Request, res: Response) => 
         { association: 'class', attributes: ['id', 'name'] },
         { association: 'section', attributes: ['id', 'name'] },
       ],
-      order: [['rollNumber', 'ASC']],
     });
+    enrollments.sort(byRollThenName(
+      (e: any) => e.rollNumber,
+      (e: any) => `${e.student.firstName} ${e.student.lastName}`,
+    ));
 
     const studentIds = enrollments.map((e: any) => e.studentId);
 
-    // Get attendance for the date (class attendance only)
-    const attendanceRecords = await Attendance.findAll({
+    // Class attendance for the date plus the lookback window, in one query
+    const records = studentIds.length === 0 ? [] : await Attendance.findAll({
       where: {
         schoolId,
-        date: attendanceDate,
         studentId: { [Op.in]: studentIds },
         attendanceType: AttendanceType.CLASS,
+        date: { [Op.lte]: date, [Op.gte]: addDaysISO(date, -ABSENCE_STREAK_LOOKBACK_DAYS) },
       },
+      attributes: ['id', 'studentId', 'date', 'status', 'remarks'],
+      order: [['date', 'DESC']],
     });
 
-    // Create a map of studentId -> attendance
-    const attendanceMap = new Map(
-      attendanceRecords.map((a) => [a.studentId, { id: a.id, status: a.status, remarks: a.remarks }])
-    );
-
-    // For each student, find the last present date
-    const lastPresentDatesMap = new Map<number, Date>();
-    if (studentIds.length > 0) {
-      const studentLastPresentPromises = studentIds.map(async (studentId) => {
-        const lastPresent = await Attendance.findOne({
-          where: {
-            schoolId,
-            studentId,
-            status: 'PRESENT',
-            date: { [Op.lte]: attendanceDate },
-            attendanceType: AttendanceType.CLASS,
-          },
-          attributes: ['date'],
-          order: [['date', 'DESC']],
-          limit: 1,
-        });
-        if (lastPresent) {
-          lastPresentDatesMap.set(studentId, new Date(lastPresent.date));
-        }
-      });
-
-      await Promise.all(studentLastPresentPromises);
+    // Attendance on the date, and each student's current absence streak:
+    // consecutive ABSENT records up to and including the date (holidays and
+    // unmarked days have no record, so they don't break the streak).
+    const attendanceMap = new Map<number, { id: number; status: string; remarks: string | null }>();
+    const streaks = new Map<number, number>();
+    const streakEnded = new Set<number>();
+    for (const r of records) {
+      if (String(r.date) === date) {
+        attendanceMap.set(r.studentId, { id: r.id, status: r.status, remarks: r.remarks ?? null });
+      }
+      if (streakEnded.has(r.studentId)) continue;
+      if (r.status === 'ABSENT') {
+        streaks.set(r.studentId, (streaks.get(r.studentId) ?? 0) + 1);
+      } else {
+        streakEnded.add(r.studentId);
+      }
     }
 
-    const attendanceDateObj = new Date(attendanceDate);
-    attendanceDateObj.setHours(0, 0, 0, 0);
-
-    // Combine students with their attendance status
     const studentsWithAttendance = enrollments.map((enrollment: any) => {
-      const student = enrollment.student;
-      const attendance = attendanceMap.get(enrollment.studentId);
-      const lastPresentDate = lastPresentDatesMap.get(enrollment.studentId);
-
-      let daysAbsentSinceLastPresent: number | null = null;
-      if (lastPresentDate) {
-        const daysDiff = Math.floor(
-          (attendanceDateObj.getTime() - lastPresentDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        daysAbsentSinceLastPresent = daysDiff > 0 ? daysDiff : null;
-      }
-
+      const consecutiveAbsences = streaks.get(enrollment.studentId) ?? 0;
       return {
-        ...student.toJSON(),
+        ...enrollment.student.toJSON(),
         rollNumber: enrollment.rollNumber,
         class: enrollment.class,
         section: enrollment.section,
-        attendance: attendance || null,
-        daysAbsentSinceLastPresent,
+        attendance: attendanceMap.get(enrollment.studentId) || null,
+        consecutiveAbsences,
+        // Legacy name kept for older app builds and the web detail panel
+        daysAbsentSinceLastPresent: consecutiveAbsences > 0 ? consecutiveAbsences : null,
       };
     });
 
@@ -782,8 +712,8 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
         'No active academic session'
       );
     }
-    const sessionStart = new Date(session.startDate);
-    sessionStart.setHours(0, 0, 0, 0);
+    const sessionStart = String(session.startDate).slice(0, 10);
+    const today = todayISO();
 
     // Get attendance records scoped to active session
     const attendances = await Attendance.findAll({
@@ -804,36 +734,23 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
       order: [['startDate', 'ASC']],
     });
 
-    // Build holiday map (date -> holiday entry)
+    // Build holiday map (date -> holiday entry). Dates are YYYY-MM-DD strings
+    // so the result doesn't depend on the server's timezone.
     const holidayMap = new Map<string, any>();
     holidays.forEach((h) => {
-      const start = new Date(h.startDate);
-      const end = new Date(h.endDate);
-      const current = new Date(start);
-      while (current <= end) {
-        const dateStr = current.toISOString().split('T')[0];
+      for (const dateStr of eachDateISO(String(h.startDate).slice(0, 10), String(h.endDate).slice(0, 10))) {
         holidayMap.set(dateStr, {
           date: dateStr,
           status: 'HOLIDAY',
           name: h.name,
           reason: h.reason,
         });
-        current.setDate(current.getDate() + 1);
       }
     });
 
-    // Add Sundays as holidays starting from session start
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const firstSunday = new Date(sessionStart);
-    const dayOfWeek = firstSunday.getDay();
-    if (dayOfWeek !== 0) firstSunday.setDate(firstSunday.getDate() + (7 - dayOfWeek));
-
-    const currentSunday = new Date(firstSunday);
-    while (currentSunday <= today) {
-      const dateStr = currentSunday.toISOString().split('T')[0];
-      if (!holidayMap.has(dateStr)) {
+    // Add Sundays as holidays from session start to today
+    for (const dateStr of eachDateISO(sessionStart, today)) {
+      if (dayOfWeekISO(dateStr) === 0 && !holidayMap.has(dateStr)) {
         holidayMap.set(dateStr, {
           date: dateStr,
           status: 'HOLIDAY',
@@ -841,14 +758,13 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
           reason: 'Weekly holiday',
         });
       }
-      currentSunday.setDate(currentSunday.getDate() + 7);
     }
 
     // Build attendance records — each record includes its attendanceType
     // Multiple records can share the same date (e.g. CLASS + HOSTEL on same day)
     const attendanceDateSet = new Set<string>();
     const attendanceRecordsList = attendances.map((a) => {
-      const dateStr = a.date instanceof Date ? a.date.toISOString().split('T')[0] : String(a.date);
+      const dateStr = String(a.date).slice(0, 10);
       attendanceDateSet.add(dateStr);
       return {
         date: dateStr,
@@ -885,13 +801,7 @@ export const getStudentAttendanceCalendar = async (req: Request, res: Response) 
     };
 
     // Total holidays count
-    let totalHolidayDays = 0;
-    holidays.forEach((h) => {
-      const start = new Date(h.startDate);
-      const end = new Date(h.endDate);
-      totalHolidayDays += Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    });
-    totalHolidayDays += Array.from(holidayMap.values()).filter((h: any) => h.name === 'Sunday').length;
+    const totalHolidayDays = holidayMap.size;
 
     // Build summary — always include class; conditionally include hostel/dayboarding.
     // OR'd with actual recorded attendance so history survives a later boarding-type change.
@@ -943,7 +853,7 @@ export const getBoardingStudents = async (req: Request, res: Response) => {
       return sendError(res, 'Date is required', 400);
     }
 
-    const attendanceDate = new Date(date as string);
+    const attendanceDate = String(date);
     const attendanceTypeValue = boardingType === 'HOSTEL' ? AttendanceType.HOSTEL : AttendanceType.DAYBOARDING;
     const studentFilter = boardingType === 'HOSTEL' ? { hostel: true } : { dayboarding: true };
 
@@ -1016,14 +926,200 @@ export const getBoardingStudents = async (req: Request, res: Response) => {
       const aSection = a.section?.name || '';
       const bSection = b.section?.name || '';
       if (aSection !== bSection) return aSection.localeCompare(bSection);
-      const aRoll = a.rollNumber || '';
-      const bRoll = b.rollNumber || '';
-      return aRoll.localeCompare(bRoll);
+      return byRollThenName<typeof a>(x => x.rollNumber, x => `${x.firstName} ${x.lastName}`)(a, b);
     });
 
     return sendSuccess(res, result, `${boardingType} students retrieved successfully`);
   } catch (error) {
     logger.error('Error fetching boarding students', { error });
     return sendError(res, 'Failed to fetch boarding students', 500);
+  }
+};
+
+/** Longest range the history endpoint serves in one request (two months). */
+const HISTORY_MAX_DAYS = 62;
+
+type DayStatus = 'MARKED' | 'PARTIAL' | 'NOT_MARKED' | 'HOLIDAY' | 'FUTURE';
+
+// GET /attendance/history?classId&sectionId&from&to[&attendanceType]
+// Per-day summary and per-student totals for one section over a date range.
+export const getAttendanceHistory = async (req: Request, res: Response) => {
+  try {
+    const schoolId = Number(req.schoolId);
+    const classId = Number(req.query.classId);
+    const sectionId = Number(req.query.sectionId);
+    const { from, to } = req.query;
+    const attendanceType = (req.query.attendanceType as AttendanceType) || AttendanceType.CLASS;
+
+    if (!Number.isInteger(classId) || !Number.isInteger(sectionId)) {
+      return sendError(res, 'classId and sectionId are required', 400);
+    }
+    if (!isISODate(from) || !isISODate(to) || from > to) {
+      return sendError(res, 'from and to are required in YYYY-MM-DD format, with from <= to', 400);
+    }
+    if (diffDaysISO(from, to) >= HISTORY_MAX_DAYS) {
+      return sendError(res, `Date range cannot exceed ${HISTORY_MAX_DAYS} days`, 400);
+    }
+    if (!Object.values(AttendanceType).includes(attendanceType)) {
+      return sendError(res, 'Invalid attendanceType', 400);
+    }
+
+    const today = todayISO();
+    const end = to > today ? today : to;
+
+    const session =
+      (await AcademicSession.findOne({
+        where: { schoolId, startDate: { [Op.lte]: end }, endDate: { [Op.gte]: end } },
+      })) ?? (await AcademicSession.findOne({ where: { schoolId, isActive: true } }));
+
+    const enrollments = session
+      ? await StudentEnrollment.findAll({
+          where: { classId, sectionId, sessionId: session.id },
+          attributes: ['studentId', 'rollNumber'],
+          include: [{
+            association: 'student',
+            attributes: ['id', 'firstName', 'lastName', 'studentPhoto'],
+            where: { schoolId, active: true },
+            required: true,
+          }],
+        })
+      : [];
+    enrollments.sort(byRollThenName(
+      (e: any) => e.rollNumber,
+      (e: any) => `${e.student.firstName} ${e.student.lastName}`,
+    ));
+    const studentIds = enrollments.map(e => e.studentId);
+
+    const [records, holidays] = await Promise.all([
+      studentIds.length === 0 || from > end
+        ? Promise.resolve([] as Attendance[])
+        : Attendance.findAll({
+            where: {
+              schoolId,
+              attendanceType,
+              studentId: { [Op.in]: studentIds },
+              date: { [Op.gte]: from, [Op.lte]: end },
+            },
+            attributes: ['studentId', 'date', 'status', 'updatedAt'],
+            include: [{
+              association: 'markedByUser',
+              attributes: ['id', 'firstName', 'lastName'],
+              include: [{ association: 'staff', attributes: ['name'] }],
+            }],
+            order: [['date', 'DESC']],
+          }),
+      Holiday.findAll({
+        where: { schoolId, startDate: { [Op.lte]: to }, endDate: { [Op.gte]: from } },
+        attributes: ['name', 'startDate', 'endDate'],
+      }),
+    ]);
+
+    // date -> holiday name (Sundays included)
+    const holidayByDate = new Map<string, string>();
+    for (const h of holidays) {
+      const start = String(h.startDate).slice(0, 10);
+      const stop = String(h.endDate).slice(0, 10);
+      for (const d of eachDateISO(start < from ? from : start, stop > to ? to : stop)) {
+        holidayByDate.set(d, h.name);
+      }
+    }
+    for (const d of eachDateISO(from, to)) {
+      if (dayOfWeekISO(d) === 0 && !holidayByDate.has(d)) holidayByDate.set(d, 'Sunday');
+    }
+
+    const markerName = (r: any): string | null => {
+      const u = r.markedByUser;
+      if (!u) return null;
+      return u.staff?.name || [u.firstName, u.lastName].filter(Boolean).join(' ') || null;
+    };
+
+    // Per-day aggregation
+    const byDate = new Map<string, { present: number; absent: number; last: any }>();
+    for (const r of records) {
+      const d = String(r.date);
+      const agg = byDate.get(d) ?? { present: 0, absent: 0, last: null };
+      if (r.status === 'PRESENT') agg.present++;
+      else agg.absent++;
+      if (!agg.last || new Date(r.updatedAt) > new Date(agg.last.updatedAt)) agg.last = r;
+      byDate.set(d, agg);
+    }
+
+    const totalStudents = studentIds.length;
+    const days = eachDateISO(from, to).map(date => {
+      const agg = byDate.get(date);
+      const present = agg?.present ?? 0;
+      const absent = agg?.absent ?? 0;
+      const holidayName = holidayByDate.get(date) ?? null;
+      let status: DayStatus;
+      if (date > today) status = 'FUTURE';
+      else if (holidayName && present + absent === 0) status = 'HOLIDAY';
+      else if (present + absent === 0) status = 'NOT_MARKED';
+      else if (present + absent < totalStudents) status = 'PARTIAL';
+      else status = 'MARKED';
+      return {
+        date,
+        status,
+        isHoliday: !!holidayName,
+        holidayName,
+        present,
+        absent,
+        notMarked: status === 'HOLIDAY' || status === 'FUTURE' ? 0 : Math.max(totalStudents - present - absent, 0),
+        lastMarkedBy: agg?.last ? markerName(agg.last) : null,
+        lastMarkedAt: agg?.last?.updatedAt ?? null,
+      };
+    });
+
+    // Per-student totals; records are newest-first for the streak
+    const perStudent = new Map<number, { present: number; absent: number; streak: number; streakEnded: boolean }>();
+    for (const r of records) {
+      const t = perStudent.get(r.studentId) ?? { present: 0, absent: 0, streak: 0, streakEnded: false };
+      if (r.status === 'PRESENT') {
+        t.present++;
+        t.streakEnded = true;
+      } else {
+        t.absent++;
+        if (!t.streakEnded) t.streak++;
+      }
+      perStudent.set(r.studentId, t);
+    }
+
+    const students = enrollments.map((e: any) => {
+      const t = perStudent.get(e.studentId);
+      const marked = (t?.present ?? 0) + (t?.absent ?? 0);
+      return {
+        studentId: e.studentId,
+        firstName: e.student.firstName,
+        lastName: e.student.lastName,
+        studentPhoto: e.student.studentPhoto ?? null,
+        rollNumber: e.rollNumber,
+        present: t?.present ?? 0,
+        absent: t?.absent ?? 0,
+        percentage: marked > 0 ? Math.round(((t?.present ?? 0) / marked) * 1000) / 10 : null,
+        consecutiveAbsences: t?.streak ?? 0,
+      };
+    });
+
+    const totalPresent = students.reduce((sum, st) => sum + st.present, 0);
+    const totalMarked = students.reduce((sum, st) => sum + st.present + st.absent, 0);
+
+    return sendSuccess(res, {
+      classId,
+      sectionId,
+      from,
+      to,
+      attendanceType,
+      session: session ? { id: session.id, name: session.name } : null,
+      totalStudents,
+      days,
+      students,
+      summary: {
+        workingDays: days.filter(d => d.status !== 'HOLIDAY' && d.status !== 'FUTURE').length,
+        markedDays: days.filter(d => d.status === 'MARKED' || d.status === 'PARTIAL').length,
+        holidays: days.filter(d => d.status === 'HOLIDAY').length,
+        averagePercentage: totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 1000) / 10 : null,
+      },
+    }, 'Attendance history retrieved successfully');
+  } catch (error) {
+    return handleError(res, error, 'Failed to fetch attendance history');
   }
 };

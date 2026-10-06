@@ -161,11 +161,12 @@ export const updateSchoolLogo = async (file: File): Promise<{ logoUrl: string }>
   return body.data as { logoUrl: string };
 };
 
-export const updateSchool = async (id: number, schoolData: Partial<Omit<School, 'id' | 'createdAt' | 'updatedAt'>>): Promise<School> => {
+export const updateSchool = async (id: number, schoolData: Partial<Omit<School, 'id' | 'createdAt' | 'updatedAt'>>, onboardToken?: string): Promise<School> => {
   const response = await fetch(`${API_BASE_URL}/api/schools/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...(onboardToken ? { Authorization: `Bearer ${onboardToken}` } : {}),
     },
     credentials: 'include',
     body: JSON.stringify(schoolData),
