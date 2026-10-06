@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { makeStyles } from '../theme';
 
 interface DatePickerProps {
   date: Date;
@@ -10,6 +11,7 @@ interface DatePickerProps {
 }
 
 const DatePicker: React.FC<DatePickerProps> = ({ date, onDateChange, maximumDate, minimumDate }) => {
+  const styles = useStyles();
   const [showPicker, setShowPicker] = useState(false);
 
   const formatDate = (dateToFormat: Date) => {
@@ -61,43 +63,43 @@ const DatePicker: React.FC<DatePickerProps> = ({ date, onDateChange, maximumDate
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   container: {
     flex: 1,
   },
   button: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     padding: 15,
     borderRadius: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   buttonText: {
     fontSize: 16,
-    color: '#1f2937',
+    color: colors.text,
     fontWeight: '600',
   },
   buttonIcon: {
     fontSize: 20,
   },
   iosPickerContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.border,
   },
   iosDoneButton: {
     padding: 15,
     alignItems: 'center',
   },
   iosDoneButtonText: {
-    color: '#3b82f6',
+    color: colors.primary,
     fontSize: 16,
     fontWeight: 'bold',
   },
-});
+}));
 
 export default DatePicker;

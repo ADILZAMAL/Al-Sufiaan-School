@@ -45,6 +45,9 @@ export interface Student {
     status: AttendanceStatus;
     remarks?: string | null;
   } | null;
+  /** Consecutive ABSENT records up to the requested date (0 if present / none). */
+  consecutiveAbsences?: number;
+  /** @deprecated legacy alias of consecutiveAbsences (null when 0) */
   daysAbsentSinceLastPresent?: number | null;
 }
 
@@ -65,21 +68,14 @@ export interface Class {
   id: number;
   name: string;
   schoolId: number;
+  sequence?: number | null;
+  sections: Section[];
 }
 
 export interface Section {
   id: number;
   name: string;
   classId: number;
-  schoolId: number;
-}
-
-export interface User {
-  id: number;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER';
   schoolId: number;
 }
 
@@ -93,6 +89,8 @@ export interface LoginResponse {
 }
 
 export interface BulkAttendanceRequest {
+  /** YYYY-MM-DD (device-local); defaults to today on the server */
+  date?: string;
   attendanceType?: AttendanceType;
   attendances: Array<{
     studentId: number;
@@ -102,6 +100,7 @@ export interface BulkAttendanceRequest {
 }
 
 export interface BulkAttendanceResponse {
+  date?: string;
   success: number;
   failed: number;
   attendances: AttendanceRecord[];
@@ -190,6 +189,21 @@ export interface AcademicSubject {
   name: string;
 }
 
+/** One subject the teacher teaches in one section (GET /academic/my-assignments). */
+export interface MyAssignment {
+  id: number;
+  sessionId: number;
+  subject: { id: number; name: string };
+  class: { id: number; name: string; sequence: number | null };
+  section: { id: number; name: string };
+  progress?: { examCount: number; classTestCount: number; pendingExamCount: number };
+}
+
+export interface MyAssignmentsResponse {
+  session: { id: number; name: string } | null;
+  assignments: MyAssignment[];
+}
+
 export interface AcademicChapter {
   id: number;
   name: string;
@@ -207,14 +221,42 @@ export interface AcademicExam {
   examDate: string | null;
   subjectId: number;
   examEventId: number | null;
+  /** Class tests belong to one section; null = all sections (exam-event papers, older tests). */
+  sectionId?: number | null;
+  section?: { id: number; name: string } | null;
+  createdBy?: number;
   examEvent?: { id: number; name: string } | null;
+  examChapters?: { chapterId: number; chapter: { id: number; name: string; orderNumber: number } }[];
+  /** Present when requested with withProgress=true. */
+  progress?: { enrolled: number; entered: number };
 }
 
-export interface ExamMark {
-  id: number;
+export interface ClassTestInput {
+  name: string;
+  totalMarks: number;
+  passingMarks: number;
+  examDate: string | null;
+  chapterIds: number[];
+}
+
+/** One row of GET /academic/marks with section + session (full roster). */
+export interface MarksRosterRow {
+  id: number | null;
+  examId: number;
   studentId: number;
-  marksObtained: number | null;
+  /** DECIMAL columns arrive as strings, e.g. "18.50". */
+  marksObtained: string | number | null;
   isAbsent: boolean;
+  enteredAt: string | null;
+  student: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    admissionNumber?: string;
+    fatherName?: string | null;
+    studentPhoto?: string | null;
+    enrollments: { rollNumber: string | null }[];
+  };
 }
 
 export interface Holiday {
@@ -274,4 +316,169 @@ export interface PayslipListResponse {
     limit: number;
     totalPages: number;
   };
+}
+
+// ─── Attendance history ──────────────────────────────────────────────────────
+
+export type AttendanceDayStatus = 'MARKED' | 'PARTIAL' | 'NOT_MARKED' | 'HOLIDAY' | 'FUTURE';
+
+export interface AttendanceHistoryDay {
+  date: string;
+  status: AttendanceDayStatus;
+  isHoliday: boolean;
+  holidayName: string | null;
+  present: number;
+  absent: number;
+  notMarked: number;
+  lastMarkedBy: string | null;
+  lastMarkedAt: string | null;
+}
+
+export interface AttendanceHistoryStudent {
+  studentId: number;
+  firstName: string;
+  lastName: string;
+  studentPhoto: string | null;
+  rollNumber: string | null;
+  present: number;
+  absent: number;
+  percentage: number | null;
+  consecutiveAbsences: number;
+}
+
+export interface AttendanceHistory {
+  classId: number;
+  sectionId: number;
+  from: string;
+  to: string;
+  session: { id: number; name: string } | null;
+  totalStudents: number;
+  days: AttendanceHistoryDay[];
+  students: AttendanceHistoryStudent[];
+  summary: { workingDays: number; markedDays: number; holidays: number; averagePercentage: number | null };
+}
+
+export interface AttendanceTypeSummary {
+  totalPresent: number;
+  totalAbsent: number;
+  totalWorkingDays: number;
+  attendancePercentage: number;
+}
+
+export type StudentCalendarRecord =
+  | { date: string; status: AttendanceStatus; attendanceType: AttendanceType; remarks: string | null }
+  | { date: string; status: 'HOLIDAY'; name: string; reason?: string | null };
+
+export interface StudentAttendanceCalendar {
+  studentId: number;
+  studentName: string;
+  hostel: boolean;
+  dayboarding: boolean;
+  class: string | null;
+  section: string | null;
+  attendanceRecords: StudentCalendarRecord[];
+  summary: {
+    class: AttendanceTypeSummary;
+    hostel?: AttendanceTypeSummary;
+    dayboarding?: AttendanceTypeSummary;
+    totalHolidays: number;
+  };
+}
+
+// ─── Report cards ────────────────────────────────────────────────────────────
+
+export interface ExamEventSummary {
+  id: number;
+  name: string;
+  sessionId: number;
+  /** Classes that have papers set up for this event. */
+  classIds?: number[];
+}
+
+export interface EventReportStudent {
+  studentId: number;
+  studentName: string;
+  admissionNumber: string | null;
+  rollNumber: string | null;
+  fatherName: string | null;
+  studentPhoto: string | null;
+}
+
+export interface EventReportSubject {
+  subjectId: number;
+  subjectName: string;
+  examId: number;
+  totalMarks: number;
+  passingMarks: number;
+  examDate: string | null;
+  marks: { studentId: number; marksObtained: number | null; isAbsent: boolean; grade: string | null }[];
+}
+
+export interface EventReportSummary {
+  studentId: number;
+  obtained: number;
+  maxTotal: number;
+  attempted: number;
+  /** Unrounded; null when nothing attempted. */
+  percentage: number | null;
+  grade: string | null;
+  rank: number | null;
+  rankOf: number;
+  failedSubjects: number;
+}
+
+export interface EventReportCard {
+  examEvent: { id: number; name: string };
+  class: { id: number; name: string } | null;
+  section: { id: number; name: string } | null;
+  session: { id: number; name: string } | null;
+  students: EventReportStudent[];
+  subjects: EventReportSubject[];
+  summaries: EventReportSummary[];
+  classStats: { studentsWithMarks: number; highestPercentage: number | null; averagePercentage: number | null };
+  gradeScale: { grade: string; min: number }[];
+}
+
+export interface AnnualReportCard {
+  student: { id: number; firstName: string; lastName: string; admissionNumber: string | null; studentPhoto: string | null };
+  enrollment?: { class: { id: number; name: string } | null; section: { id: number; name: string } | null; rollNumber: string | null };
+  examEvents?: { id: number; name: string }[];
+  subjects: {
+    subjectId: number;
+    subjectName: string;
+    classTestAvg: { count: number; obtained: number; total: number; percentage: number | null };
+    examEvents: {
+      eventId: number;
+      eventName: string;
+      examId?: number;
+      marksObtained: number | null;
+      totalMarks: number | null;
+      passingMarks: number | null;
+      isAbsent: boolean;
+      examDate: string | null;
+    }[];
+  }[];
+}
+
+export interface SectionDayStats {
+  classId: number;
+  className: string;
+  sectionId: number;
+  sectionName: string;
+  date: string;
+  presentCount: number;
+  absentCount: number;
+  totalMarked: number;
+  totalStudents: number;
+  attendancePercentage: number;
+  notMarked: number;
+  isHoliday: boolean;
+  holidayName: string | null;
+}
+
+export interface AttendanceDayStats {
+  date: string;
+  classStats: SectionDayStats[];
+  isHoliday?: boolean;
+  holidayName?: string | null;
 }

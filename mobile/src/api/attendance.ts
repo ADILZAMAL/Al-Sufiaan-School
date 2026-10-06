@@ -1,5 +1,14 @@
 import apiClient from './client';
-import { BulkAttendanceRequest, BulkAttendanceResponse, Student, AttendanceRecord, BoardingStudent } from '../types';
+import {
+  AttendanceDayStats,
+  AttendanceHistory,
+  AttendanceType,
+  BoardingStudent,
+  BulkAttendanceRequest,
+  BulkAttendanceResponse,
+  Student,
+  StudentAttendanceCalendar,
+} from '../types';
 
 export const attendanceApi = {
   // Get students with attendance status for a class/section
@@ -26,34 +35,6 @@ export const attendanceApi = {
     return response.data.data;
   },
 
-  // Get attendance records
-  getAttendance: async (params?: {
-    date?: string;
-    classId?: number;
-    sectionId?: number;
-    studentId?: number;
-  }): Promise<AttendanceRecord[]> => {
-    const queryParams = new URLSearchParams();
-    if (params?.date) queryParams.append('date', params.date);
-    if (params?.classId) queryParams.append('classId', params.classId.toString());
-    if (params?.sectionId) queryParams.append('sectionId', params.sectionId.toString());
-    if (params?.studentId) queryParams.append('studentId', params.studentId.toString());
-
-    const queryString = queryParams.toString();
-    const url = `/attendance${queryString ? `?${queryString}` : ''}`;
-    
-    const response = await apiClient.get<{ success: boolean; data: AttendanceRecord[] }>(url);
-    return response.data.data;
-  },
-
-  // Get single attendance record
-  getAttendanceById: async (id: number): Promise<AttendanceRecord> => {
-    const response = await apiClient.get<{ success: boolean; data: AttendanceRecord }>(
-      `/attendance/${id}`
-    );
-    return response.data.data;
-  },
-
   // Get boarding students (hostel or dayboarding) with attendance for a date
   getBoardingStudentsWithAttendance: async (
     boardingType: 'HOSTEL' | 'DAYBOARDING',
@@ -64,6 +45,32 @@ export const attendanceApi = {
     const response = await apiClient.get<{ success: boolean; data: BoardingStudent[] }>(
       `/attendance/boarding-students?${params.toString()}`
     );
+    return response.data.data;
+  },
+
+  // Per-day and per-student attendance for a section over a date range (max 62 days)
+  getHistory: async (params: {
+    classId: number;
+    sectionId: number;
+    from: string;
+    to: string;
+    attendanceType?: AttendanceType;
+  }): Promise<AttendanceHistory> => {
+    const response = await apiClient.get<{ success: boolean; data: AttendanceHistory }>('/attendance/history', { params });
+    return response.data.data;
+  },
+
+  // One student's attendance and holidays for the active session
+  getStudentCalendar: async (studentId: number): Promise<StudentAttendanceCalendar> => {
+    const response = await apiClient.get<{ success: boolean; data: StudentAttendanceCalendar }>(
+      `/attendance/calendar/${studentId}`
+    );
+    return response.data.data;
+  },
+
+  // Present/absent/not-marked counts for every class & section on a date
+  getAllStats: async (date: string): Promise<AttendanceDayStats> => {
+    const response = await apiClient.get<{ success: boolean; data: AttendanceDayStats }>('/attendance/stats/all', { params: { date } });
     return response.data.data;
   },
 };

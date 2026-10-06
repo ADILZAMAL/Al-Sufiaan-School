@@ -1,4 +1,5 @@
 import express, {Request, Response} from 'express';
+import 'express-async-errors'; // forwards async handler errors to globalErrorHandler instead of crashing
 import cors from 'cors';
 import "dotenv/config";
 import logger from './utils/logger';
@@ -132,8 +133,9 @@ app.use('/api/fee-heads', feeHeadRouter)
 // Global error handler — must be the last middleware
 app.use(globalErrorHandler);
 
-const server = app.listen(7000, () => {
-    logger.info('Server is running', { port: 7000, env: process.env.NODE_ENV || 'development' });
+const port = Number(process.env.API_PORT) || 7000;
+const server = app.listen(port, () => {
+    logger.info('Server is running', { port, env: process.env.NODE_ENV || 'development' });
 });
 
 // Graceful shutdown

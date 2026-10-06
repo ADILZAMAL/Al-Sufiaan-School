@@ -1,224 +1,95 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
-import { useAuth } from '../context/AuthContext';
+import React from 'react';
+import { ActivityIndicator, FlatList, Text, View } from 'react-native';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useRootNavigation } from '../navigation/types';
+import { useCurrentUser } from '../context/AuthContext';
 import { payslipApi } from '../api/payslip';
+import { queryKeys } from '../lib/queryKeys';
+import { getErrorMessage } from '../lib/errors';
+import { usePullToRefresh } from '../hooks/useRefresh';
+import { Badge, Card, EmptyState, ErrorState, SkeletonList } from '../components/ui';
+import { makeStyles, useTheme } from '../theme';
 import { Payslip } from '../types';
 
-type PayslipListNavigationProp = StackNavigationProp<RootStackParamList, 'PayslipList'>;
-
-const STATUS_CONFIG = {
-  UNPAID: { label: 'Unpaid', bg: '#fee2e2', text: '#dc2626' },
-  PARTIAL: { label: 'Partial', bg: '#fef9c3', text: '#ca8a04' },
-  PAID: { label: 'Paid', bg: '#dcfce7', text: '#16a34a' },
+export const PAYSLIP_STATUS: Record<Payslip['paymentStatus'], { label: string; tone: 'danger' | 'warning' | 'success' }> = {
+  UNPAID: { label: 'Unpaid', tone: 'danger' },
+  PARTIAL: { label: 'Partly paid', tone: 'warning' },
+  PAID: { label: 'Paid', tone: 'success' },
 };
 
-const PayslipCard: React.FC<{ payslip: Payslip; onPress: () => void }> = ({ payslip, onPress }) => {
-  const status = STATUS_CONFIG[payslip.paymentStatus];
-  return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
-      <View style={styles.cardLeft}>
-        <Text style={styles.cardPeriod}>
-          {payslip.monthName} {payslip.year}
-        </Text>
-        <Text style={styles.cardNumber}>{payslip.payslipNumber}</Text>
-      </View>
-      <View style={styles.cardRight}>
-        <Text style={styles.cardSalary}>₹{Number(payslip.netSalary).toLocaleString('en-IN')}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-          <Text style={[styles.statusText, { color: status.text }]}>{status.label}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-};
+export const formatRupees = (amount: number) => `₹${Number(amount).toLocaleString('en-IN')}`;
+
+const PAGE_SIZE = 20;
 
 const PayslipListScreen: React.FC = () => {
-  const navigation = useNavigation<PayslipListNavigationProp>();
-  const { user } = useAuth();
+  const styles = useStyles();
+  const { colors } = useTheme();
+  const navigation = useRootNavigation();
+  const { staffId } = useCurrentUser();
 
-  const [payslips, setPayslips] = useState<Payslip[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const query = useInfiniteQuery({
+    queryKey: queryKeys.payslips(staffId),
+    queryFn: ({ pageParam }) => payslipApi.getMyPayslips(staffId, pageParam, PAGE_SIZE),
+    initialPageParam: 1,
+    getNextPageParam: last => (last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined),
+  });
+  const { refreshing, onRefresh } = usePullToRefresh(query.refetch);
+  const payslips = query.data?.pages.flatMap(p => p.payslips) ?? [];
 
-  const fetchPayslips = useCallback(async () => {
-    if (!user?.staffId) {
-      setError('Staff information not found.');
-      setLoading(false);
-      return;
-    }
-    try {
-      setError(null);
-      const response = await payslipApi.getMyPayslips(user.staffId);
-      setPayslips(response.payslips);
-    } catch {
-      setError('Failed to load payslips. Please try again.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [user?.staffId]);
-
-  useEffect(() => {
-    fetchPayslips();
-  }, [fetchPayslips]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchPayslips();
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => { setLoading(true); fetchPayslips(); }}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (payslips.length === 0) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.emptyIcon}>📄</Text>
-        <Text style={styles.emptyTitle}>No Payslips Yet</Text>
-        <Text style={styles.emptySubtitle}>Your payslips will appear here once they are generated.</Text>
-      </View>
-    );
+  if (query.isPending) return <SkeletonList rows={5} />;
+  if (query.isError && !query.data) {
+    return <ErrorState message={getErrorMessage(query.error)} onRetry={() => query.refetch()} retrying={query.isFetching} />;
   }
 
   return (
     <FlatList
-      data={payslips}
-      keyExtractor={(item) => item.id.toString()}
+      style={styles.root}
       contentContainerStyle={styles.list}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#3b82f6']} />}
-      renderItem={({ item }) => (
-        <PayslipCard
-          payslip={item}
-          onPress={() =>
-            navigation.navigate('PayslipDetail', {
-              payslipId: item.id,
-              monthName: item.monthName,
-              year: item.year,
-            })
-          }
-        />
-      )}
+      data={payslips}
+      keyExtractor={p => String(p.id)}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      onEndReached={() => query.hasNextPage && !query.isFetchingNextPage && query.fetchNextPage()}
+      onEndReachedThreshold={0.4}
+      ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator color={colors.primary} style={styles.footer} /> : null}
+      ListEmptyComponent={
+        <EmptyState icon="document-text-outline" title="No payslips yet" message="Your payslips will appear here once the office generates them." />
+      }
+      renderItem={({ item }) => {
+        const status = PAYSLIP_STATUS[item.paymentStatus];
+        return (
+          <Card
+            onPress={() => navigation.navigate('PayslipDetail', { payslipId: item.id, monthName: item.monthName, year: item.year })}
+            accessibilityLabel={`${item.monthName} ${item.year}, net ${formatRupees(item.netSalary)}, ${status.label}`}
+            style={styles.card}
+          >
+            <View style={styles.left}>
+              <Text style={styles.period}>
+                {item.monthName} {item.year}
+              </Text>
+              <Text style={styles.number}>{item.payslipNumber}</Text>
+            </View>
+            <View style={styles.right}>
+              <Text style={styles.amount}>{formatRupees(item.netSalary)}</Text>
+              <Badge label={status.label} tone={status.tone} />
+            </View>
+          </Card>
+        );
+      }}
     />
   );
 };
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    padding: 24,
-  },
-  list: {
-    padding: 16,
-    backgroundColor: '#f3f4f6',
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  cardLeft: {
-    flex: 1,
-  },
-  cardPeriod: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  cardNumber: {
-    fontSize: 12,
-    color: '#9ca3af',
-  },
-  cardRight: {
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  cardSalary: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1f2937',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 20,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  errorText: {
-    fontSize: 15,
-    color: '#ef4444',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-});
+const useStyles = makeStyles(({ colors, spacing, typography }) => ({
+  root: { flex: 1, backgroundColor: colors.background },
+  list: { padding: spacing.lg, gap: spacing.md, flexGrow: 1 },
+  card: { flexDirection: 'row', alignItems: 'center' },
+  left: { flex: 1 },
+  period: { ...typography.heading, color: colors.text },
+  number: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  right: { alignItems: 'flex-end', gap: spacing.xs },
+  amount: { ...typography.heading, color: colors.text },
+  footer: { marginVertical: spacing.lg },
+}));
 
 export default PayslipListScreen;

@@ -4,7 +4,7 @@
     "slug": "alsufiaan-attendance",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "icon": "./assets/school-logo.png",
     "splash": {
       "image": "./assets/school-logo.png",
@@ -30,12 +30,21 @@
           "photosPermission": "Allow Al Sufiaan School to access your photos to update student profile picture.",
           "cameraPermission": "Allow Al Sufiaan School to use the camera to take a student profile photo."
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-font"
     ],
     "extra": {
       "eas": {
         "projectId": "09ebdba5-d51d-405b-a0e1-95b840e8152b"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/09ebdba5-d51d-405b-a0e1-95b840e8152b",
+      "fallbackToCacheTimeout": 0
     }
   }
 }

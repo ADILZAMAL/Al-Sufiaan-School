@@ -220,6 +220,7 @@ Exam.belongsTo(ExamEvent, { foreignKey: 'examEventId', as: 'examEvent' });
 // Exam associations (now subject-scoped)
 Subject.hasMany(Exam, { foreignKey: 'subjectId', as: 'exams' });
 Exam.belongsTo(Subject, { foreignKey: 'subjectId', as: 'subject' });
+Exam.belongsTo(Section, { foreignKey: 'sectionId', as: 'section' });
 
 // ExamChapter associations
 Exam.hasMany(ExamChapter, { foreignKey: 'examId', as: 'examChapters' });

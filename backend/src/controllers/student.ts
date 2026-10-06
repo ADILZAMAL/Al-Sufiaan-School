@@ -5,6 +5,7 @@ import { validationResult } from 'express-validator';
 import { generateAdmissionNumber } from '../utils/studentUtils';
 import { Op } from 'sequelize';
 import logger from '../utils/logger';
+import { byRollThenName } from '../utils/rollNumber';
 
 // Get all students
 export const getAllStudents = async (req: Request, res: Response) => {
@@ -355,15 +356,16 @@ export const getStudentsByClass = async (req: Request, res: Response) => {
         { association: 'class', attributes: ['id', 'name'] },
         { association: 'section', attributes: ['id', 'name'] },
       ],
-      order: [['rollNumber', 'ASC']],
     });
 
-    const students = enrollments.map((e: any) => ({
-      ...(e.student?.toJSON() || {}),
-      rollNumber: e.rollNumber,
-      class: e.class,
-      section: e.section,
-    }));
+    const students = enrollments
+      .map((e: any) => ({
+        ...(e.student?.toJSON() || {}),
+        rollNumber: e.rollNumber,
+        class: e.class,
+        section: e.section,
+      }))
+      .sort(byRollThenName(s => s.rollNumber, s => `${s.firstName} ${s.lastName}`));
 
     return sendSuccess(res, students, 'Students retrieved successfully');
   } catch (error) {

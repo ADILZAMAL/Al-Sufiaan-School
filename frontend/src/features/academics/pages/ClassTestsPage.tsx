@@ -67,8 +67,8 @@ export default function ClassTestsPage() {
   );
 
   const { data: exams = [], isLoading: examsLoading } = useQuery<Exam[]>(
-    ['exams', 'subject', subjectId],
-    () => examApi.list(subjectId as number),
+    ['exams', 'subject', subjectId, activeSectionId],
+    () => examApi.list(subjectId as number, undefined, activeSectionId ?? undefined),
     { enabled: !!subjectId }
   );
   const classTests = exams
@@ -138,6 +138,8 @@ export default function ClassTestsPage() {
   const createMutation = useMutation(
     () => examApi.create({
       subjectId: subjectId as number,
+      // Class tests belong to the selected section
+      sectionId: activeSectionId ?? undefined,
       name: form.name,
       totalMarks: Number(form.totalMarks),
       passingMarks: Number(form.passingMarks),
@@ -375,7 +377,14 @@ export default function ClassTestsPage() {
                           <li key={exam.id} className="px-6 py-4 hover:bg-gray-50 transition">
                             <div className="flex items-center gap-4">
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-gray-900 text-sm">{exam.name}</p>
+                                <p className="font-semibold text-gray-900 text-sm">
+                                  {exam.name}
+                                  {exam.sectionId == null && (
+                                    <span className="ml-2 align-middle inline-block bg-amber-50 text-amber-700 text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                                      Whole class
+                                    </span>
+                                  )}
+                                </p>
                                 {date && <p className="text-xs text-gray-400 mt-0.5">{date}</p>}
                                 {examChapters.length > 0 && (
                                   <div className="flex flex-wrap gap-1 mt-1.5">
