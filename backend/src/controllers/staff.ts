@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import Staff from '../models/Staff';
 import User from '../models/User';
 import Designation from '../models/Designation';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../utils/password';
 import { sendSuccess, sendError } from '../utils/response';
 import { validatePasswordStrength } from '../utils/passwordValidator';
 import logger from '../utils/logger';
@@ -302,7 +302,7 @@ export const enableStaffLogin = async (req: Request, res: Response) => {
             return sendError(res, 'A user account with this mobile number already exists', 400);
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await hashPassword(password);
 
         const newUser = await User.create({
             email: null,
@@ -370,7 +370,7 @@ export const resetStaffPassword = async (req: Request, res: Response) => {
             return sendError(res, 'No login account found for this staff member. Enable login first.', 404);
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const hashedPassword = await hashPassword(newPassword);
         await userAccount.update({ password: hashedPassword });
 
         return sendSuccess(res, null, 'Password reset successfully');

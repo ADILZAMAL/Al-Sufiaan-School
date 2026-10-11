@@ -4,7 +4,7 @@ import { login, changePassword } from '../controllers/auth';
 import { Request, Response } from 'express';
 import verifyToken from '../middleware/auth';
 import { sendSuccess } from '../utils/response';
-import { getAuthCookieClearOptions } from '../utils/cookieOptions';
+import { AUTH_COOKIE_NAME, getAuthCookieOptions } from '../utils/cookieOptions';
 
 const router = express.Router();
 
@@ -23,7 +23,6 @@ const router = express.Router();
  *           description: User mobile number
  *         password:
  *           type: string
- *           minLength: 8
  *           description: User password
  *     LoginResponse:
  *       type: object
@@ -80,7 +79,7 @@ router.post(
     "/login",
     [
         check("mobileNumber", "Mobile number is required").notEmpty(),
-        check("password", "Password is required").isLength({ min: 8 }),
+        check("password", "Password is required").notEmpty(),
     ],
     login
 )
@@ -122,9 +121,8 @@ router.get("/validate-token", verifyToken, (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/AuthResponse'
  */
 router.post("/logout", (req: Request, res: Response) => {
-    // Use the same cookie options as login to ensure proper clearing in cross-site scenarios
-    const cookieOptions = getAuthCookieClearOptions();
-    res.cookie("auth_token", "", cookieOptions);
+    // Same attributes as login so the browser matches and removes the cookie in cross-site setups
+    res.clearCookie(AUTH_COOKIE_NAME, getAuthCookieOptions());
     sendSuccess(res, {}, 'Signed out');
 });
 

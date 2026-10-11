@@ -2,67 +2,61 @@ import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import logger from '../utils/logger';
 import { sendError } from '../utils/response';
+import { AUTH_COOKIE_NAME } from '../utils/cookieOptions';
+import type { UserRole } from '../models/User';
 
 declare global {
   namespace Express {
     interface Request {
       userId: string;
       schoolId: string;
-      userRole: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
+      userRole: UserRole;
+      /** Linked staff record for TEACHER (and other staff) logins; null for plain users. */
+      staffId: number | null;
     }
   }
 }
 
 const verifyToken = (req: Request, res: Response, next: NextFunction) => {
-  // Check for token in cookies (web) or Authorization header (mobile)
-  let token = req.cookies["auth_token"];
-  
-  // If no cookie token, check Authorization header (for mobile apps)
-  if (!token && req.headers.authorization) {
-    const authHeader = req.headers.authorization;
-    if (authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
-    }
-  }
-  
+  // Cookie for web, Authorization: Bearer header for mobile
+  const authHeader = req.headers.authorization;
+  const token: string | undefined =
+    req.cookies[AUTH_COOKIE_NAME] ||
+    (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined);
+
   if (!token) {
     logger.warn('No token found in cookies or Authorization header', {
       requestId: res.locals.requestId,
       method: req.method,
       url: req.url,
     });
-    return res.status(401).json({ message: "unauthorized" });
+    return sendError(res, 'unauthorized', 401);
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY as string);
-    req.userId = (decoded as JwtPayload).userId;
-    req.schoolId = (decoded as JwtPayload).schoolId;
-    req.userRole = (decoded as JwtPayload).role;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY as string) as JwtPayload;
+    req.userId = decoded.userId;
+    req.schoolId = decoded.schoolId;
+    req.userRole = decoded.role;
+    req.staffId = decoded.staffId ?? null;
     next();
   } catch (error) {
     logger.warn('Token verification failed', {
       requestId: res.locals.requestId,
       error: (error as Error).message,
     });
-    return res.status(401).json({ message: "unauthorized" });
+    return sendError(res, 'unauthorized', 401);
   }
 };
 
-export const requireRole = (allowedRoles: ('SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER')[]) => {
+export const requireRole = (allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.userRole) {
-      return res.status(401).json({ 
-        success: false, 
-        error: { code: 'UNAUTHORIZED', message: 'User role not found' } 
-      });
+      return sendError(res, 'User role not found', 401, { code: 'UNAUTHORIZED' });
     }
 
     if (!allowedRoles.includes(req.userRole)) {
-      return res.status(403).json({ 
-        success: false, 
-        error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } 
-      });
+      return sendError(res, 'Insufficient permissions', 403, { code: 'FORBIDDEN' });
     }
 
     next();

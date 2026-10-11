@@ -2,6 +2,7 @@ import React, { useCallback, useContext, useMemo, useState } from "react";
 import Toast from "../components/common/Toast";
 import { useQuery } from "react-query";
 import * as apiClient from "../features/auth/api";
+import type { UserRole } from "../features/auth/types";
 
 type ToastMessage = {
   message: string;
@@ -12,7 +13,7 @@ type AppContext = {
   showToast: (toastMessage: ToastMessage) => void;
   isLoggedIn: boolean;
   isAuthLoading: boolean;
-  userRole: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | null;
+  userRole: UserRole | null;
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
 };

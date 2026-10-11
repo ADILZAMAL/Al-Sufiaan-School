@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Op } from 'sequelize';
-import { Subject, Chapter, Exam, ExamEvent, ExamChapter, StudentExamMark, TeacherSubjectAssignment, Student, Staff, User, StudentEnrollment, AcademicSession, Section, Class } from '../models';
+import { Subject, Chapter, Exam, ExamEvent, ExamChapter, StudentExamMark, TeacherSubjectAssignment, Student, Staff, StudentEnrollment, AcademicSession, Section, Class } from '../models';
 import { sendSuccess, sendError } from '../utils/response';
 import logger from '../utils/logger';
 import cloudinary, { chapterPDFUploadOptions } from '../config/cloudinary';
@@ -224,10 +224,9 @@ export const updateChapter = async (req: Request, res: Response) => {
       updateData.isTaught = isTaught;
       if (isTaught) {
         updateData.taughtOn = taughtOn || new Date().toISOString().split('T')[0];
-        // Look up staffId from userId if teacher role
+        // staffId comes from the JWT, so no extra lookup is needed
         if (req.userRole === 'TEACHER') {
-          const user = await User.findByPk(parseInt(String(req.userId)), { attributes: ['staffId'] });
-          updateData.taughtBy = user ? (user as any).staffId : null;
+          updateData.taughtBy = req.staffId;
         }
       } else {
         updateData.taughtOn = null;

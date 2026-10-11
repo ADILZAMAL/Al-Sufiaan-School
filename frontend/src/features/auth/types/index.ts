@@ -1,10 +1,12 @@
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
+
 export type SignInFormData = {
   mobileNumber: string;
   password: string;
 };
 
 export type ChangePasswordFormData = {
-    oldPassword: string;
-    newPassword: string;
-    confirmPassword: string;
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 };

@@ -154,13 +154,7 @@ const SignIn = () => {
                       ? "border-red-300 bg-red-50 focus:ring-red-400"
                       : "border-gray-200"
                     }`}
-                  {...register("password", {
-                    required: "Password is required",
-                    minLength: {
-                      value: 6,
-                      message: "Password must be at least 6 characters",
-                    },
-                  })}
+                  {...register("password", { required: "Password is required" })}
                 />
                 <button
                   type="button"
