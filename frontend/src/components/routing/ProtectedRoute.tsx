@@ -1,7 +1,6 @@
-import { Navigate, Outlet } from 'react-router-dom'; // Navigate used for sign-in redirect
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAppContext } from '../../providers/AppContext';
-
-type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
+import type { UserRole } from '../../features/auth/types';
 
 interface ProtectedRouteProps {
   allowedRoles?: UserRole[];
@@ -36,7 +35,7 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps = {}) => {
   }
 
   // Show unauthorized message if user's role is not allowed
-  if (allowedRoles && (!userRole || !allowedRoles.includes(userRole as UserRole))) {
+  if (allowedRoles && (!userRole || !allowedRoles.includes(userRole))) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

@@ -3,50 +3,10 @@ import { validationResult } from 'express-validator';
 import School from '../models/School';
 import User from '../models/User';
 import Staff from '../models/Staff';
-import bcrypt from 'bcryptjs';
 import { sendError, sendSuccess } from '../utils/response';
 import { Op } from 'sequelize';
 import logger from '../utils/logger';
-
-export const getCurrentUser = async (req: Request, res: Response) => {
-  try {
-    const user = await User.findByPk(req.userId);
-    if (!user) {
-      return sendError(res, 'User not found', 404);
-    }
-    sendSuccess(res, user, 'User retrieved successfully');
-  } catch (error) {
-    logger.error('Something went wrong', { error });
-    sendError(res, 'Something went wrong');
-  }
-}
-
-export const changePassword = async (req: Request, res: Response) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return sendError(res, 'Validation failed', 400, errors.array());
-  }
-  try {
-    const { oldPassword, newPassword } = req.body;
-    const user = await User.findByPk(req.userId);
-    if (!user) {
-      return sendError(res, 'User not found', 404);
-    }
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) {
-      return sendError(res, 'Invalid credentials', 400);
-    }
-    if (oldPassword === newPassword) {
-      return sendError(res, 'New password cannot be the same as the old password', 400);
-    }
-    user.password = await bcrypt.hash(newPassword, 8);
-    await user.save();
-    sendSuccess(res, null, 'Password changed successfully');
-  } catch (error) {
-    logger.error('Something went wrong', { error });
-    sendError(res, 'Something went wrong');
-  }
-}
+import { hashPassword } from '../utils/password';
 
 // Get all users (SUPER_ADMIN only)
 export const getAllUsers = async (req: Request, res: Response) => {
@@ -122,10 +82,9 @@ export const createUser = async (req: Request, res: Response) => {
       return sendError(res, 'Invalid school ID', 400);
     }
 
-    const hashedPassword = await bcrypt.hash(password, 8);
     const user = await User.create({
       email,
-      password: hashedPassword,
+      password: await hashPassword(password),
       firstName,
       lastName,
       role,

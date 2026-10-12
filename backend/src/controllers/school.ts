@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import School from '../models/School';
 import User from '../models/User';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../utils/password';
 import { validationResult } from 'express-validator';
 import { sendError, sendSuccess } from '../utils/response';
 import logger from '../utils/logger';
@@ -106,7 +106,7 @@ export const createSuperAdmin = async (req: Request, res: Response) => {
       return sendError(res, 'User with this mobile number already exists', 400);
     }
 
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const hashedPassword = await hashPassword(adminPassword);
     const user = await User.create({
       firstName,
       lastName,

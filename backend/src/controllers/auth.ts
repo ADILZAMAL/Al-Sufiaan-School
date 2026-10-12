@@ -5,8 +5,9 @@ import Staff from '../models/Staff';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendError, sendSuccess } from '../utils/response';
-import { getAuthCookieOptions } from '../utils/cookieOptions';
+import { AUTH_COOKIE_NAME, AUTH_TOKEN_TTL_SECONDS, getAuthCookieOptions } from '../utils/cookieOptions';
 import { validatePasswordStrength } from '../utils/passwordValidator';
+import { hashPassword } from '../utils/password';
 import logger from '../utils/logger';
 
 export const login = async (req: Request, res: Response) => {
@@ -19,41 +20,31 @@ export const login = async (req: Request, res: Response) => {
 
   try {
     const user = await User.findOne({ where: { mobileNumber } });
-    if (!user) {
-      return sendError(res, 'Invalid Credentials', 400);
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return sendError(res, 'Invalid Credentials', 401);
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return sendError(res, 'Invalid Credentials', 400);
-    }
-
+    const staffId = user.staffId ?? null;
     const token = jwt.sign(
-      { userId: user.id, schoolId: user.schoolId, role: user.role, staffId: user.staffId ?? null },
+      { userId: user.id, schoolId: user.schoolId, role: user.role, staffId },
       process.env.JWT_SECRET_KEY as string,
-      {
-        expiresIn: '1d',
-      }
+      { expiresIn: AUTH_TOKEN_TTL_SECONDS }
     );
 
-    const cookieOptions = {
+    res.cookie(AUTH_COOKIE_NAME, token, {
       ...getAuthCookieOptions(),
-      maxAge: 86400000, // 1 day in milliseconds
-    };
-    res.cookie('auth_token', token, cookieOptions);
+      maxAge: AUTH_TOKEN_TTL_SECONDS * 1000,
+    });
 
-    // Update last login timestamp
-    await user.update({ lastLogin: new Date() });
+    // Independent writes/reads: record last login and fetch the linked staff name in parallel
+    const [, staff] = await Promise.all([
+      user.update({ lastLogin: new Date() }),
+      staffId ? Staff.findByPk(staffId, { attributes: ['name'] }) : Promise.resolve(null),
+    ]);
+    const staffName = staff?.name ?? null;
 
-    // Fetch staff name for TEACHER users
-    let staffName: string | null = null;
-    if (user.staffId) {
-      const staff = await Staff.findByPk(user.staffId, { attributes: ['name'] });
-      staffName = staff?.name ?? null;
-    }
-
-    // Also return token in response body for mobile apps
-    sendSuccess(res, { userId: user.id, schoolId: user.schoolId, role: user.role, staffId: user.staffId ?? null, staffName, token }, 'Login successful');
+    // Token is also returned in the body for mobile apps (which use the Authorization header)
+    sendSuccess(res, { userId: user.id, schoolId: user.schoolId, role: user.role, staffId, staffName, token }, 'Login successful');
   } catch (error) {
     logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');
@@ -87,8 +78,7 @@ export const changePassword = async (req: Request, res: Response) => {
       return sendError(res, 'New password must be different from current password', 400);
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await user.update({ password: hashedPassword });
+    await user.update({ password: await hashPassword(newPassword) });
 
     return sendSuccess(res, null, 'Password changed successfully');
   } catch (error) {
