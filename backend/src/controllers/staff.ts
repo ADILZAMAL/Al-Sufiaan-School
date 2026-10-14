@@ -301,17 +301,23 @@ export const enableStaffLogin = async (req: Request, res: Response) => {
         }
 
         const existingByMobile = await User.findOne({ where: { mobileNumber: staff.mobileNumber }, paranoid: false });
-        if (existingByMobile && existingByMobile.id !== existingByStaffId?.id) {
+        // Deleting a staff record nulls its login's staffId (FK SET NULL); when that person is added back
+        // with the same number, reclaim the orphaned login instead of being blocked by it
+        const isOrphanedStaffLogin = existingByMobile?.role === 'TEACHER' && !existingByMobile.staffId;
+        const reusable = existingByStaffId ?? (isOrphanedStaffLogin ? existingByMobile : null);
+        if (existingByMobile && existingByMobile.id !== reusable?.id) {
             return sendError(res, 'A user account with this mobile number already exists', 400);
         }
 
         const hashedPassword = await hashPassword(password);
 
-        const user = existingByStaffId
+        const user = reusable
             ? await sequelize.transaction(async (t) => {
-                await existingByStaffId.restore({ transaction: t });
-                return existingByStaffId.update(
-                    { mobileNumber: staff.mobileNumber, password: hashedPassword },
+                if (reusable.deletedAt) {
+                    await reusable.restore({ transaction: t });
+                }
+                return reusable.update(
+                    { staffId: staff.id, mobileNumber: staff.mobileNumber, password: hashedPassword },
                     { transaction: t },
                 );
             })
