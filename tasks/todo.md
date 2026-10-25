@@ -89,3 +89,17 @@ Decisions: attendance open to all teachers · class tests per section · report 
 - Teachers can now create/edit/delete class tests (own subject + section) and see report cards only for sections they teach.
 - Teachers can no longer read other staff payslips or call payslip admin endpoints.
 - Old installed app builds keep working (all API changes are additive/optional).
+
+## Merge with main (2026-10-25)
+
+Merged `main` (auth cleanup PRs #18/#19, staff relink, DB diagnostics) into `mobile/revamp`. Conflicts resolved by
+keeping main's cleanup and re-applying the revamp's additions:
+- [x] `middleware/auth.ts`: main's verify block + shared `UserRole`; `denyRoles` now uses `sendError` (same JSON shape)
+- [x] `controllers/auth.ts`: main's login (401, constants, parallel writes) + `client: 'mobile'` 7d token + `validateSession`
+- [x] `controllers/user.ts`: main's (no `/users/me`, no duplicate change-password)
+- [x] `controllers/academic.ts`: revamp's `todayISO()` / `isTeacher(req)` with `req.staffId`
+
+**Verified:** tsc clean in backend/mobile/frontend; backend 10 + mobile 16 unit tests; 21 auth checks via controllers on a
+throwaway MySQL (bad/unknown/disabled login → 401, web 1d cookie+token, mobile 7d token, Bearer + cookie verify,
+denyRoles 403 shape, validateSession 401 for soft-deleted teacher, change-password 400 on wrong current, logout
+clearCookie, updateChapter taughtBy/taughtOn).

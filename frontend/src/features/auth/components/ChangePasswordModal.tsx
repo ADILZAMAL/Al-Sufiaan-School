@@ -3,10 +3,11 @@ import ReactDOM from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from 'react-query';
 import { FaTimes, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { changePassword } from '../../users/api';
+import { changePassword, signOut } from '../api';
 import { useAppContext } from '../../../providers/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { ChangePasswordFormData } from '../types';
+import { validatePasswordStrength } from '../utils/passwordRules';
 
 type ChangePasswordModalProps = {
     isOpen: boolean;
@@ -49,8 +50,7 @@ const PasswordInput = ({
 };
 
 const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClose }) => {
-    const [loading, setLoading] = useState(false);
-    const { register, handleSubmit, formState: { errors } } = useForm<ChangePasswordFormData>();
+    const { register, handleSubmit, getValues, formState: { errors } } = useForm<ChangePasswordFormData>();
     const { showToast } = useAppContext();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -58,29 +58,21 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
     const mutation = useMutation(changePassword, {
         onSuccess: async () => {
             showToast({ message: 'Password changed successfully', type: 'SUCCESS' });
-            await queryClient.invalidateQueries('validateToken');
-            setLoading(false);
-            onClose();
-            navigate('/sign-in');
+            // The old session cookie is still valid after a password change, so end it explicitly
+            try {
+                await signOut();
+            } finally {
+                await queryClient.invalidateQueries('validateToken');
+                onClose();
+                navigate('/sign-in');
+            }
         },
-        onError: (error: any) => {
+        onError: (error: Error) => {
             showToast({ message: error.message, type: 'ERROR' });
-            setLoading(false);
         },
     });
 
-    const onSubmit = (data: ChangePasswordFormData) => {
-        if (data.oldPassword === data.newPassword) {
-            showToast({ message: 'New password cannot be the same as the old password', type: 'ERROR' });
-            return;
-        }
-        if (data.newPassword !== data.confirmPassword) {
-            showToast({ message: "Passwords don't match", type: 'ERROR' });
-            return;
-        }
-        setLoading(true);
-        mutation.mutate(data);
-    };
+    const onSubmit = (data: ChangePasswordFormData) => mutation.mutate(data);
 
     if (!isOpen) return null;
 
@@ -115,11 +107,10 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
                             </label>
                             <PasswordInput
                                 placeholder="Enter current password"
-                                registration={register('oldPassword', {
+                                registration={register('currentPassword', {
                                     required: 'Current password is required',
-                                    minLength: { value: 6, message: 'Must be at least 6 characters' },
                                 })}
-                                error={errors.oldPassword?.message as string}
+                                error={errors.currentPassword?.message}
                             />
                         </div>
 
@@ -131,9 +122,14 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
                                 placeholder="Enter new password"
                                 registration={register('newPassword', {
                                     required: 'New password is required',
-                                    minLength: { value: 6, message: 'Must be at least 6 characters' },
+                                    validate: {
+                                        strength: validatePasswordStrength,
+                                        different: (value) =>
+                                            value !== getValues('currentPassword') ||
+                                            'New password must be different from current password',
+                                    },
                                 })}
-                                error={errors.newPassword?.message as string}
+                                error={errors.newPassword?.message}
                             />
                         </div>
 
@@ -145,9 +141,9 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
                                 placeholder="Re-enter new password"
                                 registration={register('confirmPassword', {
                                     required: 'Please confirm your password',
-                                    minLength: { value: 6, message: 'Must be at least 6 characters' },
+                                    validate: (value) => value === getValues('newPassword') || "Passwords don't match",
                                 })}
-                                error={errors.confirmPassword?.message as string}
+                                error={errors.confirmPassword?.message}
                             />
                         </div>
                     </div>
@@ -162,10 +158,10 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
                         </button>
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={mutation.isLoading}
                             className="flex-1 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            {loading ? 'Updating…' : 'Update Password'}
+                            {mutation.isLoading ? 'Updating…' : 'Update Password'}
                         </button>
                     </div>
                 </form>

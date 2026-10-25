@@ -298,6 +298,7 @@ export const updateChapter = async (req: Request, res: Response) => {
       updateData.isTaught = isTaught;
       if (isTaught) {
         updateData.taughtOn = taughtOn || todayISO();
+        // staffId comes from the JWT, so no extra lookup is needed
         if (isTeacher(req)) {
           updateData.taughtBy = req.staffId;
         }

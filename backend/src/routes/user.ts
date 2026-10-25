@@ -1,35 +1,16 @@
 import express, {Request, Response} from 'express';
 import {check} from 'express-validator';
 import { 
-    changePassword, 
     getAllUsers, 
     getUserById, 
     createUser, 
     updateUser, 
     deleteUser, 
-    updateProfile,
-    getCurrentUser 
+    updateProfile
 } from '../controllers/user';
 import verifyToken from '../middleware/auth';
 import { requireSuperAdmin, canModifyUser } from '../middleware/roleAuth';
 const router = express.Router();
-
-router.post(
-    "/change-password",
-    verifyToken,
-    [
-        check('oldPassword', 'Old Password is required').isLength({
-            min: 6
-        }),
-        check('newPassword', 'New Password with 6 or more character is required').isLength({
-            min: 6
-        })
-    ],
-    changePassword
-)
-
-// Get current user
-router.get("/me", verifyToken, getCurrentUser);
 
 // Get all users (SUPER_ADMIN only)
 router.get("/", verifyToken, requireSuperAdmin, getAllUsers);

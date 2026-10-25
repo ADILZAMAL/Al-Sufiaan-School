@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import Staff from '../models/Staff';
 import User from '../models/User';
 import Designation from '../models/Designation';
-import bcrypt from 'bcryptjs';
+import sequelize from '../config/database';
+import { hashPassword } from '../utils/password';
 import { sendSuccess, sendError } from '../utils/response';
 import { validatePasswordStrength } from '../utils/passwordValidator';
 import logger from '../utils/logger';
@@ -292,33 +293,49 @@ export const enableStaffLogin = async (req: Request, res: Response) => {
             return sendError(res, 'Staff not found', 404);
         }
 
-        const existingByStaffId = await User.findOne({ where: { staffId: staff.id } });
-        if (existingByStaffId) {
+        // paranoid: false — a disabled login is soft-deleted but still holds the unique staffId/mobileNumber,
+        // so it is restored rather than recreated (keeping attendance/marks linked to the same user id)
+        const existingByStaffId = await User.findOne({ where: { staffId: staff.id }, paranoid: false });
+        if (existingByStaffId && !existingByStaffId.deletedAt) {
             return sendError(res, 'Login already enabled for this staff member', 400);
         }
 
-        const existingByMobile = await User.findOne({ where: { mobileNumber: staff.mobileNumber } });
-        if (existingByMobile) {
+        const existingByMobile = await User.findOne({ where: { mobileNumber: staff.mobileNumber }, paranoid: false });
+        // Deleting a staff record nulls its login's staffId (FK SET NULL); when that person is added back
+        // with the same number, reclaim the orphaned login instead of being blocked by it
+        const isOrphanedStaffLogin = existingByMobile?.role === 'TEACHER' && !existingByMobile.staffId;
+        const reusable = existingByStaffId ?? (isOrphanedStaffLogin ? existingByMobile : null);
+        if (existingByMobile && existingByMobile.id !== reusable?.id) {
             return sendError(res, 'A user account with this mobile number already exists', 400);
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await hashPassword(password);
 
-        const newUser = await User.create({
-            email: null,
-            firstName: null,
-            lastName: null,
-            mobileNumber: staff.mobileNumber,
-            password: hashedPassword,
-            role: 'TEACHER',
-            schoolId: staff.schoolId,
-            staffId: staff.id,
-        });
+        const user = reusable
+            ? await sequelize.transaction(async (t) => {
+                if (reusable.deletedAt) {
+                    await reusable.restore({ transaction: t });
+                }
+                return reusable.update(
+                    { staffId: staff.id, mobileNumber: staff.mobileNumber, password: hashedPassword },
+                    { transaction: t },
+                );
+            })
+            : await User.create({
+                email: null,
+                firstName: null,
+                lastName: null,
+                mobileNumber: staff.mobileNumber,
+                password: hashedPassword,
+                role: 'TEACHER',
+                schoolId: staff.schoolId,
+                staffId: staff.id,
+            });
 
         return sendSuccess(res, {
-            userId: newUser.id,
-            mobileNumber: newUser.mobileNumber,
-            role: newUser.role,
+            userId: user.id,
+            mobileNumber: user.mobileNumber,
+            role: user.role,
             staffId: staff.id,
         }, 'Staff login enabled successfully', 201);
     } catch (error: any) {
@@ -341,7 +358,8 @@ export const disableStaffLogin = async (req: Request, res: Response) => {
             return sendError(res, 'No login account found for this staff member', 404);
         }
 
-        await userAccount.destroy({ force: true });
+        // Soft delete: attendance, marks etc. reference this user (FK RESTRICT); enableStaffLogin restores it
+        await userAccount.destroy();
 
         return sendSuccess(res, null, 'Staff login disabled successfully');
     } catch (error: any) {
@@ -370,7 +388,7 @@ export const resetStaffPassword = async (req: Request, res: Response) => {
             return sendError(res, 'No login account found for this staff member. Enable login first.', 404);
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const hashedPassword = await hashPassword(newPassword);
         await userAccount.update({ password: hashedPassword });
 
         return sendSuccess(res, null, 'Password reset successfully');

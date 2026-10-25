@@ -1,6 +1,8 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import School from './School';
 
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
+
 class User extends Model {
     public id!: number;
     public email!: string | null;
@@ -9,7 +11,7 @@ class User extends Model {
     public lastName!: string | null;
     public mobileNumber?: string | null;
     public staffId?: number | null;
-    public role!: 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
+    public role!: UserRole;
     public schoolId!: number;
     public lastLogin?: Date;
     public readonly createdAt!: Date;
