@@ -2,7 +2,7 @@ import { Router } from 'express';
 import verifyToken, { requireRole } from '../middleware/auth';
 import {
   createSubject, getSubjects, updateSubject, deleteSubject,
-  createAssignment, getAssignments, deleteAssignment,
+  createAssignment, getAssignments, deleteAssignment, getMyAssignments,
   createChapter, getChapters, updateChapter, deleteChapter,
   uploadChapterPDF, deleteChapterPDF,
   createExamEvent, getExamEvents, updateExamEvent, deleteExamEvent,
@@ -26,6 +26,7 @@ router.delete('/subjects/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), deleteSubj
 // Teacher assignments
 router.post('/assignments', requireRole(['SUPER_ADMIN', 'ADMIN']), createAssignment);
 router.get('/assignments', getAssignments);
+router.get('/my-assignments', requireRole(['TEACHER']), getMyAssignments);
 router.delete('/assignments/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), deleteAssignment);
 
 // Chapters
@@ -43,10 +44,11 @@ router.put('/exam-events/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), updateExam
 router.delete('/exam-events/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), deleteExamEvent);
 
 // Exams
-router.post('/exams', requireRole(['SUPER_ADMIN', 'ADMIN']), createExam);
+// Teachers may create/edit/delete class tests for their own subject + section
+router.post('/exams', requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']), createExam);
 router.get('/exams', getExams);
-router.put('/exams/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), updateExam);
-router.delete('/exams/:id', requireRole(['SUPER_ADMIN', 'ADMIN']), deleteExam);
+router.put('/exams/:id', requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']), updateExam);
+router.delete('/exams/:id', requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']), deleteExam);
 
 // Marks
 router.post('/marks/bulk', requireRole(['SUPER_ADMIN', 'ADMIN', 'TEACHER']), bulkSubmitMarks);

@@ -1,235 +1,260 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
-import { useAuth } from '../context/AuthContext';
+import React, { useCallback, useMemo } from 'react';
+import { Pressable, RefreshControl, ScrollView, StatusBar, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useQuery } from '@tanstack/react-query';
+import dayjs from 'dayjs';
+import { useCurrentUser } from '../context/AuthContext';
+import { useRootNavigation } from '../navigation/types';
+import { attendanceApi } from '../api/attendance';
+import { holidayApi } from '../api/holiday';
+import { useMyAssignments } from '../hooks/queries';
+import { usePullToRefresh } from '../hooks/useRefresh';
+import { Badge, Card, Icon, IconName, ListRow, SectionHeader } from '../components/ui';
+import { makeStyles, useTheme } from '../theme';
+import { addDaysISO, formatLongDate, greetingForNow, todayISO } from '../lib/date';
+import { queryKeys } from '../lib/queryKeys';
 
-type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
+interface QuickAction {
+  key: string;
+  title: string;
+  icon: IconName;
+  onPress: () => void;
+}
 
 const HomeScreen: React.FC = () => {
-  const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { logout, user } = useAuth();
+  const styles = useStyles();
+  const { colors, scheme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const user = useCurrentUser();
+  const rootNav = useRootNavigation();
+  const tabNav = useNavigation<any>();
+  const today = todayISO();
 
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+  const assignments = useMyAssignments();
+  const dayStats = useQuery({
+    queryKey: queryKeys.dayStats(today),
+    queryFn: () => attendanceApi.getAllStats(today),
+    staleTime: 60 * 1000,
+  });
+  const holidays = useQuery({
+    queryKey: queryKeys.holidays(today, addDaysISO(today, 45)),
+    queryFn: () => holidayApi.getHolidays(today, addDaysISO(today, 45)),
+    staleTime: 60 * 60 * 1000,
+    meta: { persist: true },
+  });
+  const { refreshing, onRefresh } = usePullToRefresh(async () => {
+    await Promise.all([assignments.refetch(), dayStats.refetch(), holidays.refetch()]);
   });
 
+  // Light status bar over the blue header while Home is visible
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle('light-content');
+      dayStats.refetch();
+      return () => StatusBar.setBarStyle(scheme === 'dark' ? 'light-content' : 'dark-content');
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scheme])
+  );
+
+  const firstName = user.staffName?.split(' ')[0] ?? 'Teacher';
+
+  // Sections this teacher teaches, with today's attendance status
+  const mySections = useMemo(() => {
+    const seen = new Map<number, { classId: number; className: string; sectionId: number; sectionName: string }>();
+    for (const a of assignments.data?.assignments ?? []) {
+      if (!seen.has(a.section.id)) seen.set(a.section.id, { classId: a.class.id, className: a.class.name, sectionId: a.section.id, sectionName: a.section.name });
+    }
+    return Array.from(seen.values()).map(s => ({
+      ...s,
+      stats: dayStats.data?.classStats.find(c => c.sectionId === s.sectionId),
+    }));
+  }, [assignments.data, dayStats.data]);
+
+  const pending = (assignments.data?.assignments ?? []).filter(a => (a.progress?.pendingExamCount ?? 0) > 0);
+  const upcoming = (holidays.data ?? [])
+    .filter(h => h.endDate >= today)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate))
+    .slice(0, 3);
+  const isHolidayToday = dayStats.data?.isHoliday;
+
+  const actions: QuickAction[] = [
+    { key: 'attendance', title: 'Attendance', icon: 'checkmark-done-circle-outline', onPress: () => rootNav.navigate('SectionPicker', { mode: 'attendance' }) },
+    { key: 'marks', title: 'Marks', icon: 'create-outline', onPress: () => tabNav.navigate('AcademicsTab') },
+    { key: 'reports', title: 'Report cards', icon: 'ribbon-outline', onPress: () => rootNav.navigate('ReportCardPicker') },
+    { key: 'students', title: 'Students', icon: 'people-outline', onPress: () => rootNav.navigate('SectionPicker', { mode: 'students' }) },
+    { key: 'hostel', title: 'Hostel', icon: 'bed-outline', onPress: () => rootNav.navigate('BoardingAttendance', { boardingType: 'HOSTEL' }) },
+    { key: 'dayboarding', title: 'Dayboarding', icon: 'sunny-outline', onPress: () => rootNav.navigate('BoardingAttendance', { boardingType: 'DAYBOARDING' }) },
+  ];
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.schoolName}>Al Sufiaan School</Text>
-          <Text style={styles.date}>{today}</Text>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.scroll}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.onHero} />}
+    >
+      <View style={[styles.hero, { paddingTop: insets.top + 20 }]}>
+        <Text style={styles.date}>{formatLongDate(today)}</Text>
+        <Text style={styles.greeting} accessibilityRole="header">
+          {greetingForNow()}, {firstName}
+        </Text>
+      </View>
+
+      <View style={styles.body}>
+        <View style={styles.grid}>
+          {actions.map(action => (
+            <Pressable
+              key={action.key}
+              onPress={action.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={action.title}
+              style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+            >
+              <View style={styles.actionIcon}>
+                <Icon name={action.icon} size={24} color={colors.primary} />
+              </View>
+              <Text style={styles.actionTitle} numberOfLines={1}>
+                {action.title}
+              </Text>
+            </Pressable>
+          ))}
         </View>
 
-        {/* Greeting */}
-        <Text style={styles.greeting}>Welcome back, {user?.staffName ?? 'Teacher'}!</Text>
+        {mySections.length > 0 && (
+          <>
+            <SectionHeader title="Today's attendance" />
+            <Card padded={false} style={styles.group}>
+              {isHolidayToday ? (
+                <ListRow icon="sunny-outline" title="No school today" subtitle={dayStats.data?.holidayName ?? 'Holiday'} />
+              ) : (
+                mySections.map((s, i) => {
+                  const marked = s.stats && s.stats.totalMarked > 0;
+                  const complete = s.stats && s.stats.notMarked === 0 && s.stats.totalStudents > 0;
+                  return (
+                    <View key={s.sectionId}>
+                      {i > 0 && <View style={styles.divider} />}
+                      <ListRow
+                        icon={complete ? 'checkmark-circle' : 'time-outline'}
+                        iconColor={complete ? colors.success : colors.warning}
+                        iconBackground={complete ? colors.successSoft : colors.warningSoft}
+                        title={`Class ${s.className} – ${s.sectionName}`}
+                        subtitle={
+                          !s.stats
+                            ? 'Loading…'
+                            : complete
+                              ? `${s.stats.presentCount} present · ${s.stats.absentCount} absent`
+                              : marked
+                                ? `${s.stats.notMarked} of ${s.stats.totalStudents} not marked`
+                                : 'Not marked yet'
+                        }
+                        right={!complete ? <Badge label="Mark" tone="primary" /> : undefined}
+                        onPress={() =>
+                          rootNav.navigate('Attendance', { classId: s.classId, sectionId: s.sectionId, className: s.className, sectionName: s.sectionName })
+                        }
+                      />
+                    </View>
+                  );
+                })
+              )}
+            </Card>
+          </>
+        )}
 
-        {/* Feature Cards */}
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.cardsContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('ClassSelection', { mode: 'attendance' })}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.cardIcon}>📋</Text>
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Take Attendance</Text>
-              <Text style={styles.cardSubtitle}>Mark today's class attendance</Text>
-            </View>
-            <Text style={styles.cardArrow}>→</Text>
-          </TouchableOpacity>
+        {pending.length > 0 && (
+          <>
+            <SectionHeader title="Marks to enter" />
+            <Card padded={false} style={styles.group}>
+              {pending.slice(0, 5).map((a, i) => (
+                <View key={a.id}>
+                  {i > 0 && <View style={styles.divider} />}
+                  <ListRow
+                    icon="create-outline"
+                    title={a.subject.name}
+                    subtitle={`Class ${a.class.name} – ${a.section.name}`}
+                    right={<Badge label={`${a.progress!.pendingExamCount} exam${a.progress!.pendingExamCount === 1 ? '' : 's'}`} tone="warning" />}
+                    onPress={() =>
+                      rootNav.navigate('SubjectHome', {
+                        subjectId: a.subject.id,
+                        subjectName: a.subject.name,
+                        classId: a.class.id,
+                        className: a.class.name,
+                        sectionId: a.section.id,
+                        sectionName: a.section.name,
+                        sessionId: a.sessionId,
+                      })
+                    }
+                  />
+                </View>
+              ))}
+            </Card>
+          </>
+        )}
 
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('BoardingAttendance', { boardingType: 'HOSTEL' })}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.cardIcon}>🏠</Text>
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Hostel Attendance</Text>
-              <Text style={styles.cardSubtitle}>Mark hostel students attendance</Text>
-            </View>
-            <Text style={styles.cardArrow}>→</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('BoardingAttendance', { boardingType: 'DAYBOARDING' })}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.cardIcon}>🌤️</Text>
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Dayboarding Attendance</Text>
-              <Text style={styles.cardSubtitle}>Mark dayboarding students attendance</Text>
-            </View>
-            <Text style={styles.cardArrow}>→</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('ClassSelection', { mode: 'students' })}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.cardIcon}>👤</Text>
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Student Profiles</Text>
-              <Text style={styles.cardSubtitle}>View & update student information</Text>
-            </View>
-            <Text style={styles.cardArrow}>→</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('PayslipList')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.cardIcon}>💰</Text>
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>My Payslips</Text>
-              <Text style={styles.cardSubtitle}>View salary slips & payment history</Text>
-            </View>
-            <Text style={styles.cardArrow}>→</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('MarksClassSelection')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.cardIcon}>✏️</Text>
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Enter Marks</Text>
-              <Text style={styles.cardSubtitle}>Record exam marks for your students</Text>
-            </View>
-            <Text style={styles.cardArrow}>→</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('ChangePassword')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.cardIcon}>🔑</Text>
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Change Password</Text>
-              <Text style={styles.cardSubtitle}>Update your login password</Text>
-            </View>
-            <Text style={styles.cardArrow}>→</Text>
-          </TouchableOpacity>
-
-          {/* Logout */}
-          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        </ScrollView>
+        <SectionHeader
+          title="Upcoming holidays"
+          right={
+            <Pressable onPress={() => rootNav.navigate('HolidayCalendar')} accessibilityRole="button" hitSlop={10}>
+              <Text style={styles.link}>Calendar</Text>
+            </Pressable>
+          }
+        />
+        <Card padded={false} style={styles.group}>
+          {upcoming.length === 0 ? (
+            <ListRow icon="calendar-outline" title="No holidays in the next few weeks" onPress={() => rootNav.navigate('HolidayCalendar')} />
+          ) : (
+            upcoming.map((h, i) => (
+              <View key={h.id}>
+                {i > 0 && <View style={styles.divider} />}
+                <ListRow
+                  icon="sunny-outline"
+                  iconColor={colors.warning}
+                  iconBackground={colors.warningSoft}
+                  title={h.name}
+                  subtitle={
+                    h.startDate === h.endDate
+                      ? dayjs(h.startDate).format('dddd, D MMM')
+                      : `${dayjs(h.startDate).format('D MMM')} – ${dayjs(h.endDate).format('D MMM')}`
+                  }
+                />
+              </View>
+            ))
+          )}
+        </Card>
       </View>
-    </SafeAreaView>
+    </ScrollView>
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#3b82f6',
+const useStyles = makeStyles(({ colors, spacing, typography, radius, shadow }) => ({
+  root: { flex: 1, backgroundColor: colors.background },
+  scroll: { paddingBottom: spacing.xxl },
+  hero: {
+    backgroundColor: colors.hero,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl + spacing.lg,
+    borderBottomLeftRadius: radius.xl,
+    borderBottomRightRadius: radius.xl,
   },
-  container: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-  },
-  header: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 32,
-  },
-  schoolName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  date: {
-    fontSize: 13,
-    color: '#bfdbfe',
-    marginTop: 4,
-  },
-  greeting: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginTop: 28,
-    marginHorizontal: 24,
-    marginBottom: 20,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  cardsContainer: {
-    paddingHorizontal: 24,
-    gap: 16,
-    paddingBottom: 40,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
+  date: { ...typography.caption, color: colors.onHeroMuted },
+  greeting: { ...typography.display, color: colors.onHero, marginTop: spacing.xs },
+  body: { padding: spacing.lg, gap: spacing.lg, marginTop: -spacing.xxl },
+  grid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    flexWrap: 'wrap',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadow,
   },
-  cardIcon: {
-    fontSize: 36,
-    marginRight: 16,
-  },
-  cardText: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  cardSubtitle: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
-  cardArrow: {
-    fontSize: 22,
-    color: '#3b82f6',
-    marginLeft: 8,
-  },
-  logoutButton: {
-    alignSelf: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 32,
-    marginTop: 8,
-  },
-  logoutText: {
-    fontSize: 15,
-    color: '#ef4444',
-    fontWeight: '500',
-  },
-});
+  action: { width: '33.33%', alignItems: 'center', paddingVertical: spacing.md, gap: spacing.xs },
+  pressed: { opacity: 0.6 },
+  actionIcon: { width: 48, height: 48, borderRadius: radius.lg, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  actionTitle: { ...typography.small, color: colors.textSecondary },
+  group: { overflow: 'hidden' },
+  divider: { height: 1, backgroundColor: colors.divider, marginLeft: spacing.lg + 38 + spacing.md },
+  link: { ...typography.small, color: colors.primary },
+}));
 
 export default HomeScreen;

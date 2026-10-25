@@ -353,7 +353,7 @@ const EditSchoolModal = ({
       updateSchool(school.id, {
         ...data,
         logoUrl: uploadedLogoUrl ?? undefined,
-      }),
+      }, token ?? undefined),
     {
       onSuccess: (updated) => {
         showToast({ message: 'School updated successfully!', type: 'SUCCESS' });

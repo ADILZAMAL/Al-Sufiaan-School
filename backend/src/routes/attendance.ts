@@ -12,6 +12,7 @@ import {
   getStudentsWithAttendance,
   getStudentAttendanceCalendar,
   getBoardingStudents,
+  getAttendanceHistory,
 } from '../controllers/attendance';
 
 const router = Router();
@@ -135,6 +136,7 @@ router.get('/', verifyToken, getAttendanceQueryValidation, getAttendance);
 router.get('/stats', verifyToken, getAttendanceStatsValidation, getAttendanceStats);
 router.get('/stats/all', verifyToken, getAllAttendanceStats);
 router.get('/boarding-students', verifyToken, getBoardingStudentsValidation, getBoardingStudents);
+router.get('/history', verifyToken, getAttendanceHistory); // must stay above '/:id'
 router.get('/students/:classId/:sectionId', verifyToken, getStudentsWithAttendance);
 router.get('/calendar/:studentId', verifyToken, getStudentAttendanceCalendar);
 router.get('/:id', verifyToken, getAttendanceById);

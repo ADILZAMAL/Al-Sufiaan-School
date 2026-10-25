@@ -1,316 +1,458 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
-  Alert, ActivityIndicator,
+  Alert,
+  InputAccessoryView,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
-import { useAuth } from '../context/AuthContext';
+import { RouteProp, useRoute } from '@react-navigation/native';
+import { useHeaderHeight } from '@react-navigation/elements';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
+import { RootStackParamList, useRootNavigation } from '../navigation/types';
 import { academicApi } from '../api/academics';
-import { studentApi } from '../api/student';
-import { RootStackParamList } from '../navigation/AppNavigator';
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorMessage from '../components/ErrorMessage';
+import { useCurrentUser } from '../context/AuthContext';
+import { queryKeys } from '../lib/queryKeys';
+import { drafts } from '../lib/drafts';
+import { getErrorMessage } from '../lib/errors';
+import { haptics, toast } from '../lib/feedback';
+import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
+import { ErrorState, Icon, SkeletonList } from '../components/ui';
+import { SaveBar } from '../features/attendance/components/SheetChrome';
+import {
+  computeStats,
+  markError,
+  MarkEntry,
+  MarkStudent,
+  parseMark,
+  rosterToEntries,
+  rosterToStudents,
+  sameEntry,
+} from '../features/marks/marks';
+import { HIT_SIZE, makeStyles, useTheme } from '../theme';
 
-type Route = RouteProp<RootStackParamList, 'MarksEntry'>;
-
-interface StudentMark {
-  studentId: number;
-  studentName: string;
-  rollNumber: string | null;
-  isAbsent: boolean;
-  marksObtained: string; // string for TextInput; convert to number on save
-}
+const ACCESSORY_ID = 'marks-entry-nav';
+type Entries = Record<number, MarkEntry>;
 
 interface MarkRowProps {
-  item: StudentMark;
+  student: MarkStudent;
+  index: number;
+  entry: MarkEntry;
+  error: string | null;
+  dirty: boolean;
   totalMarks: number;
   passingMarks: number;
-  onUpdate: (studentId: number, field: 'marksObtained' | 'isAbsent', value: string | boolean) => void;
+  isLast: boolean;
+  inputRef: (index: number, ref: TextInput | null) => void;
+  onChange: (studentId: number, value: string) => void;
+  onToggleAbsent: (studentId: number) => void;
+  onFocusRow: (index: number) => void;
+  onNext: (index: number) => void;
+  onLayoutRow: (index: number, y: number) => void;
 }
 
-const MarkRow = React.memo(({ item, totalMarks, passingMarks, onUpdate }: MarkRowProps) => {
-  const result: 'pass' | 'fail' | null = (() => {
-    if (item.isAbsent || item.marksObtained === '') return null;
-    const num = parseFloat(item.marksObtained);
-    if (isNaN(num)) return null;
-    return num >= passingMarks ? 'pass' : 'fail';
-  })();
+const MarkRow = memo(
+  ({ student, index, entry, error, dirty, totalMarks, passingMarks, isLast, inputRef, onChange, onToggleAbsent, onFocusRow, onNext, onLayoutRow }: MarkRowProps) => {
+    const styles = useStyles();
+    const { colors } = useTheme();
+    const n = parseMark(entry.value);
+    const tone = error ? colors.danger : n === null || Number.isNaN(n) ? colors.border : n >= passingMarks ? colors.success : colors.warning;
 
-  return (
-    <View style={styles.row}>
-      <View style={styles.studentInfo}>
-        {item.rollNumber && <Text style={styles.rollNumber}>#{item.rollNumber}</Text>}
-        <Text style={styles.studentName}>{item.studentName}</Text>
-      </View>
-      <TouchableOpacity
-        style={[styles.absentBtn, item.isAbsent && styles.absentBtnActive]}
-        onPress={() => onUpdate(item.studentId, 'isAbsent', !item.isAbsent)}
-      >
-        <Text style={[styles.absentBtnText, item.isAbsent && styles.absentBtnTextActive]}>Absent</Text>
-      </TouchableOpacity>
-      {!item.isAbsent ? (
-        <View style={styles.marksInputWrap}>
+    return (
+      <View style={[styles.row, entry.absent && styles.rowAbsent]} onLayout={e => onLayoutRow(index, e.nativeEvent.layout.y)}>
+        <Text style={styles.roll}>{student.rollNumber ?? '—'}</Text>
+        <View style={styles.nameWrap}>
+          <Text style={styles.name} numberOfLines={1}>
+            {student.name}
+          </Text>
+          {error ? (
+            <Text style={styles.error}>{error}</Text>
+          ) : dirty ? (
+            <Text style={styles.unsaved}>Unsaved</Text>
+          ) : null}
+        </View>
+        <Pressable
+          onPress={() => onToggleAbsent(student.studentId)}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: entry.absent }}
+          accessibilityLabel={`${student.name} absent`}
+          style={[styles.absent, entry.absent && styles.absentOn]}
+        >
+          <Text style={[styles.absentText, entry.absent && styles.absentTextOn]}>AB</Text>
+        </Pressable>
+        {entry.absent ? (
+          <View style={[styles.input, styles.inputDisabled]}>
+            <Text style={styles.absentDash}>—</Text>
+          </View>
+        ) : (
           <TextInput
-            style={[
-              styles.marksInput,
-              result === 'pass' && styles.marksInputPass,
-              result === 'fail' && styles.marksInputFail,
-            ]}
-            value={item.marksObtained}
-            onChangeText={text => onUpdate(item.studentId, 'marksObtained', text)}
+            ref={r => inputRef(index, r)}
+            value={entry.value}
+            onChangeText={t => onChange(student.studentId, t)}
+            onFocus={() => onFocusRow(index)}
             keyboardType="decimal-pad"
-            placeholder={`/ ${totalMarks}`}
-            placeholderTextColor="#9ca3af"
+            returnKeyType={isLast ? 'done' : 'next'}
+            onSubmitEditing={() => onNext(index)}
+            blurOnSubmit={isLast}
+            inputAccessoryViewID={Platform.OS === 'ios' ? ACCESSORY_ID : undefined}
+            placeholder={`/${totalMarks}`}
+            placeholderTextColor={colors.textSubtle}
             maxLength={6}
+            selectTextOnFocus
+            accessibilityLabel={`Marks for ${student.name}, out of ${totalMarks}`}
+            style={[styles.input, { borderColor: tone }]}
           />
-          {result && (
-            <Text style={result === 'pass' ? styles.resultPass : styles.resultFail}>
-              {result === 'pass' ? 'P' : 'F'}
-            </Text>
-          )}
-        </View>
-      ) : (
-        <View style={styles.absentPlaceholder}>
-          <Text style={styles.absentLabel}>—</Text>
-        </View>
-      )}
-    </View>
-  );
-});
+        )}
+      </View>
+    );
+  }
+);
+MarkRow.displayName = 'MarkRow';
 
+/** Enter or update marks for one exam in one section. */
 const MarksEntryScreen: React.FC = () => {
-  const route = useRoute<Route>();
-  const navigation = useNavigation();
-  const { examId, examName, totalMarks, passingMarks, classId, sectionId } = route.params;
-  const { logout } = useAuth();
+  const styles = useStyles();
+  const { colors } = useTheme();
+  const navigation = useRootNavigation();
+  const queryClient = useQueryClient();
+  const headerHeight = useHeaderHeight();
+  const user = useCurrentUser();
+  const ctx = useRoute<RouteProp<RootStackParamList, 'MarksEntry'>>().params;
+  const { examId, sectionId, sessionId, totalMarks, passingMarks } = ctx;
+  const draftKey = `marks:${user.userId}:${examId}:${sectionId}`;
 
-  const [marks, setMarks] = useState<StudentMark[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isUpdate, setIsUpdate] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
+  const query = useQuery({
+    queryKey: queryKeys.marks(examId, sectionId),
+    queryFn: () => academicApi.getMarksRoster(examId, sectionId, sessionId),
+  });
+  const students = useMemo(() => rosterToStudents(query.data ?? []), [query.data]);
 
-  useEffect(() => { loadData(); }, []);
+  const [entries, setEntries] = useState<Entries>({});
+  const [baseline, setBaseline] = useState<Entries>({});
+  const [touched, setTouched] = useState(false);
+  const initialized = useRef(false);
+  const draftResolved = useRef(false);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const [students, existingMarks] = await Promise.all([
-        studentApi.getBySection(classId, sectionId),
-        academicApi.getMarksByExam(examId),
-      ]);
+  // Initialise from the server once, then offer any unsaved draft back
+  useEffect(() => {
+    if (!query.data || initialized.current) return;
+    initialized.current = true;
+    const saved = rosterToEntries(query.data);
+    setBaseline(saved);
+    setEntries(saved);
 
-      const markMap = new Map(existingMarks.map((m: any) => [m.studentId, m]));
-
-      const merged: StudentMark[] = students.map((s: any) => {
-        const existing = markMap.get(s.id) as any;
-        return {
-          studentId: s.id,
-          studentName: `${s.firstName} ${s.lastName}`,
-          rollNumber: s.rollNumber,
-          isAbsent: existing?.isAbsent ?? false,
-          marksObtained: existing && !existing.isAbsent && existing.marksObtained !== null
-            ? String(existing.marksObtained)
-            : '',
-        };
-      });
-
-      setMarks(merged);
-      setIsUpdate(existingMarks.length > 0);
-      setIsDirty(false);
-    } catch (err: any) {
-      if (err.response?.status === 401) { await logout(); return; }
-      setError(err.response?.data?.message || 'Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateMark = useCallback((studentId: number, field: 'marksObtained' | 'isAbsent', value: string | boolean) => {
-    setIsDirty(true);
-    setMarks(prev => prev.map(m => {
-      if (m.studentId !== studentId) return m;
-      if (field === 'isAbsent') {
-        return { ...m, isAbsent: value as boolean, marksObtained: value ? '' : m.marksObtained };
+    drafts.load<Entries>(draftKey).then(draft => {
+      const changes = Object.entries(draft?.data ?? {})
+        .map(([id, e]) => [Number(id), e] as const)
+        .filter(([id, e]) => saved[id] && !sameEntry(saved[id], e));
+      if (!draft || changes.length === 0) {
+        draftResolved.current = true;
+        return;
       }
-      return { ...m, marksObtained: value as string };
-    }));
+      Alert.alert(
+        'Restore unsaved marks?',
+        `${changes.length} mark${changes.length === 1 ? '' : 's'} from ${dayjs(draft.savedAt).format('h:mm A, D MMM')} weren't saved.`,
+        [
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => {
+              drafts.remove(draftKey);
+              draftResolved.current = true;
+            },
+          },
+          {
+            text: 'Restore',
+            onPress: () => {
+              setEntries(prev => ({ ...prev, ...Object.fromEntries(changes) }));
+              setTouched(true);
+              draftResolved.current = true;
+            },
+          },
+        ],
+        { cancelable: false }
+      );
+    });
+  }, [query.data, draftKey]);
+
+  const dirtyIds = useMemo(
+    () => students.map(s => s.studentId).filter(id => !sameEntry(entries[id], baseline[id])),
+    [students, entries, baseline]
+  );
+  const errors = useMemo(() => {
+    const map: Record<number, string | null> = {};
+    students.forEach(s => {
+      map[s.studentId] = markError(entries[s.studentId], totalMarks);
+    });
+    return map;
+  }, [students, entries, totalMarks]);
+  const stats = useMemo(() => computeStats(students, entries, passingMarks), [students, entries, passingMarks]);
+
+  // Autosave unsaved marks as a draft
+  useEffect(() => {
+    if (!draftResolved.current) return;
+    const timer = setTimeout(() => {
+      if (dirtyIds.length > 0) drafts.save(draftKey, entries);
+      else drafts.remove(draftKey);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [entries, dirtyIds.length, draftKey]);
+
+  // ── Focus & scrolling ──
+  const scrollRef = useRef<ScrollView>(null);
+  const inputs = useRef<(TextInput | null)[]>([]);
+  const rowY = useRef<number[]>([]);
+  const [focused, setFocused] = useState<number | null>(null);
+
+  const setInputRef = useCallback((index: number, ref: TextInput | null) => {
+    inputs.current[index] = ref;
+  }, []);
+  const onLayoutRow = useCallback((index: number, y: number) => {
+    rowY.current[index] = y;
+  }, []);
+  const onFocusRow = useCallback((index: number) => {
+    setFocused(index);
+    scrollRef.current?.scrollTo({ y: Math.max(0, (rowY.current[index] ?? 0) - 120), animated: true });
   }, []);
 
-  const getPassFail = (mark: StudentMark): 'pass' | 'fail' | null => {
-    if (mark.isAbsent || mark.marksObtained === '') return null;
-    const num = parseFloat(mark.marksObtained);
-    if (isNaN(num)) return null;
-    return num >= passingMarks ? 'pass' : 'fail';
-  };
+  const entriesRef = useRef(entries);
+  entriesRef.current = entries;
+  const studentsRef = useRef(students);
+  studentsRef.current = students;
 
-  const validate = (): boolean => {
-    for (const m of marks) {
-      if (!m.isAbsent) {
-        if (m.marksObtained === '') {
-          Alert.alert('Missing Marks', `Please enter marks for ${m.studentName} or mark them absent.`);
-          return false;
-        }
-        const num = parseFloat(m.marksObtained);
-        if (isNaN(num) || num < 0 || num > totalMarks) {
-          Alert.alert('Invalid Marks', `Marks for ${m.studentName} must be between 0 and ${totalMarks}.`);
-          return false;
-        }
+  /** Focus the next/previous student who isn't marked absent. */
+  const focusFrom = useCallback((index: number, step: 1 | -1) => {
+    const list = studentsRef.current;
+    for (let i = index + step; i >= 0 && i < list.length; i += step) {
+      if (!entriesRef.current[list[i].studentId]?.absent) {
+        inputs.current[i]?.focus();
+        return;
       }
     }
-    return true;
-  };
+    Keyboard.dismiss();
+  }, []);
+  const onNext = useCallback((index: number) => focusFrom(index, 1), [focusFrom]);
+
+  // ── Editing ──
+  const onChange = useCallback((studentId: number, text: string) => {
+    const cleaned = text.replace(',', '.').replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+    setTouched(true);
+    setEntries(prev => ({ ...prev, [studentId]: { absent: false, value: cleaned } }));
+  }, []);
+  const onToggleAbsent = useCallback((studentId: number) => {
+    haptics.tap();
+    setTouched(true);
+    setEntries(prev => {
+      const current = prev[studentId] ?? { value: '', absent: false };
+      return { ...prev, [studentId]: { absent: !current.absent, value: current.absent ? current.value : '' } };
+    });
+  }, []);
+
+  // ── Saving ──
+  const mutation = useMutation({
+    mutationFn: (rows: { studentId: number; marksObtained: number | null; isAbsent: boolean }[]) =>
+      academicApi.bulkSubmitMarks(examId, rows, sectionId),
+  });
 
   const handleSave = async () => {
-    if (!validate()) return;
-
-    Alert.alert(
-      isUpdate ? 'Update Marks' : 'Save Marks',
-      `${isUpdate ? 'Update' : 'Save'} marks for all ${marks.length} students?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Save',
-          onPress: async () => {
-            try {
-              setSaving(true);
-              const payload = marks.map(m => ({
-                studentId: m.studentId,
-                isAbsent: m.isAbsent,
-                marksObtained: m.isAbsent ? null : parseFloat(m.marksObtained),
-              }));
-              await academicApi.bulkSubmitMarks(examId, payload);
-              setIsUpdate(true);
-              setIsDirty(false);
-              Alert.alert('Saved', 'Marks saved successfully!', [
-                { text: 'OK', onPress: () => navigation.goBack() },
-              ]);
-            } catch (err: any) {
-              Alert.alert('Error', err.response?.data?.message || 'Failed to save marks');
-            } finally {
-              setSaving(false);
-            }
-          },
-        },
-      ]
-    );
+    const invalid = dirtyIds.filter(id => errors[id]);
+    if (invalid.length > 0) {
+      haptics.error();
+      toast.error(`Fix ${invalid.length} mark${invalid.length === 1 ? '' : 's'} first`, `Marks must be between 0 and ${totalMarks}.`);
+      const index = students.findIndex(s => s.studentId === invalid[0]);
+      inputs.current[index]?.focus();
+      return;
+    }
+    Keyboard.dismiss();
+    const ids = dirtyIds;
+    const snapshot = entries;
+    try {
+      await mutation.mutateAsync(
+        ids.map(id => ({
+          studentId: id,
+          isAbsent: snapshot[id].absent,
+          marksObtained: snapshot[id].absent ? null : parseMark(snapshot[id].value),
+        }))
+      );
+      setBaseline(prev => ({ ...prev, ...Object.fromEntries(ids.map(id => [id, snapshot[id]])) }));
+      setTouched(false);
+      await drafts.remove(draftKey);
+      queryClient.invalidateQueries({ queryKey: ['academic', 'exams', ctx.subjectId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myAssignments });
+      haptics.success();
+      toast.success('Marks saved', `${stats.entered} of ${stats.total} students entered`);
+    } catch (error) {
+      haptics.error();
+      toast.error("Couldn't save marks", `${getErrorMessage(error)} Your marks are kept on this phone.`);
+    }
   };
 
-  if (loading) return <LoadingSpinner />;
-  if (error) return <ErrorMessage message={error} onRetry={loadData} />;
+  useUnsavedChangesGuard(touched && dirtyIds.length > 0 && !mutation.isPending, {
+    message: `${dirtyIds.length} mark${dirtyIds.length === 1 ? '' : 's'} haven't been saved. They're kept as a draft on this phone.`,
+  });
 
-  const passed = marks.filter(m => getPassFail(m) === 'pass').length;
-  const failed = marks.filter(m => getPassFail(m) === 'fail').length;
-  const absent = marks.filter(m => m.isAbsent).length;
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          onPress={() => navigation.navigate('ExamResults', ctx)}
+          accessibilityRole="button"
+          accessibilityLabel="View results"
+          hitSlop={10}
+          style={{ paddingHorizontal: 16 }}
+        >
+          <Icon name="stats-chart-outline" size={22} color={colors.primary} />
+        </Pressable>
+      ),
+    });
+  }, [navigation, ctx, colors.primary]);
+
+  if (query.isPending) return <SkeletonList rows={8} />;
+  if (query.isError && !query.data) {
+    return <ErrorState message={getErrorMessage(query.error)} onRetry={() => query.refetch()} retrying={query.isFetching} />;
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.examHeader}>
-        <Text style={styles.examName}>{examName}</Text>
-        <Text style={styles.examMeta}>Total Marks: {totalMarks}  |  Passing: {passingMarks}</Text>
-        <View style={styles.statRow}>
-          <Text style={styles.statPass}>✓ Pass: {passed}</Text>
-          <Text style={styles.statFail}>✗ Fail: {failed}</Text>
-          <Text style={styles.statAbsent}>○ Absent: {absent}</Text>
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerHeight}>
+      <View style={styles.summary} accessible accessibilityLabel={`${stats.entered} of ${stats.total} entered. Average ${stats.average ?? 'none'}.`}>
+        <Text style={styles.summaryMeta}>
+          Out of {totalMarks} · pass {passingMarks}
+        </Text>
+        <View style={styles.chips}>
+          <Text style={styles.chip}>
+            <Text style={styles.chipValue}>{stats.entered}</Text>/{stats.total} entered
+          </Text>
+          <Text style={styles.chip}>
+            Avg <Text style={styles.chipValue}>{stats.average ?? '—'}</Text>
+          </Text>
+          <Text style={[styles.chip, { color: colors.success }]}>Pass {stats.passed}</Text>
+          <Text style={[styles.chip, { color: colors.warning }]}>Fail {stats.failed}</Text>
+          <Text style={styles.chip}>AB {stats.absent}</Text>
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.list}
-        keyboardShouldPersistTaps="always"
-        automaticallyAdjustKeyboardInsets={true}
-      >
-        {marks.map(item => (
+      <ScrollView ref={scrollRef} style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list}>
+        {students.map((student, index) => (
           <MarkRow
-            key={item.studentId}
-            item={item}
+            key={student.studentId}
+            student={student}
+            index={index}
+            entry={entries[student.studentId] ?? { value: '', absent: false }}
+            error={errors[student.studentId]}
+            dirty={!sameEntry(entries[student.studentId], baseline[student.studentId])}
             totalMarks={totalMarks}
             passingMarks={passingMarks}
-            onUpdate={updateMark}
+            isLast={index === students.length - 1}
+            inputRef={setInputRef}
+            onChange={onChange}
+            onToggleAbsent={onToggleAbsent}
+            onFocusRow={onFocusRow}
+            onNext={onNext}
+            onLayoutRow={onLayoutRow}
           />
         ))}
-        <View style={{ height: 120 }} />
+        {students.length === 0 && <Text style={styles.empty}>No active students are enrolled in this section.</Text>}
       </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.saveBtn, (saving || (isUpdate && !isDirty)) && styles.saveBtnDisabled]}
-          onPress={handleSave}
-          disabled={saving || (isUpdate && !isDirty)}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveBtnText}>{isUpdate ? 'Update Marks' : 'Save Marks'} ({marks.length} students)</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
+      <SaveBar
+        dirtyCount={dirtyIds.length}
+        saving={mutation.isPending}
+        onSave={handleSave}
+        saveLabel={dirtyIds.length ? `Save ${dirtyIds.length} mark${dirtyIds.length === 1 ? '' : 's'}` : undefined}
+        savedLabel={stats.total > 0 ? (stats.notEntered === 0 ? 'All marks saved' : `${stats.notEntered} student${stats.notEntered === 1 ? '' : 's'} still without marks`) : undefined}
+      />
+
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID={ACCESSORY_ID}>
+          <View style={styles.accessory}>
+            <Pressable onPress={() => focused !== null && focusFrom(focused, -1)} accessibilityRole="button" accessibilityLabel="Previous student" hitSlop={8} style={styles.accessoryButton}>
+              <Icon name="chevron-up" size={22} color={colors.primary} />
+            </Pressable>
+            <Pressable onPress={() => focused !== null && focusFrom(focused, 1)} accessibilityRole="button" accessibilityLabel="Next student" hitSlop={8} style={styles.accessoryButton}>
+              <Icon name="chevron-down" size={22} color={colors.primary} />
+            </Pressable>
+            <Text style={styles.accessoryLabel} numberOfLines={1}>
+              {focused !== null ? students[focused]?.name : ''}
+            </Text>
+            <Pressable onPress={() => Keyboard.dismiss()} accessibilityRole="button" hitSlop={8} style={styles.accessoryButton}>
+              <Text style={styles.done}>Done</Text>
+            </Pressable>
+          </View>
+        </InputAccessoryView>
+      )}
+    </KeyboardAvoidingView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-
-  examHeader: {
-    backgroundColor: '#fff', padding: 16,
-    borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
-  },
-  examName: { fontSize: 16, fontWeight: '700', color: '#1f2937' },
-  examMeta: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  statRow: { flexDirection: 'row', gap: 16, marginTop: 8 },
-  statPass: { fontSize: 13, color: '#16a34a', fontWeight: '600' },
-  statFail: { fontSize: 13, color: '#dc2626', fontWeight: '600' },
-  statAbsent: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
-
-  list: { padding: 12 },
+const useStyles = makeStyles(({ colors, spacing, typography, radius }) => ({
+  root: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
+  summary: { backgroundColor: colors.surface, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, gap: spacing.xs },
+  summaryMeta: { ...typography.caption, color: colors.textMuted },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  chip: { ...typography.caption, color: colors.textSecondary },
+  chipValue: { fontWeight: '700', color: colors.text },
+  list: { paddingBottom: spacing.xl },
   row: {
-    backgroundColor: '#fff', borderRadius: 8, marginBottom: 8,
-    padding: 12, flexDirection: 'row', alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 2, elevation: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
-  studentInfo: { flex: 1 },
-  rollNumber: { fontSize: 11, color: '#9ca3af', marginBottom: 2 },
-  studentName: { fontSize: 14, fontWeight: '600', color: '#1f2937' },
-
-  absentBtn: {
-    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6,
-    borderWidth: 1, borderColor: '#d1d5db', marginRight: 8,
-    backgroundColor: '#fff',
+  rowAbsent: { backgroundColor: colors.surfaceMuted },
+  roll: { ...typography.caption, fontWeight: '700', color: colors.textMuted, width: 26, textAlign: 'center' },
+  nameWrap: { flex: 1 },
+  name: { ...typography.bodyStrong, color: colors.text },
+  error: { ...typography.small, color: colors.danger, marginTop: 1 },
+  unsaved: { ...typography.small, color: colors.primary, marginTop: 1 },
+  absent: {
+    width: HIT_SIZE,
+    height: HIT_SIZE,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  absentBtnActive: { backgroundColor: '#fee2e2', borderColor: '#fca5a5' },
-  absentBtnText: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
-  absentBtnTextActive: { color: '#dc2626', fontWeight: '700' },
-
-  marksInputWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  marksInput: {
-    width: 72, height: 38, borderWidth: 1, borderColor: '#d1d5db',
-    borderRadius: 6, paddingHorizontal: 8, fontSize: 15, fontWeight: '600',
-    color: '#1f2937', backgroundColor: '#fff', textAlign: 'center',
+  absentOn: { backgroundColor: colors.absent, borderColor: colors.absent },
+  absentText: { ...typography.small, fontWeight: '700', color: colors.textMuted },
+  absentTextOn: { color: colors.onPrimary },
+  input: {
+    width: 76,
+    height: HIT_SIZE,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    textAlign: 'center',
+    ...typography.heading,
+    color: colors.text,
+    backgroundColor: colors.surface,
   },
-  marksInputPass: { borderColor: '#86efac', backgroundColor: '#f0fdf4' },
-  marksInputFail: { borderColor: '#fca5a5', backgroundColor: '#fff1f2' },
-  resultPass: { fontSize: 14, fontWeight: '700', color: '#16a34a', width: 16 },
-  resultFail: { fontSize: 14, fontWeight: '700', color: '#dc2626', width: 16 },
-
-  absentPlaceholder: {
-    width: 72 + 4 + 16, justifyContent: 'center', alignItems: 'center',
+  inputDisabled: { borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceMuted },
+  absentDash: { ...typography.heading, color: colors.textSubtle },
+  empty: { ...typography.body, color: colors.textMuted, textAlign: 'center', padding: spacing.xl },
+  accessory: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    height: 44,
+    backgroundColor: colors.surfaceMuted,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  absentLabel: { fontSize: 20, color: '#d1d5db' },
-
-  footer: {
-    padding: 16, backgroundColor: '#fff',
-    borderTopWidth: 1, borderTopColor: '#e5e7eb',
-  },
-  saveBtn: {
-    backgroundColor: '#3b82f6', paddingVertical: 14, borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  saveBtnDisabled: { backgroundColor: '#93c5fd' },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-});
+  accessoryButton: { paddingHorizontal: spacing.sm, height: 44, justifyContent: 'center' },
+  accessoryLabel: { ...typography.caption, color: colors.textMuted, flex: 1, textAlign: 'center' },
+  done: { ...typography.bodyStrong, color: colors.primary },
+}));
 
 export default MarksEntryScreen;

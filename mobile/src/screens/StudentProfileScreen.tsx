@@ -5,7 +5,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   ActivityIndicator,
   Image,
@@ -13,16 +12,16 @@ import {
   Platform,
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
+import { useRootNavigation } from '../navigation/types';
 import { RouteProp } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { studentApi } from '../api/student';
 import { photoUploadApi } from '../api/photoUpload';
 import { StudentDetail, StudentUpdatePayload, StudentEnrollment } from '../types';
-import { RootStackParamList } from '../navigation/AppNavigator';
-import { useAuth } from '../context/AuthContext';
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorMessage from '../components/ErrorMessage';
+import { RootStackParamList } from '../navigation/types';
+import { LoadingState, ErrorState, Card, ListRow } from '../components/ui';
 import DatePicker from '../components/DatePicker';
+import { makeStyles, useTheme } from '../theme';
 
 type StudentProfileScreenRouteProp = RouteProp<RootStackParamList, 'StudentProfile'>;
 
@@ -59,11 +58,14 @@ const getActiveEnrollment = (s: StudentDetail): StudentEnrollment | null =>
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
+const SectionHeader: React.FC<{ title: string }> = ({ title }) => {
+  const styles = useStyles();
+  return (
   <View style={styles.sectionHeader}>
     <Text style={styles.sectionHeaderText}>{title}</Text>
   </View>
-);
+  );
+};
 
 interface FieldProps {
   label: string;
@@ -79,7 +81,10 @@ interface FieldProps {
 const Field: React.FC<FieldProps> = ({
   label, value, editable, onChangeText,
   keyboardType = 'default', multiline = false, isLast = false, placeholder,
-}) => (
+}) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
+  return (
   <View style={[styles.fieldRow, !isLast && styles.fieldRowBorder]}>
     <Text style={styles.fieldLabel}>{label}</Text>
     {editable ? (
@@ -90,14 +95,15 @@ const Field: React.FC<FieldProps> = ({
         keyboardType={keyboardType}
         multiline={multiline}
         placeholder={placeholder ?? `Enter ${label.toLowerCase()}`}
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor={colors.textSubtle}
         autoCorrect={false}
       />
     ) : (
       <Text style={styles.fieldValue}>{value || '—'}</Text>
     )}
   </View>
-);
+  );
+};
 
 interface PillSelectorProps {
   label: string;
@@ -108,7 +114,9 @@ interface PillSelectorProps {
   isLast?: boolean;
 }
 
-const PillSelector: React.FC<PillSelectorProps> = ({ label, options, value, editable, onSelect, isLast = false }) => (
+const PillSelector: React.FC<PillSelectorProps> = ({ label, options, value, editable, onSelect, isLast = false }) => {
+  const styles = useStyles();
+  return (
   <View style={[styles.pillFieldRow, !isLast && styles.fieldRowBorder]}>
     <Text style={[styles.fieldLabel, styles.pillLabel]}>{label}</Text>
     <ScrollView
@@ -128,14 +136,17 @@ const PillSelector: React.FC<PillSelectorProps> = ({ label, options, value, edit
       ))}
     </ScrollView>
   </View>
-);
+  );
+};
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 const StudentProfileScreen: React.FC = () => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const route = useRoute<StudentProfileScreenRouteProp>();
   const { studentId } = route.params;
-  const { logout } = useAuth();
+  const navigation = useRootNavigation();
 
   const [student, setStudent] = useState<StudentDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -165,7 +176,6 @@ const StudentProfileScreen: React.FC = () => {
       setForm(initForm(data));
       setRollNumber(getActiveEnrollment(data)?.rollNumber ?? '');
     } catch (err: any) {
-      if (err.response?.status === 401) { await logout(); return; }
       setError(err.response?.data?.message || 'Failed to load student');
     } finally {
       setLoading(false);
@@ -259,7 +269,6 @@ const StudentProfileScreen: React.FC = () => {
       setIsEditMode(false);
       Alert.alert('Saved', 'Student profile updated successfully.');
     } catch (err: any) {
-      if (err.response?.status === 401) { await logout(); return; }
       Alert.alert('Error', err.response?.data?.message || 'Failed to save changes.');
     } finally {
       setSaving(false);
@@ -276,8 +285,8 @@ const StudentProfileScreen: React.FC = () => {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  if (loading) return <LoadingSpinner />;
-  if (error || !student) return <ErrorMessage message={error ?? 'Student not found'} onRetry={loadStudent} />;
+  if (loading) return <LoadingState />;
+  if (error || !student) return <ErrorState message={error ?? 'Student not found'} onRetry={loadStudent} />;
 
   const photoUri = pendingPhotoUri ?? student.studentPhoto;
   const initials = `${student.firstName[0] ?? ''}${student.lastName[0] ?? ''}`.toUpperCase();
@@ -329,6 +338,24 @@ const StudentProfileScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* ── Quick links ── */}
+        {!isEditMode && (
+          <Card padded={false} style={styles.links}>
+            <ListRow
+              icon="calendar-outline"
+              title="Attendance"
+              subtitle="Calendar, absences & percentage"
+              onPress={() => navigation.navigate('StudentAttendance', { studentId, studentName: `${student.firstName} ${student.lastName}`.trim() })}
+            />
+            <ListRow
+              icon="trending-up-outline"
+              title="Performance"
+              subtitle="Class tests & exam results this session"
+              onPress={() => navigation.navigate('StudentPerformance', { studentId, studentName: `${student.firstName} ${student.lastName}`.trim() })}
+            />
+          </Card>
+        )}
+
         {/* ── Roll Number ── */}
         <View style={styles.rollRow}>
           <Text style={styles.rollLabel}>Roll No</Text>
@@ -339,7 +366,7 @@ const StudentProfileScreen: React.FC = () => {
               onChangeText={setRollNumber}
               keyboardType="numeric"
               placeholder="Roll number"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.textSubtle}
             />
           ) : (
             <Text style={styles.rollValue}>{rollNumber || '—'}</Text>
@@ -362,7 +389,7 @@ const StudentProfileScreen: React.FC = () => {
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={colors.onPrimary} />
               ) : (
                 <Text style={styles.saveButtonText}>
                   {uploadingPhoto ? 'Uploading…' : 'Save'}
@@ -431,10 +458,10 @@ const StudentProfileScreen: React.FC = () => {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   keyboardView: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
@@ -447,23 +474,23 @@ const styles = StyleSheet.create({
   photoSection: {
     alignItems: 'center',
     paddingVertical: 24,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: colors.background,
   },
   photo: {
     width: 112,
     height: 112,
     borderRadius: 56,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: colors.border,
   },
   initialsCircle: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   initialsText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontSize: 36,
     fontWeight: '700',
   },
@@ -471,7 +498,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 14,
     width: 28,
     height: 28,
@@ -489,13 +516,13 @@ const styles = StyleSheet.create({
   photoHint: {
     marginTop: 10,
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
   },
 
   // Read-only banner
   banner: {
     flexDirection: 'row',
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primarySoft,
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 10,
@@ -508,7 +535,7 @@ const styles = StyleSheet.create({
   },
   bannerLabel: {
     fontSize: 11,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginBottom: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -516,18 +543,18 @@ const styles = StyleSheet.create({
   bannerValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e40af',
+    color: colors.primaryDark,
   },
   bannerDivider: {
     width: 1,
-    backgroundColor: '#bfdbfe',
+    backgroundColor: colors.border,
   },
 
   // Roll Number
   rollRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     marginHorizontal: 16,
     marginTop: 10,
     borderRadius: 10,
@@ -542,21 +569,21 @@ const styles = StyleSheet.create({
   rollLabel: {
     width: 110,
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   rollInput: {
     flex: 1,
     fontSize: 15,
-    color: '#1f2937',
+    color: colors.text,
     borderBottomWidth: 1,
-    borderBottomColor: '#d1d5db',
+    borderBottomColor: colors.border,
     paddingVertical: 2,
   },
   rollValue: {
     flex: 1,
     fontSize: 15,
-    color: '#1f2937',
+    color: colors.text,
     fontWeight: '500',
   },
 
@@ -566,11 +593,11 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingVertical: 10,
     paddingHorizontal: 40,
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.primary,
     borderRadius: 8,
   },
   editButtonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontWeight: '600',
     fontSize: 15,
   },
@@ -586,12 +613,12 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
   },
   cancelButtonText: {
-    color: '#374151',
+    color: colors.textSecondary,
     fontWeight: '600',
     fontSize: 15,
   },
@@ -599,16 +626,16 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 11,
     borderRadius: 8,
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.primary,
     alignItems: 'center',
   },
   saveButtonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontWeight: '600',
     fontSize: 15,
   },
   buttonDisabled: {
-    backgroundColor: '#93c5fd',
+    backgroundColor: colors.primarySoft,
   },
 
   // Section header
@@ -620,14 +647,14 @@ const styles = StyleSheet.create({
   sectionHeaderText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6b7280',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
 
   // Card
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     marginHorizontal: 16,
     borderRadius: 10,
     paddingHorizontal: 16,
@@ -646,27 +673,27 @@ const styles = StyleSheet.create({
   },
   fieldRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: colors.background,
   },
   fieldLabel: {
     width: 110,
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '500',
     flexShrink: 0,
   },
   fieldValue: {
     flex: 1,
     fontSize: 15,
-    color: '#1f2937',
+    color: colors.text,
     fontWeight: '500',
   },
   fieldInput: {
     flex: 1,
     fontSize: 15,
-    color: '#1f2937',
+    color: colors.text,
     borderBottomWidth: 1,
-    borderBottomColor: '#d1d5db',
+    borderBottomColor: colors.border,
     paddingVertical: 2,
   },
   fieldInputMultiline: {
@@ -691,28 +718,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.background,
     marginRight: 6,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
   },
   pillActive: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#3b82f6',
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primary,
   },
   pillText: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   pillTextActive: {
-    color: '#2563eb',
+    color: colors.primaryDark,
     fontWeight: '700',
   },
 
   bottomSpacer: {
     height: 40,
   },
-});
+  links: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+}));
 
 export default StudentProfileScreen;

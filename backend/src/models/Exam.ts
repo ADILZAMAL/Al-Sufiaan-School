@@ -5,6 +5,8 @@ class Exam extends Model {
   public id!: number;
   public subjectId!: number;
   public examEventId!: number | null;
+  /** Class tests belong to one section; NULL = all sections (exam-event papers and legacy tests). */
+  public sectionId!: number | null;
   public chapterId!: number | null; // kept nullable for migration compatibility
   public schoolId!: number;
   public name!: string;
@@ -30,6 +32,11 @@ export const initExamModel = (sequelize: Sequelize) => {
         allowNull: false,
       },
       examEventId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      // FK + index are created by src/scripts/migrateExamSectionId.ts (not by sync)
+      sectionId: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },

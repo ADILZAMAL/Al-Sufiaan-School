@@ -1,158 +1,113 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-} from 'react-native';
+import React, { useRef, useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { Button, TextField } from '../components/ui';
+import { makeStyles } from '../theme';
+import { getErrorMessage, getStatus } from '../lib/errors';
 import SchoolLogo from '../../assets/school-logo.svg';
 
-type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
-
 const LoginScreen: React.FC = () => {
+  const styles = useStyles();
+  const { login } = useAuth();
+  const passwordRef = useRef<TextInput>(null);
+
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
-  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const [error, setError] = useState<string | null>(null);
+
+  const mobileError = mobileNumber.length > 0 && !/^\d{10}$/.test(mobileNumber) ? 'Enter a 10-digit mobile number' : null;
+  const canSubmit = /^\d{10}$/.test(mobileNumber) && password.length > 0 && !loading;
 
   const handleLogin = async () => {
-    if (!mobileNumber.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter both mobile number and password');
-      return;
-    }
-
+    if (!canSubmit) return;
     setLoading(true);
+    setError(null);
     try {
-      await login(mobileNumber.trim(), password);
-      // Navigation will happen automatically via AppNavigator
-    } catch (error: any) {
-      Alert.alert(
-        'Login Failed',
-        error.response?.data?.message || error.message || 'Invalid credentials. Please try again.'
-      );
+      await login(mobileNumber, password);
+      // RootNavigator switches to the app once the user is set
+    } catch (err) {
+      const status = getStatus(err);
+      setError(status === 400 || status === 401 ? 'Incorrect mobile number or password.' : getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.content}>
-        <View style={styles.logoContainer}>
-          <SchoolLogo width={150} height={150} />
-        </View>
-        <Text style={styles.title}>Al-Sufiaan School</Text>
-        <Text style={styles.subtitle}>Attendance System</Text>
+    <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.brand}>
+            <SchoolLogo width={112} height={112} />
+            <Text style={styles.title}>Al-Sufiaan School</Text>
+            <Text style={styles.subtitle}>Teacher App</Text>
+          </View>
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Mobile Number"
-            value={mobileNumber}
-            onChangeText={setMobileNumber}
-            keyboardType="phone-pad"
-            autoCapitalize="none"
-            autoComplete="tel"
-            editable={!loading}
-          />
+          <View style={styles.form}>
+            <TextField
+              label="Mobile number"
+              icon="call-outline"
+              placeholder="10-digit mobile number"
+              value={mobileNumber}
+              onChangeText={t => setMobileNumber(t.replace(/\D/g, '').slice(0, 10))}
+              keyboardType="number-pad"
+              textContentType="telephoneNumber"
+              autoComplete="tel"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              editable={!loading}
+              error={mobileError}
+            />
+            <TextField
+              ref={passwordRef}
+              label="Password"
+              icon="lock-closed-outline"
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureToggle
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="password"
+              autoComplete="password"
+              returnKeyType="go"
+              onSubmitEditing={handleLogin}
+              editable={!loading}
+            />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-          />
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Login</Text>
+            {!!error && (
+              <Text style={styles.error} accessibilityRole="alert">
+                {error}
+              </Text>
             )}
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+
+            <Button title="Sign in" onPress={handleLogin} loading={loading} disabled={!canSubmit} />
+            <Text style={styles.help}>Forgot your password? Ask the school office to reset it.</Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
+const useStyles = makeStyles(({ colors, spacing, typography, radius }) => ({
+  safe: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
+  content: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
+  brand: { alignItems: 'center', marginBottom: spacing.xxl },
+  title: { ...typography.display, color: colors.text, marginTop: spacing.lg },
+  subtitle: { ...typography.body, color: colors.textMuted, marginTop: spacing.xs },
+  form: { gap: spacing.lg },
+  error: {
+    ...typography.caption,
+    color: colors.danger,
+    backgroundColor: colors.dangerSoft,
+    padding: spacing.md,
+    borderRadius: radius.md,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  logo: {
-    width: 150,
-    height: 150,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 40,
-  },
-  form: {
-    width: '100%',
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  button: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 8,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
+  help: { ...typography.caption, color: colors.textMuted, textAlign: 'center' },
+}));
 
 export default LoginScreen;

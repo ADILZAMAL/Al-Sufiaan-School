@@ -63,6 +63,16 @@ export const requireRole = (allowedRoles: UserRole[]) => {
   };
 };
 
+/** Inverse of requireRole: blocks only the listed roles, everyone else passes. */
+export const denyRoles = (deniedRoles: UserRole[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (deniedRoles.includes(req.userRole)) {
+      return sendError(res, 'Insufficient permissions', 403, { code: 'FORBIDDEN' });
+    }
+    next();
+  };
+};
+
 export const verifyOnboardToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;

@@ -4,38 +4,38 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Alert,
-  Platform,
 } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
-import * as Print from 'expo-print';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { shareHtmlAsPdf } from '../pdf/shareHtmlAsPdf';
+import { RootStackParamList } from '../navigation/types';
 import { payslipApi } from '../api/payslip';
 import { PayslipWithPayments, PayslipPayment } from '../types';
+import { makeStyles, useTheme } from '../theme';
 
 type PayslipDetailRouteProp = RouteProp<RootStackParamList, 'PayslipDetail'>;
 
 const STATUS_CONFIG = {
-  UNPAID: { label: 'Unpaid', bg: '#fee2e2', text: '#dc2626' },
-  PARTIAL: { label: 'Partial', bg: '#fef9c3', text: '#ca8a04' },
-  PAID: { label: 'Paid', bg: '#dcfce7', text: '#16a34a' },
-};
+  UNPAID: { label: 'Unpaid', bg: 'dangerSoft', text: 'danger' },
+  PARTIAL: { label: 'Partial', bg: 'warningSoft', text: 'warning' },
+  PAID: { label: 'Paid', bg: 'successSoft', text: 'success' },
+} as const;
 
 const Row: React.FC<{ label: string; value: string; bold?: boolean; highlight?: boolean }> = ({
   label,
   value,
   bold,
   highlight,
-}) => (
+}) => {
+  const styles = useStyles();
+  return (
   <View style={[styles.row, highlight && styles.rowHighlight]}>
     <Text style={[styles.rowLabel, bold && styles.rowBold]}>{label}</Text>
     <Text style={[styles.rowValue, bold && styles.rowBold]}>{value}</Text>
   </View>
-);
+  );
+};
 
 const buildPayslipHtml = (payslip: PayslipWithPayments): string => `
 <!DOCTYPE html>
@@ -106,6 +106,8 @@ const buildPayslipHtml = (payslip: PayslipWithPayments): string => `
 `;
 
 const DetailsTab: React.FC<{ payslip: PayslipWithPayments }> = ({ payslip }) => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const status = STATUS_CONFIG[payslip.paymentStatus];
   return (
     <ScrollView contentContainerStyle={styles.tabContent}>
@@ -137,8 +139,8 @@ const DetailsTab: React.FC<{ payslip: PayslipWithPayments }> = ({ payslip }) => 
         <Text style={styles.sectionTitle}>Payment Summary</Text>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Status</Text>
-          <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-            <Text style={[styles.statusText, { color: status.text }]}>{status.label}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: colors[status.bg] }]}>
+            <Text style={[styles.statusText, { color: colors[status.text] }]}>{status.label}</Text>
           </View>
         </View>
         <Row label="Paid" value={`₹${Number(payslip.totalPaidAmount).toLocaleString('en-IN')}`} />
@@ -155,6 +157,7 @@ const DetailsTab: React.FC<{ payslip: PayslipWithPayments }> = ({ payslip }) => 
 };
 
 const PaymentsTab: React.FC<{ payments: PayslipPayment[] }> = ({ payments }) => {
+  const styles = useStyles();
   if (payments.length === 0) {
     return (
       <View style={styles.emptyPayments}>
@@ -190,6 +193,8 @@ const PaymentsTab: React.FC<{ payments: PayslipPayment[] }> = ({ payments }) => 
 };
 
 const PayslipDetailScreen: React.FC = () => {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const route = useRoute<PayslipDetailRouteProp>();
   const { payslipId } = route.params;
 
@@ -217,24 +222,7 @@ const PayslipDetailScreen: React.FC = () => {
     if (!payslip) return;
     setSaving(true);
     try {
-      const html = buildPayslipHtml(payslip);
-      const { uri: tempUri } = await Print.printToFileAsync({ html });
-
-      const fileName = `${payslip.payslipNumber}.pdf`;
-      const destUri = `${FileSystem.documentDirectory}${fileName}`;
-
-      await FileSystem.copyAsync({ from: tempUri, to: destUri });
-
-      if (Platform.OS === 'ios') {
-        await Sharing.shareAsync(destUri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
-      } else {
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(destUri, { mimeType: 'application/pdf' });
-        } else {
-          Alert.alert('Saved', `Payslip saved to:\n${destUri}`);
-        }
-      }
+      await shareHtmlAsPdf(buildPayslipHtml(payslip), payslip.payslipNumber);
     } catch {
       Alert.alert('Error', 'Failed to save payslip PDF. Please try again.');
     } finally {
@@ -245,7 +233,7 @@ const PayslipDetailScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -300,7 +288,7 @@ const PayslipDetailScreen: React.FC = () => {
           activeOpacity={0.85}
         >
           {saving ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={colors.onPrimary} size="small" />
           ) : (
             <Text style={styles.saveButtonText}>⬇  Save PDF</Text>
           )}
@@ -310,23 +298,23 @@ const PayslipDetailScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.background,
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.background,
     padding: 24,
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: colors.border,
   },
   tab: {
     flex: 1,
@@ -336,15 +324,15 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabActive: {
-    borderBottomColor: '#3b82f6',
+    borderBottomColor: colors.primary,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#9ca3af',
+    color: colors.textSubtle,
   },
   tabTextActive: {
-    color: '#3b82f6',
+    color: colors.primary,
   },
   tabContainer: {
     flex: 1,
@@ -354,7 +342,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -367,7 +355,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#3b82f6',
+    color: colors.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
@@ -378,10 +366,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: colors.background,
   },
   rowHighlight: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: colors.successSoft,
     marginHorizontal: -16,
     paddingHorizontal: 16,
     borderBottomWidth: 0,
@@ -389,15 +377,15 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textMuted,
   },
   rowValue: {
     fontSize: 14,
-    color: '#1f2937',
+    color: colors.text,
   },
   rowBold: {
     fontWeight: '700',
-    color: '#1f2937',
+    color: colors.text,
     fontSize: 15,
   },
   statusBadge: {
@@ -410,7 +398,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   paymentCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
@@ -429,25 +417,25 @@ const styles = StyleSheet.create({
   paymentAmount: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1f2937',
+    color: colors.text,
   },
   paymentMethod: {
     fontSize: 13,
-    color: '#3b82f6',
+    color: colors.primary,
     fontWeight: '600',
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primarySoft,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 20,
   },
   paymentDate: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textMuted,
     marginBottom: 4,
   },
   paymentNotes: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: colors.textSubtle,
     fontStyle: 'italic',
     marginTop: 4,
   },
@@ -464,39 +452,39 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1f2937',
+    color: colors.text,
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: colors.textSubtle,
     textAlign: 'center',
   },
   footer: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.border,
   },
   saveButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#93c5fd',
+    backgroundColor: colors.primarySoft,
   },
   saveButtonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontWeight: '700',
     fontSize: 16,
   },
   errorText: {
     fontSize: 15,
-    color: '#ef4444',
+    color: colors.danger,
     textAlign: 'center',
   },
-});
+}));
 
 export default PayslipDetailScreen;

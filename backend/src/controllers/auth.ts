@@ -16,7 +16,7 @@ export const login = async (req: Request, res: Response) => {
     return sendError(res, 'Validation failed', 400, errors.array());
   }
 
-  const { mobileNumber, password } = req.body;
+  const { mobileNumber, password, client } = req.body;
 
   try {
     const user = await User.findOne({ where: { mobileNumber } });
@@ -25,10 +25,13 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const staffId = user.staffId ?? null;
+    // The mobile app stores its token securely and re-validates it on launch,
+    // so it gets a longer session than the web cookie.
+    const expiresIn = client === 'mobile' ? (process.env.MOBILE_JWT_EXPIRES_IN || '7d') : AUTH_TOKEN_TTL_SECONDS;
     const token = jwt.sign(
       { userId: user.id, schoolId: user.schoolId, role: user.role, staffId },
       process.env.JWT_SECRET_KEY as string,
-      { expiresIn: AUTH_TOKEN_TTL_SECONDS }
+      { expiresIn } as jwt.SignOptions
     );
 
     res.cookie(AUTH_COOKIE_NAME, token, {
@@ -45,6 +48,28 @@ export const login = async (req: Request, res: Response) => {
 
     // Token is also returned in the body for mobile apps (which use the Authorization header)
     sendSuccess(res, { userId: user.id, schoolId: user.schoolId, role: user.role, staffId, staffName, token }, 'Login successful');
+  } catch (error) {
+    logger.error('Something went wrong', { error });
+    sendError(res, 'Something went wrong');
+  }
+};
+
+// GET /api/auth/validate-token — confirms the account still exists (staff login
+// may have been disabled since the token was issued) and returns fresh user info.
+export const validateSession = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findByPk(req.userId, { attributes: ['id', 'schoolId', 'role', 'staffId'] });
+    if (!user) {
+      return sendError(res, 'unauthorized', 401);
+    }
+
+    let staffName: string | null = null;
+    if (user.staffId) {
+      const staff = await Staff.findByPk(user.staffId, { attributes: ['name'] });
+      staffName = staff?.name ?? null;
+    }
+
+    sendSuccess(res, { userId: user.id, schoolId: user.schoolId, role: user.role, staffId: user.staffId ?? null, staffName }, 'Token validated');
   } catch (error) {
     logger.error('Something went wrong', { error });
     sendError(res, 'Something went wrong');

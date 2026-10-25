@@ -31,12 +31,17 @@ export interface ExamEvent {
   createdAt: string;
   updatedAt: string;
   subjectExams?: Exam[];
+  /** Classes that have papers set up for this event. */
+  classIds?: number[];
 }
 
 export interface Exam {
   id: number;
   subjectId: number;
   examEventId: number | null;
+  /** Class tests belong to one section; null = all sections (exam-event papers, older tests). */
+  sectionId?: number | null;
+  section?: { id: number; name: string } | null;
   chapterId?: number | null; // kept for migration compatibility
   schoolId: number;
   name: string;
@@ -98,6 +103,8 @@ export interface EventReportStudentMark {
   rollNumber: string | null;
   marksObtained: number | null;
   isAbsent: boolean;
+  /** Subject grade, computed on the server. */
+  grade?: string | null;
 }
 
 export interface EventReportSubject {
@@ -126,6 +133,23 @@ export interface EventReportCard {
   session: { id: number; name: string };
   students: EventReportStudent[];
   subjects: EventReportSubject[];
+  /** Totals, grade and rank per student — computed on the server (shared with the mobile app). */
+  summaries: EventReportSummary[];
+  classStats: { studentsWithMarks: number; highestPercentage: number | null; averagePercentage: number | null };
+  gradeScale: { grade: string; min: number }[];
+}
+
+export interface EventReportSummary {
+  studentId: number;
+  obtained: number;
+  maxTotal: number;
+  attempted: number;
+  /** Unrounded percentage; null when no subject was attempted. */
+  percentage: number | null;
+  grade: string | null;
+  rank: number | null;
+  rankOf: number;
+  failedSubjects: number;
 }
 
 export interface AnnualEventResult {

@@ -44,18 +44,6 @@ const toPngDataUrl = (src: string): Promise<string | null> =>
     img.src = src;
   });
 
-// CBSE-style letter grade from a percentage.
-const gradeFor = (pct: number): string => {
-  if (pct >= 91) return 'A1';
-  if (pct >= 81) return 'A2';
-  if (pct >= 71) return 'B1';
-  if (pct >= 61) return 'B2';
-  if (pct >= 51) return 'C1';
-  if (pct >= 41) return 'C2';
-  if (pct >= 33) return 'D';
-  return 'E';
-};
-
 // 1 -> "1st", 2 -> "2nd", 11 -> "11th" ...
 const ordinal = (n: number): string => {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -67,6 +55,7 @@ interface StudentSummary {
   obtained: number;
   maxTotal: number;
   pct: number | null;
+  grade: string | null;
   rank: number | null;
   rankOf: number;
 }
@@ -185,7 +174,7 @@ function renderCardPage(doc: jsPDF, ctx: {
       String(subject.totalMarks),
       String(mark.marksObtained),
       `${Math.round(p)}%`,
-      gradeFor(p),
+      mark.grade ?? '—',
     ];
   });
   autoTable(doc, {
@@ -213,7 +202,7 @@ function renderCardPage(doc: jsPDF, ctx: {
   const items: [string, string][] = [
     ['TOTAL', s ? `${s.obtained} / ${s.maxTotal}` : '—'],
     ['PERCENTAGE', s && s.pct !== null ? `${s.pct.toFixed(1)}%` : '—'],
-    ['GRADE', s && s.pct !== null ? gradeFor(s.pct) : '—'],
+    ['GRADE', s?.grade ?? '—'],
     ['POSITION', s && s.rank !== null ? ordinal(s.rank) : '—'],
   ];
   const barH = 16;
@@ -307,41 +296,17 @@ function EventReportCardView({ data, school }: { data: EventReportCard; school: 
     return subject.marks.find(m => m.studentId === studentId);
   };
 
-  // Per-student total / % / rank (rank by total marks over attempted subjects, ties shared)
-  const summaries = useMemo(() => {
-    const map = new Map<number, StudentSummary>();
-    const rows = students.map(student => {
-      let obtained = 0;
-      let maxTotal = 0;
-      let counted = 0;
-      subjects.forEach(subject => {
-        const mark = subject.marks.find(m => m.studentId === student.studentId);
-        if (!mark || mark.isAbsent || mark.marksObtained === null) return;
-        obtained += mark.marksObtained;
-        maxTotal += subject.totalMarks;
-        counted += 1;
-      });
-      return { studentId: student.studentId, obtained, maxTotal, counted };
-    });
-    const ranked = rows.filter(r => r.counted > 0).sort((a, b) => b.obtained - a.obtained);
-    const rankById = new Map<number, number>();
-    ranked.forEach((r, i) => {
-      const rank = i > 0 && r.obtained === ranked[i - 1].obtained
-        ? rankById.get(ranked[i - 1].studentId)!
-        : i + 1;
-      rankById.set(r.studentId, rank);
-    });
-    rows.forEach(r => {
-      map.set(r.studentId, {
-        obtained: r.obtained,
-        maxTotal: r.maxTotal,
-        pct: r.maxTotal > 0 ? (r.obtained / r.maxTotal) * 100 : null,
-        rank: rankById.get(r.studentId) ?? null,
-        rankOf: ranked.length,
-      });
-    });
-    return map;
-  }, [students, subjects]);
+  // Per-student total / % / grade / rank, computed on the server
+  const summaries = useMemo(
+    () =>
+      new Map<number, StudentSummary>(
+        (data.summaries ?? []).map(s => [
+          s.studentId,
+          { obtained: s.obtained, maxTotal: s.maxTotal, pct: s.percentage, grade: s.grade, rank: s.rank, rankOf: s.rankOf },
+        ])
+      ),
+    [data.summaries]
+  );
 
   const buildReportCards = async (targets: EventReportStudent[]) => {
     if (targets.length === 0) return;
@@ -728,6 +693,10 @@ function ReportCardPicker({
 
   const selectedClass = classes.find(c => c.id === classId) ?? null;
   const sections = selectedClass?.sections ?? [];
+  // Only events with papers set up for the chosen class
+  const eventsForClass = (id: number | null) =>
+    examEvents.filter(ev => id !== null && (ev.classIds ?? []).includes(id));
+  const classEvents = eventsForClass(classId);
 
   const canSubmit = !!examEventId && !!classId && !!sectionId && !!sessionId;
 
@@ -760,8 +729,10 @@ function ReportCardPicker({
               value={classId ?? ''}
               disabled={!sessionId}
               onChange={e => {
-                setClassId(e.target.value ? Number(e.target.value) : null);
+                const nextClassId = e.target.value ? Number(e.target.value) : null;
+                setClassId(nextClassId);
                 setSectionId(null);
+                setExamEventId(prev => (prev && eventsForClass(nextClassId).some(ev => ev.id === prev) ? prev : null));
               }}
               className={`${selectClass} w-full`}
             >
@@ -791,12 +762,14 @@ function ReportCardPicker({
             <label className="block text-sm font-medium text-gray-700">Exam Event</label>
             <select
               value={examEventId ?? ''}
-              disabled={!sessionId}
+              disabled={!classId || classEvents.length === 0}
               onChange={e => setExamEventId(e.target.value ? Number(e.target.value) : null)}
               className={`${selectClass} w-full`}
             >
-              <option value="">Select exam event</option>
-              {examEvents.map(ev => (
+              <option value="">
+                {!classId ? 'Select a class first' : classEvents.length === 0 ? 'No exams set up for this class' : 'Select exam event'}
+              </option>
+              {classEvents.map(ev => (
                 <option key={ev.id} value={ev.id}>{ev.name}</option>
               ))}
             </select>
