@@ -2,6 +2,9 @@ import { Model, DataTypes, Sequelize } from 'sequelize';
 import School from './School';
 
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER' | 'TEACHER';
+export const USER_ROLES: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'CASHIER', 'TEACHER'];
+/** Web (office) roles. TEACHER is the mobile-app role and is always linked to a staff record. */
+export const OFFICE_ROLES: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'CASHIER'];
 
 class User extends Model {
     public id!: number;
@@ -51,7 +54,7 @@ export const initUserModel = (sequelize: Sequelize) => {
             allowNull: true,
         },
         role: {
-            type: DataTypes.ENUM('SUPER_ADMIN', 'ADMIN', 'CASHIER', 'TEACHER'),
+            type: DataTypes.ENUM(...USER_ROLES),
             allowNull: false,
             defaultValue: 'CASHIER',
         },

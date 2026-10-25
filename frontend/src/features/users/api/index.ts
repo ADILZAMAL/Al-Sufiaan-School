@@ -1,40 +1,14 @@
-import { User, CreateUserData, UpdateUserData, UpdateProfileData } from '../types';
+import { User, CreateLoginData, UpdateLoginData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_API_BASE_URL || "";
 
-// Get all users (SUPER_ADMIN only)
-export const getAllUsers = async (): Promise<User[]> => {
-  const response = await fetch(`${API_BASE_URL}/api/users`, {
-    credentials: 'include'
-  });
-  const body = await response.json();
-  if (!body.success) {
-    throw new Error(body.message);
-  }
-  return body.data;
-};
-
-// Get user by ID
-export const getUserById = async (id: number): Promise<User> => {
-  const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
-    credentials: 'include'
-  });
-  const body = await response.json();
-  if (!body.success) {
-    throw new Error(body.message);
-  }
-  return body.data;
-};
-
-// Create new user (SUPER_ADMIN only)
-export const createUser = async (userData: CreateUserData): Promise<User> => {
-  const response = await fetch(`${API_BASE_URL}/api/users`, {
-    method: 'POST',
+// Every login (staff-linked or not) is managed through /api/users; the backend decides who may change what.
+const send = async <T>(path: string, method: string, data?: unknown): Promise<T> => {
+  const response = await fetch(`${API_BASE_URL}/api/users${path}`, {
+    method,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(userData)
+    headers: data === undefined ? undefined : { 'Content-Type': 'application/json' },
+    body: data === undefined ? undefined : JSON.stringify(data),
   });
   const body = await response.json();
   if (!body.success) {
@@ -43,48 +17,14 @@ export const createUser = async (userData: CreateUserData): Promise<User> => {
   return body.data;
 };
 
-// Update user (SUPER_ADMIN or self)
-export const updateUser = async (id: number, userData: UpdateUserData): Promise<User> => {
-  const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(userData)
-  });
-  const body = await response.json();
-  if (!body.success) {
-    throw new Error(body.message);
-  }
-  return body.data;
-};
+// Get every login (SUPER_ADMIN only)
+export const getAllUsers = () => send<User[]>('', 'GET');
 
-// Update own profile
-export const updateProfile = async (profileData: UpdateProfileData): Promise<User> => {
-  const response = await fetch(`${API_BASE_URL}/api/users/profile/me`, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(profileData)
-  });
-  const body = await response.json();
-  if (!body.success) {
-    throw new Error(body.message);
-  }
-  return body.data;
-};
+export const createLogin = (data: CreateLoginData) => send<User>('', 'POST', data);
 
-// Delete user (SUPER_ADMIN only)
-export const deleteUser = async (id: number): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
-    method: 'DELETE',
-    credentials: 'include'
-  });
-  const body = await response.json();
-  if (!body.success) {
-    throw new Error(body.message);
-  }
-};
+export const updateLogin = (id: number, data: UpdateLoginData) => send<User>(`/${id}`, 'PUT', data);
+
+export const resetLoginPassword = (id: number, password: string) => send<null>(`/${id}/password`, 'PUT', { password });
+
+// Soft delete: past records stay linked; a staff login can be enabled again from the staff profile
+export const disableLogin = (id: number) => send<null>(`/${id}`, 'DELETE');

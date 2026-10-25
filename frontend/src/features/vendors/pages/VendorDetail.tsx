@@ -339,7 +339,7 @@ const VendorDetail: React.FC = () => {
                         <p className="text-sm font-medium text-gray-900 truncate">{bill.name}</p>
                         <p className="text-xs text-gray-400">
                           {formatDate(bill.createdAt)}
-                          {bill.user && ` · ${bill.user.firstName} ${bill.user.lastName}`}
+                          {bill.user && ` · ${[bill.user.firstName, bill.user.lastName].filter(Boolean).join(' ')}`}
                         </p>
                       </div>
                     </div>
@@ -415,7 +415,7 @@ const VendorDetail: React.FC = () => {
                           </span>
                         </div>
                         <p className="text-xs text-gray-400 truncate">
-                          {payment.user && `${payment.user.firstName} ${payment.user.lastName}`}
+                          {payment.user && [payment.user.firstName, payment.user.lastName].filter(Boolean).join(' ')}
                           {payment.notes && ` · ${payment.notes}`}
                         </p>
                       </div>

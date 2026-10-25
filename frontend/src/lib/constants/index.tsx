@@ -1,6 +1,18 @@
 import { HiOutlineViewGrid, HiOutlineCube, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineUserGroup, HiOutlineChartBar, HiOutlineCurrencyDollar, HiOutlineUserCircle, HiOutlineAcademicCap, HiOutlineLibrary, HiOutlineBell, HiOutlineCalendar, HiOutlineSun, HiOutlineBookOpen, HiOutlineArrowCircleUp, HiOutlineClipboardList } from 'react-icons/hi'
 
-export const DASHBOARD_SIDEBAR_LINKS = [
+import type { UserRole } from '../../features/auth/types'
+
+export interface SidebarLinkItem {
+	key: string
+	label: string
+	path: string
+	icon: JSX.Element
+	children?: SidebarLinkItem[]
+	/** Only these roles see the link (everyone when omitted) */
+	roles?: UserRole[]
+}
+
+export const DASHBOARD_SIDEBAR_LINKS: SidebarLinkItem[] = [
 	{
 		key: 'dashboard',
 		label: 'Dashboard',
@@ -93,7 +105,8 @@ export const DASHBOARD_SIDEBAR_LINKS = [
 		key: 'users',
 		label: 'User Management',
 		path: 'users',
-		icon: <HiOutlineUserCircle />
+		icon: <HiOutlineUserCircle />,
+		roles: ['SUPER_ADMIN']
 	},
 	{
 		key: 'school',

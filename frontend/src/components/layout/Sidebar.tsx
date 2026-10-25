@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { DASHBOARD_SIDEBAR_LINKS } from '../../lib/constants/index.tsx';
+import { DASHBOARD_SIDEBAR_LINKS, type SidebarLinkItem } from '../../lib/constants/index.tsx';
 import classNames from 'classnames';
 import { HiOutlineLogout, HiOutlineLockClosed, HiChevronDown } from 'react-icons/hi';
 import { FaSchool } from 'react-icons/fa';
@@ -14,7 +14,7 @@ const Sidebar: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [expandedItems, setExpandedItems] = useState<string[]>(['expense']);
     const navigate = useNavigate();
-    const { showToast, isSidebarOpen } = useAppContext();
+    const { showToast, isSidebarOpen, userRole } = useAppContext();
     const queryClient = useQueryClient();
     const { data: school } = useQuery('currentSchool', getCurrentSchool, { retry: false });
 
@@ -52,7 +52,7 @@ const Sidebar: React.FC = () => {
 
             {/* Nav */}
             <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5 scrollbar-thin">
-                {DASHBOARD_SIDEBAR_LINKS.map((link) => (
+                {DASHBOARD_SIDEBAR_LINKS.filter((link) => !link.roles || (userRole && link.roles.includes(userRole))).map((link) => (
                     <SidebarLink
                         key={link.key}
                         item={link}
@@ -99,14 +99,6 @@ const Sidebar: React.FC = () => {
         </div>
     );
 };
-
-interface SidebarLinkItem {
-    key: string;
-    label: string;
-    path: string;
-    icon: JSX.Element;
-    children?: SidebarLinkItem[];
-}
 
 interface SidebarLinkProps {
     item: SidebarLinkItem;

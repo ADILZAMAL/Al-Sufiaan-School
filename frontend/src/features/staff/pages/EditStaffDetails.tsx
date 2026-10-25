@@ -217,6 +217,9 @@ const EditStaffDetails: React.FC = () => {
               errors={errors}
               onChange={handleChange}
               staffType={staffType}
+              mobileHint={staff?.loginStatus?.enabled
+                ? 'This is also their login ID. Changing it changes the number they sign in with.'
+                : undefined}
             />
           )}
 

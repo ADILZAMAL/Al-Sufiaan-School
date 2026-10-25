@@ -103,3 +103,49 @@ keeping main's cleanup and re-applying the revamp's additions:
 throwaway MySQL (bad/unknown/disabled login → 401, web 1d cookie+token, mobile 7d token, Bearer + cookie verify,
 denyRoles 403 shape, validateSession 401 for soft-deleted teacher, change-password 400 on wrong current, logout
 clearCookie, updateChapter taughtBy/taughtOn).
+
+## Login accounts: one engine, two entry points (2026-10-26)
+
+Plan: `~/.claude/plans/i-want-you-to-zesty-taco.md`. Staff profile card + User Management both edit the same
+`User` row through `backend/src/utils/loginAccounts.ts` and `/api/users`.
+
+- [x] Local DB from `school_dump.sql`; baseline repro of bugs (no-mobile users, teacher edit, staff mobile clash, stale JWT)
+- [x] Phase 1: `OFFICE_ROLES`; `verifyToken` checks the DB (missing → 401, DB error → 500); delete `roleAuth.ts`
+- [x] Phase 2: `utils/loginAccounts.ts` engine + unit tests
+- [x] Phase 3: `/api/users` routes/controllers on the engine; staff login endpoints removed; staff write guards,
+      `updateStaff` + left-school transactions; `loginStatus.role`; backfill script
+- [x] Phase 4: `PASSWORD_RULES`; users api/types; `LoginFormModal`, `SetPasswordModal`, `LoginAccessCard`; `userId` in AppContext
+- [x] Phase 5: staff profile card, mobile hint, User Management list, disable modal, route + sidebar guard, VendorDetail names
+- [x] Verify: tsc/jest/lint/build, curl scenarios
+- [ ] UI click-through (no browser tool in the session; local stack left running for the user)
+- [ ] After deploy (needs user go-ahead): backfill script on prod, add mobile for Admin #2, delete test user #7
+
+**Review (2026-10-26)**
+- Baseline on the unchanged code (local DB): Add User saved `mobileNumber NULL`; editing teacher #10 made it ADMIN;
+  staff #24 saved a clashing number then 500'd with the login out of sync; re-adding deleted #3's email → 500;
+  a disabled teacher's token kept working.
+- After: backend tsc clean, jest 20/20 (new: `loginAccounts.test.ts`, `middleware/__tests__/auth.test.ts`);
+  frontend tsc + build clean, no new lint problems in touched files (remaining ones are identical on main).
+- Curl (local DB): readable 400s for bad mobile/weak password/teacher without staff/bad email; clashes name the owner
+  ("…already the login of Heena Tabassum (Teacher)"); deleted #3's email reusable; Admin manages teacher logins only
+  (403 on office accounts and role changes); self disable/demote/reset → 400; disable → that token 401 next call;
+  re-enable restores the same user id; staff mobile change moves the login ID (old number fails) or 400s and leaves
+  the staff row unchanged; left school → 401; DB down → 500 (not 401); onboarding + `PUT /schools/1` unaffected;
+  backfill run twice → 7 then 0 updates.
+- Removed: `/api/staff/:id/{enable-login,disable-login,reset-password}`, `GET /api/users/:id`, `PUT /api/users/profile/me`,
+  `middleware/roleAuth.ts`, Add/Edit/View user modals, `EnableLoginModal`.
+
+**Deploy notes**
+- Backend and web together (the `/api/users` contract changed). No schema change.
+- Then, with the user's go-ahead: `cd backend && npx ts-node src/scripts/backfillStaffLoginNames.ts` on prod
+  (a trailing "Error syncing database … connection manager was closed" line is the import-time sync being cut off,
+  same as the other scripts); add a mobile number for Admin #2 in User Management; disable test login #7.
+
+**Follow-ups found (not done)**
+- Error logs serialise Sequelize errors with the full row, password hash included (seen in `Error updating staff`);
+  in prod these go to Loki.
+- Teachers can sign in to the web dashboard; many routes only check for a token.
+- `GET /api/schools/:id/super-admin` is public and returns the super admin's mobile (login ID).
+- `payslip.ts:239,478` attributes payslips/salary expenses to user #1 (`(req as any).user?.id || 1`).
+- `GET /api/staff` returns Aadhaar and salary to any role.
+- Password reset doesn't end existing sessions (needs a token version column).

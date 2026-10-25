@@ -181,7 +181,8 @@ const router = createBrowserRouter([
       },
       {
         path: "users",
-        element: <UserManagement />
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN']} />,
+        children: [{ index: true, element: <UserManagement /> }]
       },
       {
         path: "students",

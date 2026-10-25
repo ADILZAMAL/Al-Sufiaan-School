@@ -16,6 +16,8 @@ interface PersonalDetailsFormProps {
   errors: StaffFormErrors;
   onChange: (field: keyof StaffFormData, value: any) => void;
   staffType?: 'teaching' | 'non-teaching';
+  /** Shown under the mobile number, e.g. when it is also the staff member's login ID */
+  mobileHint?: string;
 }
 
 const inputCls = (error?: string) =>
@@ -27,6 +29,7 @@ const PersonalDetailsForm: React.FC<PersonalDetailsFormProps> = ({
   formData,
   errors,
   onChange,
+  mobileHint,
 }) => {
   const [designations, setDesignations] = useState<Designation[]>([]);
   const [loadingDesignations, setLoadingDesignations] = useState(false);
@@ -124,8 +127,10 @@ const PersonalDetailsForm: React.FC<PersonalDetailsFormProps> = ({
               placeholder="10-digit mobile number"
               maxLength={10}
             />
-            {errors.mobileNumber && (
+            {errors.mobileNumber ? (
               <p className="text-red-500 text-xs mt-1">{errors.mobileNumber}</p>
+            ) : mobileHint && (
+              <p className="text-amber-600 text-xs mt-1">{mobileHint}</p>
             )}
           </div>
 
