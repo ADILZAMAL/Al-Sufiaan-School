@@ -22,3 +22,13 @@ after hitting `/api/test`, which never touches the DB. Render was failing too.
 (e.g. `POST /api/auth/login` with a fake `mobileNumber` should return a quick 401).
 Before blaming a firewall, test the port from several networks (check-host.net
 `check-tcp`) and compare with a full `SELECT 1` from the local `.env`.
+
+## "Explore and handle it properly" means: come back with a design, not questions
+
+On 2026-10-25 the user asked me to explore the staff + user management modules, said there was "a bug", and I
+asked them which bug and which approach. They rejected the question and asked me to explore more. Full
+exploration (prod dump data, git history, every caller, mobile client behaviour) found eight bugs and a clear
+design; the remaining open choice was answered by explaining how good products do it.
+
+**Rule:** for open-ended "explore X and make it right" requests, exhaust the codebase, data and history first and
+present a recommended design with the reasoning. Ask only about things the code and data cannot answer.

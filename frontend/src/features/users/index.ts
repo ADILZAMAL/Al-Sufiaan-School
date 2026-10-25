@@ -6,7 +6,7 @@ export * from './api';
 
 // Export components
 export { default as UserManagement } from './pages/UserManagement';
-export { default as AddUserModal } from './components/AddUserModal';
-export { default as EditUserModal } from './components/EditUserModal';
-export { default as ViewUserModal } from './components/ViewUserModal';
-export { default as DeleteUserModal } from './components/DeleteUserModal';
+export { default as LoginFormModal } from './components/LoginFormModal';
+export { default as LoginAccessCard } from './components/LoginAccessCard';
+export { default as SetPasswordModal } from './components/SetPasswordModal';
+export { default as DisableLoginModal } from './components/DisableLoginModal';

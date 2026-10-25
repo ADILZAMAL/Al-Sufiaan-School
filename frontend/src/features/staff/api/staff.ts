@@ -54,26 +54,6 @@ export const staffApi = {
     if (!body.success) throw new Error(body.message || 'Failed to mark staff as left school');
   },
 
-  enableLogin: async (staffId: number, password: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/api/staff/${staffId}/enable-login`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password })
-    });
-    const body = await response.json();
-    if (!body.success) throw new Error(body.error?.message || body.message || 'Failed to enable staff login');
-  },
-
-  disableLogin: async (staffId: number): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/api/staff/${staffId}/disable-login`, {
-      method: 'DELETE',
-      credentials: 'include'
-    });
-    const body = await response.json();
-    if (!body.success) throw new Error(body.error?.message || body.message || 'Failed to disable staff login');
-  },
-
   uploadPhoto: async (file: File): Promise<string> => {
     const form = new FormData();
     form.append('photo', file);
@@ -85,16 +65,5 @@ export const staffApi = {
     const body = await response.json();
     if (!body.success) throw new Error(body.message || 'Failed to upload photo');
     return body.data.photoUrl;
-  },
-
-  resetPassword: async (staffId: number, newPassword: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/api/staff/${staffId}/reset-password`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ newPassword })
-    });
-    const body = await response.json();
-    if (!body.success) throw new Error(body.error?.message || body.message || 'Failed to reset password');
   },
 };

@@ -1,68 +1,51 @@
-import express, {Request, Response} from 'express';
-import {check} from 'express-validator';
-import { 
-    getAllUsers, 
-    getUserById, 
-    createUser, 
-    updateUser, 
-    deleteUser, 
-    updateProfile
-} from '../controllers/user';
-import verifyToken from '../middleware/auth';
-import { requireSuperAdmin, canModifyUser } from '../middleware/roleAuth';
+import express from 'express';
+import { check } from 'express-validator';
+import { getAllUsers, createUser, updateUser, resetUserPassword, deleteUser } from '../controllers/user';
+import verifyToken, { requireRole } from '../middleware/auth';
+import { USER_ROLES } from '../models/User';
 const router = express.Router();
 
-// Get all users (SUPER_ADMIN only)
-router.get("/", verifyToken, requireSuperAdmin, getAllUsers);
+// Who may touch which login (Admins: Teacher logins only) is decided in utils/loginAccounts
+const loginManagers = requireRole(['SUPER_ADMIN', 'ADMIN']);
 
-// Get user by ID
-router.get("/:id", verifyToken, canModifyUser, getUserById);
+const loginFields = [
+    check('role', 'Choose a valid role').optional().isIn(USER_ROLES),
+    check('firstName', 'First name must be text').optional().isString(),
+    check('lastName', 'Last name must be text').optional({ values: 'null' }).isString(),
+    check('mobileNumber', 'Mobile number must be 10 digits').optional().matches(/^\d{10}$/),
+    check('email', 'Enter a valid email address').optional({ values: 'falsy' }).trim().isEmail(),
+];
 
-// Create new user (SUPER_ADMIN only)
+// List every login (SUPER_ADMIN only — the User Management page)
+router.get("/", verifyToken, requireRole(['SUPER_ADMIN']), getAllUsers);
+
+// Create a login (for a staff member via staffId, or a non-staff office account)
 router.post(
     "/",
     verifyToken,
-    requireSuperAdmin,
+    loginManagers,
     [
-        check('firstName', 'First Name is required').isString().notEmpty(),
-        check('lastName', 'Last Name is required').isString().notEmpty(),
-        check('email', 'Email is required').isEmail(),
-        check('password', 'Password with 6 or more characters is required').isLength({
-            min: 6
-        }),
-        check('role', 'Role is required').isIn(['SUPER_ADMIN', 'ADMIN', 'CASHIER']),
-        check('schoolId', 'School ID is required').isInt()
+        ...loginFields,
+        check('role', 'Role is required').exists(),
+        check('password', 'Password is required').isString(),
+        check('staffId', 'Invalid staff member').optional().isInt({ min: 1 }).toInt(),
     ],
     createUser
 );
 
-// Update user (SUPER_ADMIN or self)
+// Update role / name / mobile / email
+router.put("/:id", verifyToken, loginManagers, loginFields, updateUser);
+
+// Reset someone else's password (own password: PUT /api/auth/change-password)
 router.put(
-    "/:id",
+    "/:id/password",
     verifyToken,
-    canModifyUser,
-    [
-        check('firstName', 'First Name is required').optional().isString().notEmpty(),
-        check('lastName', 'Last Name is required').optional().isString().notEmpty(),
-        check('email', 'Email is required').optional().isEmail(),
-        check('role', 'Invalid role').optional().isIn(['SUPER_ADMIN', 'ADMIN', 'CASHIER'])
-    ],
-    updateUser
+    loginManagers,
+    [check('password', 'Password is required').isString()],
+    resetUserPassword
 );
 
-// Update own profile
-router.put(
-    "/profile/me",
-    verifyToken,
-    [
-        check('firstName', 'First Name is required').optional().isString().notEmpty(),
-        check('lastName', 'Last Name is required').optional().isString().notEmpty(),
-        check('email', 'Email is required').optional().isEmail()
-    ],
-    updateProfile
-);
-
-// Delete user (SUPER_ADMIN only)
-router.delete("/:id", verifyToken, requireSuperAdmin, deleteUser);
+// Disable a login (soft delete)
+router.delete("/:id", verifyToken, loginManagers, deleteUser);
 
 export default router;

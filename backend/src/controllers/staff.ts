@@ -3,9 +3,9 @@ import Staff from '../models/Staff';
 import User from '../models/User';
 import Designation from '../models/Designation';
 import sequelize from '../config/database';
-import { hashPassword } from '../utils/password';
 import { sendSuccess, sendError } from '../utils/response';
-import { validatePasswordStrength } from '../utils/passwordValidator';
+import { handleError } from '../utils/httpError';
+import { disableLoginForStaff, syncLoginFromStaff } from '../utils/loginAccounts';
 import logger from '../utils/logger';
 
 export const createStaff = async (req: Request, res: Response) => {
@@ -176,7 +176,7 @@ export const getStaffById = async (req: Request, res: Response) => {
 
         const staff = await Staff.findByPk(id, {
             include: [
-                { model: User, as: 'loginUser', attributes: ['id', 'mobileNumber', 'lastLogin'], required: false },
+                { model: User, as: 'loginUser', attributes: ['id', 'role', 'mobileNumber', 'lastLogin'], required: false },
                 { model: Designation, as: 'designation', attributes: ['id', 'name'], required: false },
             ],
         });
@@ -191,6 +191,7 @@ export const getStaffById = async (req: Request, res: Response) => {
             loginStatus: {
                 enabled: !!loginUser,
                 userId: loginUser?.id ?? null,
+                role: loginUser?.role ?? null,
                 mobileNumber: loginUser?.mobileNumber ?? null,
                 lastLogin: loginUser?.lastLogin ?? null,
             },
@@ -215,6 +216,11 @@ export const updateStaff = async (req: Request, res: Response) => {
 
         // Prevent changing staffType after creation
         delete updateData.staffType;
+
+        // The mobile number is also the staff member's login ID
+        if (updateData.mobileNumber !== undefined && !/^[0-9]{10}$/.test(updateData.mobileNumber)) {
+            return sendError(res, 'Mobile number must be 10 digits', 400);
+        }
 
         // Validate designation if being updated
         if (updateData.designationId) {
@@ -242,20 +248,15 @@ export const updateStaff = async (req: Request, res: Response) => {
             }
         }
 
-        await staff.update(updateData);
-
-        // Auto-sync mobileNumber to linked User account if it was changed
-        if (updateData.mobileNumber) {
-            const linkedUser = await User.findOne({ where: { staffId: staff.id } });
-            if (linkedUser) {
-                await linkedUser.update({ mobileNumber: updateData.mobileNumber });
-            }
-        }
+        // One transaction: if the new number is already someone else's login, the staff record is not saved either
+        await sequelize.transaction(async (transaction) => {
+            await staff.update(updateData, { transaction });
+            await syncLoginFromStaff(staff, transaction);
+        });
 
         return sendSuccess(res, staff, 'Staff updated successfully');
     } catch (error: any) {
-        logger.error('Error updating staff', { error });
-        return sendError(res, 'Internal server error', 500);
+        return handleError(res, error, 'Error updating staff');
     }
 };
 
@@ -269,131 +270,14 @@ export const markStaffLeftSchool = async (req: Request, res: Response) => {
             return sendError(res, 'Staff not found', 404);
         }
 
-        await staff.update({ active: false });
+        await sequelize.transaction(async (transaction) => {
+            await staff.update({ active: false }, { transaction });
+            await disableLoginForStaff(staff.id, transaction);
+        });
 
         return sendSuccess(res, staff, 'Staff marked as left school successfully');
     } catch (error: any) {
         logger.error('Error marking staff as left school', { error });
-        return sendError(res, 'Internal server error', 500);
-    }
-};
-
-export const enableStaffLogin = async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-        const { password } = req.body;
-
-        const passwordError = validatePasswordStrength(password);
-        if (passwordError) {
-            return sendError(res, passwordError, 400);
-        }
-
-        const staff = await Staff.findByPk(id);
-        if (!staff) {
-            return sendError(res, 'Staff not found', 404);
-        }
-
-        // paranoid: false — a disabled login is soft-deleted but still holds the unique staffId/mobileNumber,
-        // so it is restored rather than recreated (keeping attendance/marks linked to the same user id)
-        const existingByStaffId = await User.findOne({ where: { staffId: staff.id }, paranoid: false });
-        if (existingByStaffId && !existingByStaffId.deletedAt) {
-            return sendError(res, 'Login already enabled for this staff member', 400);
-        }
-
-        const existingByMobile = await User.findOne({ where: { mobileNumber: staff.mobileNumber }, paranoid: false });
-        // Deleting a staff record nulls its login's staffId (FK SET NULL); when that person is added back
-        // with the same number, reclaim the orphaned login instead of being blocked by it
-        const isOrphanedStaffLogin = existingByMobile?.role === 'TEACHER' && !existingByMobile.staffId;
-        const reusable = existingByStaffId ?? (isOrphanedStaffLogin ? existingByMobile : null);
-        if (existingByMobile && existingByMobile.id !== reusable?.id) {
-            return sendError(res, 'A user account with this mobile number already exists', 400);
-        }
-
-        const hashedPassword = await hashPassword(password);
-
-        const user = reusable
-            ? await sequelize.transaction(async (t) => {
-                if (reusable.deletedAt) {
-                    await reusable.restore({ transaction: t });
-                }
-                return reusable.update(
-                    { staffId: staff.id, mobileNumber: staff.mobileNumber, password: hashedPassword },
-                    { transaction: t },
-                );
-            })
-            : await User.create({
-                email: null,
-                firstName: null,
-                lastName: null,
-                mobileNumber: staff.mobileNumber,
-                password: hashedPassword,
-                role: 'TEACHER',
-                schoolId: staff.schoolId,
-                staffId: staff.id,
-            });
-
-        return sendSuccess(res, {
-            userId: user.id,
-            mobileNumber: user.mobileNumber,
-            role: user.role,
-            staffId: staff.id,
-        }, 'Staff login enabled successfully', 201);
-    } catch (error: any) {
-        logger.error('Error enabling staff login', { error });
-        return sendError(res, 'Internal server error', 500);
-    }
-};
-
-export const disableStaffLogin = async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-
-        const staff = await Staff.findByPk(id);
-        if (!staff) {
-            return sendError(res, 'Staff not found', 404);
-        }
-
-        const userAccount = await User.findOne({ where: { staffId: staff.id } });
-        if (!userAccount) {
-            return sendError(res, 'No login account found for this staff member', 404);
-        }
-
-        // Soft delete: attendance, marks etc. reference this user (FK RESTRICT); enableStaffLogin restores it
-        await userAccount.destroy();
-
-        return sendSuccess(res, null, 'Staff login disabled successfully');
-    } catch (error: any) {
-        logger.error('Error disabling staff login', { error });
-        return sendError(res, 'Internal server error', 500);
-    }
-};
-
-export const resetStaffPassword = async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-        const { newPassword } = req.body;
-
-        const passwordError = validatePasswordStrength(newPassword);
-        if (passwordError) {
-            return sendError(res, passwordError, 400);
-        }
-
-        const staff = await Staff.findByPk(id);
-        if (!staff) {
-            return sendError(res, 'Staff not found', 404);
-        }
-
-        const userAccount = await User.findOne({ where: { staffId: staff.id } });
-        if (!userAccount) {
-            return sendError(res, 'No login account found for this staff member. Enable login first.', 404);
-        }
-
-        const hashedPassword = await hashPassword(newPassword);
-        await userAccount.update({ password: hashedPassword });
-
-        return sendSuccess(res, null, 'Password reset successfully');
-    } catch (error: any) {
-        logger.error('Error resetting staff password', { error });
         return sendError(res, 'Internal server error', 500);
     }
 };

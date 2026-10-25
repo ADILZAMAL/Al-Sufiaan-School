@@ -13,6 +13,7 @@ type AppContext = {
   showToast: (toastMessage: ToastMessage) => void;
   isLoggedIn: boolean;
   isAuthLoading: boolean;
+  userId: number | null;
   userRole: UserRole | null;
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
@@ -45,6 +46,7 @@ export const AppContextProvider = ({
   }, []);
 
   const isLoggedIn = !!userData?.data;
+  const userId: number | null = userData?.data?.userId ?? null;
   const userRole = userData?.data?.role || null;
 
   const contextValue = useMemo(
@@ -52,11 +54,12 @@ export const AppContextProvider = ({
       showToast,
       isLoggedIn,
       isAuthLoading,
+      userId,
       userRole,
       isSidebarOpen,
       toggleSidebar,
     }),
-    [showToast, isLoggedIn, isAuthLoading, userRole, isSidebarOpen, toggleSidebar]
+    [showToast, isLoggedIn, isAuthLoading, userId, userRole, isSidebarOpen, toggleSidebar]
   );
 
   return (

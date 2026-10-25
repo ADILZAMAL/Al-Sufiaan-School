@@ -1,8 +1,11 @@
+import type { UserRole } from '../../auth/types';
+
 export type StaffType = 'teaching' | 'non-teaching';
 
 export interface StaffLoginStatus {
   enabled: boolean;
   userId: number | null;
+  role: UserRole | null;
   mobileNumber: string | null;
   lastLogin: string | null;
 }
