@@ -571,6 +571,7 @@ export const getPaymentHistory = async (req: Request, res: Response) => {
                 include: [{
                     model: User,
                     as: 'paidByUser',
+                    paranoid: false, // keep the name when that login is later disabled (soft-deleted)
                     attributes: ['id', 'name', 'email']
                 }, {
                     model: Expense,

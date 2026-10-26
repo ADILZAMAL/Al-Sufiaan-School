@@ -118,6 +118,7 @@ router.get('/stock-in/recent', verifyToken, async (req: Request, res: Response) 
                 {
                     model: User,
                     as: 'user',
+                    paranoid: false, // keep the name when that login is later disabled (soft-deleted)
                     attributes: ['firstName', 'lastName']
                 }
             ],
@@ -167,6 +168,7 @@ router.get('/stock-in', verifyToken, async (req: Request, res: Response) => {
                 {
                     model: User,
                     as: 'user',
+                    paranoid: false, // keep the name when that login is later disabled (soft-deleted)
                     attributes: ['firstName', 'lastName']
                 }
             ],

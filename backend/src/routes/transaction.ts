@@ -49,11 +49,13 @@ router.get('/recent', verifyToken, async (req: Request, res: Response) => {
         {
           model: User,
           as: 'user',
+          paranoid: false, // keep the name when that login is later disabled (soft-deleted)
           attributes: ['firstName', 'lastName']
         },
         {
           model: User,
           as: 'verifier',
+          paranoid: false, // keep the name when that login is later disabled (soft-deleted)
           attributes: ['firstName', 'lastName'],
           required: false
         }
@@ -164,11 +166,13 @@ router.get('/', verifyToken, async (req: Request, res: Response) => {
         {
           model: User,
           as: 'user',
+          paranoid: false, // keep the name when that login is later disabled (soft-deleted)
           attributes: ['firstName', 'lastName']
         },
         {
           model: User,
           as: 'verifier',
+          paranoid: false, // keep the name when that login is later disabled (soft-deleted)
           attributes: ['firstName', 'lastName'],
           required: false
         }

@@ -63,6 +63,7 @@ export const fetchExpense = async (req: Request, res: Response) => {
         {
           model: User,
           as: 'user',
+          paranoid: false, // keep the name when that login is later disabled (soft-deleted)
           attributes: ['firstName', 'lastName'],
         },
         {

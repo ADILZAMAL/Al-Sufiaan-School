@@ -349,6 +349,7 @@ export async function getStudentFeeTimeline(studentId: number) {
           {
             model: User,
             as: 'receiver',
+            paranoid: false, // keep the name when that login is later disabled (soft-deleted)
             attributes: ['id', 'firstName', 'lastName'],
           },
         ],
@@ -584,6 +585,7 @@ export async function collectFeePaymentController(req: Request, res: Response) {
             {
               model: User,
               as: 'receiver',
+              paranoid: false, // keep the name when that login is later disabled (soft-deleted)
               attributes: ['id', 'firstName', 'lastName'],
             },
           ],
@@ -647,11 +649,13 @@ export async function getAllIncomingPayments(req: Request, res: Response) {
         {
           model: User,
           as: 'receiver',
+          paranoid: false, // keep the name when that login is later disabled (soft-deleted)
           attributes: ['id', 'firstName', 'lastName'],
         },
         {
           model: User,
           as: 'verifier',
+          paranoid: false, // keep the name when that login is later disabled (soft-deleted)
           attributes: ['id', 'firstName', 'lastName'],
           required: false,
         },
